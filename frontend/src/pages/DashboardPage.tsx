@@ -1,6 +1,7 @@
 import { Building2, Calendar, FolderKanban, FileText } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import PermissionGate from '@/components/PermissionGate';
+import { Interactive3DCard } from '@/components/ui';
 
 const stats = [
   { module: 'societies', label: 'Societies', icon: Building2, color: 'text-accent-teal' },
@@ -18,13 +19,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <PermissionGate key={stat.module} module={stat.module} action="read">
-            <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-shadow">
+            <Interactive3DCard className="p-6">
               <stat.icon size={24} className={`${stat.color} mb-3`} />
               <h3 className="text-title font-semibold text-ink">{stat.label}</h3>
               <p className="text-body-sm text-ink-muted mt-1">
                 {hasAccess(stat.module, 'write') ? 'Full access' : 'Read only'}
               </p>
-            </div>
+            </Interactive3DCard>
           </PermissionGate>
         ))}
       </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { announcementService } from '@/services/announcements';
-import { Pagination, Button, LoadingSpinner } from '@/components/ui';
+import { Pagination, Button, LoadingSpinner, Interactive3DCard } from '@/components/ui';
 import PermissionGate from '@/components/PermissionGate';
 import { usePagination } from '@/hooks/usePagination';
 import type { Announcement } from '@/types/models';
@@ -31,7 +31,7 @@ export default function AnnouncementListPage() {
       <div className="space-y-4">
         {data.length === 0 && <p className="text-body-sm text-ink-muted text-center py-8">No announcements yet</p>}
         {data.map((a) => (
-          <div key={a.id} className="bg-surface rounded-lg border border-hairline p-5 hover:shadow-soft-1 transition-shadow cursor-pointer" onClick={() => navigate(`/announcements/${a.id}`)}>
+          <Interactive3DCard key={a.id} className="p-5 cursor-pointer block" onClick={() => navigate(`/announcements/${a.id}`)}>
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-title font-semibold text-ink">{a.title}</h3>
               <span className={`inline-flex px-2 py-0.5 rounded-full text-eyebrow ${
@@ -40,7 +40,7 @@ export default function AnnouncementListPage() {
             </div>
             <div className="text-body-sm text-ink-secondary" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(a.content.slice(0, 200) + (a.content.length > 200 ? '...' : '')) }} />
             <p className="text-caption text-ink-faint mt-2">{new Date(a.createdAt).toLocaleDateString()}</p>
-          </div>
+          </Interactive3DCard>
         ))}
       </div>
       <Pagination meta={meta} onPageChange={goToPage} />

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { userService } from '@/services/users';
-import { Button } from '@/components/ui';
+import { Button, Interactive3DCard } from '@/components/ui';
 import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
@@ -30,7 +30,7 @@ export default function ProfilePage() {
   return (
     <div>
       <h1 className="text-heading-1 font-bold text-ink mb-6">Profile</h1>
-      <div className="bg-surface rounded-lg border border-hairline p-6 max-w-lg space-y-5">
+      <Interactive3DCard className="p-6 max-w-lg space-y-5" maxRotation={5}>
         <div>
           <label className="text-eyebrow text-ink-muted uppercase">Name</label>
           {editing ? (
@@ -69,7 +69,7 @@ export default function ProfilePage() {
             </>
           )}
         </div>
-      </div>
+      </Interactive3DCard>
     </div>
   );
 }

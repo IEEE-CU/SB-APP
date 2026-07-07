@@ -5,3 +5,5 @@ export { default as Pagination } from './Pagination';
 export { default as SearchInput } from './SearchInput';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as ErrorBoundary } from './ErrorBoundary';
+export { default as Interactive3DCard } from './Interactive3DCard';
+
