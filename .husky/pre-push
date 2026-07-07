@@ -1,0 +1,21 @@
+echo "🚀 Running Husky pre-push checks..."
+
+echo "🧪 Verifying tests before push..."
+
+if [ -f "frontend/package.json" ]; then
+  echo "Running frontend tests..."
+  (cd frontend && npm run test:unit) || {
+    echo "❌ Frontend tests failed! Fix them before pushing."
+    exit 1
+  }
+fi
+
+if [ -f "backend/package.json" ]; then
+  echo "Running backend tests..."
+  (cd backend && npm run test:unit) || {
+    echo "❌ Backend tests failed! Fix them before pushing."
+    exit 1
+  }
+fi
+
+echo "✅ All pre-push checks passed!"
