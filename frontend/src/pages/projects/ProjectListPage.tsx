@@ -9,6 +9,7 @@ import type { PaginationMeta } from '@/types/api';
 
 export default function ProjectListPage() {
   const [data, setData] = useState<Project[]>([]);
+  const [allData, setAllData] = useState<Project[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 20, totalItems: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const { page, limit, goToPage } = usePagination();
@@ -18,9 +19,16 @@ export default function ProjectListPage() {
     setLoading(true);
     projectService.getProjects(page, limit).then((res) => {
       setData(res.data.data);
+      setAllData(res.data.data);
       setMeta(res.data.meta);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [page, limit]);
+
+  const handleSearch = (query: string) => {
+    if (!query.trim()) { setData(allData); return; }
+    const q = query.toLowerCase();
+    setData(allData.filter((p) => p.title.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)));
+  };
 
   const columns = [
     { key: 'title', header: 'Title' },
@@ -45,7 +53,7 @@ export default function ProjectListPage() {
           <Button onClick={() => navigate('/projects/new')}>New Project</Button>
         </PermissionGate>
       </div>
-      <div className="mb-4 max-w-xs"><SearchInput onSearch={() => {}} placeholder="Search projects..." /></div>
+      <div className="mb-4 max-w-xs">        <SearchInput onSearch={handleSearch} placeholder="Search projects..." /></div>
       <DataTable columns={columns} data={data} onRowClick={(item) => navigate(`/projects/${item.id}`)} />
       <Pagination meta={meta} onPageChange={goToPage} />
     </div>

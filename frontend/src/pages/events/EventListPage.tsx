@@ -9,6 +9,7 @@ import type { PaginationMeta } from '@/types/api';
 
 export default function EventListPage() {
   const [data, setData] = useState<Event[]>([]);
+  const [allData, setAllData] = useState<Event[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 20, totalItems: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const { page, limit, goToPage } = usePagination();
@@ -18,9 +19,16 @@ export default function EventListPage() {
     setLoading(true);
     eventService.getEvents(page, limit).then((res) => {
       setData(res.data.data);
+      setAllData(res.data.data);
       setMeta(res.data.meta);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [page, limit]);
+
+  const handleSearch = (query: string) => {
+    if (!query.trim()) { setData(allData); return; }
+    const q = query.toLowerCase();
+    setData(allData.filter((e) => e.title.toLowerCase().includes(q) || e.location?.toLowerCase().includes(q)));
+  };
 
   const columns = [
     { key: 'title', header: 'Title' },
@@ -47,7 +55,7 @@ export default function EventListPage() {
         </PermissionGate>
       </div>
       <div className="mb-4 max-w-xs">
-        <SearchInput onSearch={() => {}} placeholder="Search events..." />
+        <SearchInput onSearch={handleSearch} placeholder="Search events..." />
       </div>
       <DataTable columns={columns} data={data} onRowClick={(item) => navigate(`/events/${item.id}`)} />
       <Pagination meta={meta} onPageChange={goToPage} />

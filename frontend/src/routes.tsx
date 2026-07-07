@@ -20,6 +20,7 @@ import ReportListPage from '@/pages/reports/ReportListPage';
 import ReportDetailPage from '@/pages/reports/ReportDetailPage';
 import ReportFormPage from '@/pages/reports/ReportFormPage';
 import AnnouncementListPage from '@/pages/announcements/AnnouncementListPage';
+import AnnouncementDetailPage from '@/pages/announcements/AnnouncementDetailPage';
 import AnnouncementFormPage from '@/pages/announcements/AnnouncementFormPage';
 import CommunityPage from '@/pages/community/CommunityPage';
 import UserManagementPage from '@/pages/admin/UserManagementPage';
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
           { path: '/reports/:id/edit', element: <ReportFormPage /> },
           { path: '/announcements', element: <AnnouncementListPage /> },
           { path: '/announcements/new', element: <AnnouncementFormPage /> },
+          { path: '/announcements/:id', element: <AnnouncementDetailPage /> },
           { path: '/announcements/:id/edit', element: <AnnouncementFormPage /> },
           { path: '/community', element: <CommunityPage /> },
         ],

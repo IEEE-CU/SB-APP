@@ -69,6 +69,18 @@ server.get('/api/v1/user/permissions', (req, res) => {
   });
 });
 
+// Mock change-password endpoint
+server.post('/api/v1/auth/change-password', (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Current and new password are required' },
+    });
+  }
+  res.json({ success: true, data: null });
+});
+
 // Mock access check
 server.post('/api/v1/access/check', (req, res) => {
   res.json({

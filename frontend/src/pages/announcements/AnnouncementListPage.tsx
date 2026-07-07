@@ -31,7 +31,7 @@ export default function AnnouncementListPage() {
       <div className="space-y-4">
         {data.length === 0 && <p className="text-body-sm text-ink-muted text-center py-8">No announcements yet</p>}
         {data.map((a) => (
-          <div key={a.id} className="bg-surface rounded-lg border border-hairline p-5 hover:shadow-soft-1 transition-shadow cursor-pointer" onClick={() => navigate(`/announcements/${a.id}/edit`)}>
+          <div key={a.id} className="bg-surface rounded-lg border border-hairline p-5 hover:shadow-soft-1 transition-shadow cursor-pointer" onClick={() => navigate(`/announcements/${a.id}`)}>
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-title font-semibold text-ink">{a.title}</h3>
               <span className={`inline-flex px-2 py-0.5 rounded-full text-eyebrow ${

@@ -7,14 +7,21 @@ import type { PaginationMeta } from '@/types/api';
 
 export default function UserManagementPage() {
   const [data, setData] = useState<User[]>([]);
+  const [allData, setAllData] = useState<User[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 20, totalItems: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const { page, limit, goToPage } = usePagination();
 
   useEffect(() => {
     setLoading(true);
-    userService.getUsers(page, limit).then((res) => { setData(res.data.data); setMeta(res.data.meta); }).catch(() => {}).finally(() => setLoading(false));
+    userService.getUsers(page, limit).then((res) => { setData(res.data.data); setAllData(res.data.data); setMeta(res.data.meta); }).catch(() => {}).finally(() => setLoading(false));
   }, [page, limit]);
+
+  const handleSearch = (query: string) => {
+    if (!query.trim()) { setData(allData); return; }
+    const q = query.toLowerCase();
+    setData(allData.filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)));
+  };
 
   const columns = [
     { key: 'name', header: 'Name' },
@@ -32,7 +39,7 @@ export default function UserManagementPage() {
   return (
     <div>
       <h1 className="text-heading-1 font-bold text-ink mb-6">User Management</h1>
-      <div className="mb-4 max-w-xs"><SearchInput onSearch={() => {}} placeholder="Search users..." /></div>
+      <div className="mb-4 max-w-xs"><SearchInput onSearch={handleSearch} placeholder="Search users..." /></div>
       <DataTable columns={columns} data={data} />
       <Pagination meta={meta} onPageChange={goToPage} />
     </div>
