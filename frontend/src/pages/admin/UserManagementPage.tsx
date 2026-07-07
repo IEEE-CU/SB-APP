@@ -33,7 +33,7 @@ export default function UserManagementPage() {
     <div>
       <h1 className="text-heading-1 font-bold text-ink mb-6">User Management</h1>
       <div className="mb-4 max-w-xs"><SearchInput onSearch={() => {}} placeholder="Search users..." /></div>
-      <DataTable columns={columns} data={data as Record<string, any>[]} />
+      <DataTable columns={columns} data={data} />
       <Pagination meta={meta} onPageChange={goToPage} />
     </div>
   );

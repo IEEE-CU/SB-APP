@@ -1,18 +1,14 @@
 import { ReactNode } from 'react';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface Column<T = any> {
+interface Column {
   key: string;
   header: string;
-  render?: (item: T) => ReactNode;
+  render?: (item: any) => ReactNode;
 }
 
 interface DataTableProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  columns: Column<any>[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  columns: Column[];
   data: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onRowClick?: (item: any) => void;
 }
 

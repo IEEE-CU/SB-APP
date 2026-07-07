@@ -34,7 +34,7 @@ export default function ReportListPage() {
         <PermissionGate module="reports" action="write"><Button onClick={() => navigate('/reports/new')}>New Report</Button></PermissionGate>
       </div>
       <div className="mb-4 max-w-xs"><SearchInput onSearch={() => {}} placeholder="Search reports..." /></div>
-      <DataTable columns={columns} data={data as Record<string, any>[]} onRowClick={(item) => navigate(`/reports/${item.id}`)} />
+      <DataTable columns={columns} data={data} onRowClick={(item) => navigate(`/reports/${item.id}`)} />
       <Pagination meta={meta} onPageChange={goToPage} />
     </div>
   );

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { societyService } from '@/services/societies';
-import { DataTable, Pagination, SearchInput, LoadingSpinner } from '@/components/ui';
+import { DataTable, Pagination, SearchInput, Button, LoadingSpinner } from '@/components/ui';
+import PermissionGate from '@/components/PermissionGate';
 import { usePagination } from '@/hooks/usePagination';
 import type { Society } from '@/types/models';
 import type { PaginationMeta } from '@/types/api';
@@ -34,6 +35,9 @@ export default function SocietyListPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-heading-1 font-bold text-ink">Societies</h1>
+        <PermissionGate module="societies" action="write">
+          <Button onClick={() => navigate('/societies/new')}>New Society</Button>
+        </PermissionGate>
       </div>
       <div className="mb-4 max-w-xs">
         <SearchInput onSearch={() => {}} placeholder="Search societies..." />

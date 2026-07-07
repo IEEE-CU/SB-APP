@@ -10,6 +10,10 @@ dist-ssr/
 .env.local
 .env.*.local
 
+# Secrets
+*.pem
+*.key
+
 # Editor
 .vscode/*
 !.vscode/extensions.json

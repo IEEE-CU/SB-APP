@@ -46,7 +46,7 @@ export default function ProjectListPage() {
         </PermissionGate>
       </div>
       <div className="mb-4 max-w-xs"><SearchInput onSearch={() => {}} placeholder="Search projects..." /></div>
-      <DataTable columns={columns} data={data as Record<string, any>[]} onRowClick={(item) => navigate(`/projects/${item.id}`)} />
+      <DataTable columns={columns} data={data} onRowClick={(item) => navigate(`/projects/${item.id}`)} />
       <Pagination meta={meta} onPageChange={goToPage} />
     </div>
   );

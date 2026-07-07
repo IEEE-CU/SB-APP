@@ -4,10 +4,12 @@ import AuthLayout from '@/components/layout/AuthLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
+import ChangePasswordPage from '@/pages/auth/ChangePasswordPage';
 import DashboardPage from '@/pages/DashboardPage';
 import ProfilePage from '@/pages/ProfilePage';
 import SocietyListPage from '@/pages/societies/SocietyListPage';
 import SocietyDetailPage from '@/pages/societies/SocietyDetailPage';
+import SocietyFormPage from '@/pages/societies/SocietyFormPage';
 import EventListPage from '@/pages/events/EventListPage';
 import EventDetailPage from '@/pages/events/EventDetailPage';
 import EventFormPage from '@/pages/events/EventFormPage';
@@ -38,8 +40,11 @@ export const router = createBrowserRouter([
         children: [
           { path: '/', element: <DashboardPage /> },
           { path: '/profile', element: <ProfilePage /> },
+          { path: '/change-password', element: <ChangePasswordPage /> },
           { path: '/societies', element: <SocietyListPage /> },
+          { path: '/societies/new', element: <SocietyFormPage /> },
           { path: '/societies/:id', element: <SocietyDetailPage /> },
+          { path: '/societies/:id/edit', element: <SocietyFormPage /> },
           { path: '/events', element: <EventListPage /> },
           { path: '/events/new', element: <EventFormPage /> },
           { path: '/events/:id', element: <EventDetailPage /> },
