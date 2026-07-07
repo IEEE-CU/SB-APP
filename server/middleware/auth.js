@@ -21,7 +21,7 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
 
     // Fetch user from DB to ensure they exist
     const userId = decoded.id || decoded.userId;
@@ -69,7 +69,7 @@ const generateToken = (user, roleId = null, societyId = null) => {
       email: user.email
     },
     JWT_SECRET,
-    { expiresIn: '1d' }
+    { expiresIn: '2h', algorithm: 'HS256' }
   );
 };
 

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const rbacRoutes = require('./modules/rbac/routes/rbac.routes');
+const contractGuard = require('./middleware/contractGuard');
 
 const app = express();
 
@@ -10,9 +11,21 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date() });
+// Enforce API contract compliance in non-production environments
+if (process.env.NODE_ENV !== 'production') {
+  app.use(contractGuard);
+}
+
+// Health check endpoint conforming to Section 5.4 contract
+app.get('/api/v1/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: {
+      status: 'ok',
+      uptime: Math.floor(process.uptime()),
+      version: '1.0.0'
+    }
+  });
 });
 
 // Mount RBAC module routes under /api/v1
