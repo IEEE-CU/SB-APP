@@ -4,6 +4,34 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-canvas: #ffffff;
+  --color-canvas-soft: #ffffff;
+  --color-surface: #ffffff;
+  --color-ink: #000000;
+  --color-ink-secondary: #31302e;
+  --color-ink-muted: #615d59;
+  --color-ink-faint: #a39e98;
+  --color-hairline: #e6e6e6;
+  --color-primary: #2563eb;
+  --color-primary-active: #1d4ed8;
+  --color-secondary: #2563eb;
+}
+
+.dark {
+  --color-canvas: #000000;
+  --color-canvas-soft: #000000;
+  --color-surface: #121212;
+  --color-ink: #ffffff;
+  --color-ink-secondary: rgba(255, 255, 255, 0.9);
+  --color-ink-muted: rgba(255, 255, 255, 0.6);
+  --color-ink-faint: rgba(255, 255, 255, 0.4);
+  --color-hairline: #222222;
+  --color-primary: #60a5fa;
+  --color-primary-active: #3b82f6;
+  --color-secondary: #60a5fa;
+}
+
 @layer base {
   body {
     @apply bg-canvas-soft text-ink font-sans text-body-md antialiased;

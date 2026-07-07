@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import {
@@ -15,7 +15,9 @@ import {
   LogIn,
   LayoutDashboard,
   Plus,
-  Minus
+  Minus,
+  Sun,
+  Moon
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -26,15 +28,34 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState<'societies' | 'events' | 'projects' | 'reports'>('societies');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  // Dark Mode State with LocalStorage Persistence
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
   };
 
   const mockLedger = [
-    { id: 1, date: '2026-07-06', desc: 'Component procurement - Robocon', category: 'Project Fund', amount: -250.0, status: 'approved', badgeColor: 'bg-accent-orange/10 text-accent-orange' },
-    { id: 2, date: '2026-07-04', desc: 'Sponsorship - Tech Corp', category: 'Income', amount: 1500.0, status: 'approved', badgeColor: 'bg-accent-green/10 text-accent-green' },
-    { id: 3, date: '2026-07-02', desc: 'Catering - Annual Gen Assembly', category: 'Event Expense', amount: -420.5, status: 'pending', badgeColor: 'bg-accent-purple/10 text-accent-purple-deep' },
-    { id: 4, date: '2026-06-28', desc: 'Vanguard Project Grant', category: 'Project Fund', amount: -600.0, status: 'approved', badgeColor: 'bg-accent-orange/10 text-accent-orange' },
+    { id: 1, date: '2026-07-06', desc: 'Component procurement - Robocon', category: 'Project Fund', amount: -250.0, badgeColor: 'bg-accent-orange/10 dark:bg-accent-orange/20 text-accent-orange' },
+    { id: 2, date: '2026-07-04', desc: 'Sponsorship - Tech Corp', category: 'Income', amount: 1500.0, badgeColor: 'bg-accent-green/10 dark:bg-accent-green/20 text-accent-green' },
+    { id: 3, date: '2026-07-02', desc: 'Catering - Annual Gen Assembly', category: 'Event Expense', amount: -420.5, badgeColor: 'bg-accent-purple/10 dark:bg-accent-purple/20 text-accent-purple dark:text-accent-purple' },
+    { id: 4, date: '2026-06-28', desc: 'Vanguard Project Grant', category: 'Project Fund', amount: -600.0, badgeColor: 'bg-accent-orange/10 dark:bg-accent-orange/20 text-accent-orange' },
   ];
 
   const faqs = [
@@ -61,12 +82,13 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-canvas text-ink font-sans flex flex-col selection:bg-primary/20">
+    <div className="min-h-screen bg-canvas-soft text-ink font-sans flex flex-col selection:bg-primary/20 transition-colors duration-200">
       
       {/* ─── STICKY HEADER ─── */}
       <header className="sticky top-0 z-50 bg-surface/90 backdrop-blur-md border-b border-hairline transition-all">
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* Logo representing Notion-style calm icon */}
             <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-white font-bold text-title shadow-soft-1">
               F
             </div>
@@ -79,12 +101,22 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-body-sm text-ink-secondary hover:text-ink font-medium transition-colors">Features</a>
             <a href="#societies" className="text-body-sm text-ink-secondary hover:text-ink font-medium transition-colors">Societies</a>
-            <a href="#pricing" className="text-body-sm text-ink-secondary hover:text-ink font-medium transition-colors">Pricing</a>
+            <a href="#pricing" className="text-body-sm text-ink-secondary hover:text-ink font-medium transition-colors">Packages</a>
             <a href="#faq" className="text-body-sm text-ink-secondary hover:text-ink font-medium transition-colors">FAQ</a>
           </nav>
 
           {/* Action buttons */}
           <div className="hidden md:flex items-center gap-4">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-md hover:bg-canvas-soft text-ink-secondary transition-colors"
+              title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label="Toggle theme"
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
             {isAuthenticated ? (
               <Button
                 variant="primary"
@@ -110,13 +142,22 @@ export default function LandingPage() {
           </div>
 
           {/* Mobile menu button */}
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 rounded-md hover:bg-canvas-soft text-ink-secondary"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-md hover:bg-canvas-soft text-ink-secondary transition-colors"
+              aria-label="Toggle theme"
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-1.5 rounded-md hover:bg-canvas-soft text-ink-secondary"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile menu panel */}
@@ -141,7 +182,7 @@ export default function LandingPage() {
               onClick={() => setMobileMenuOpen(false)}
               className="text-body-md text-ink-secondary py-2"
             >
-              Pricing
+              Packages
             </a>
             <a 
               href="#faq" 
@@ -187,41 +228,39 @@ export default function LandingPage() {
       </header>
 
       {/* ─── HERO SECTION ─── */}
-      <section className="bg-secondary text-white relative overflow-hidden py-16 lg:py-24 border-b border-hairline">
-        {/* Constellation background */}
-        <div className="absolute inset-0 opacity-15 pointer-events-none">
+      <section className="bg-canvas text-ink relative overflow-hidden py-20 lg:py-28 border-b border-hairline">
+        {/* Minimal connecting constellation line art in black/white */}
+        <div className="absolute inset-0 opacity-10 dark:opacity-20 pointer-events-none">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="10%" cy="20%" r="1" fill="#fff" />
-            <circle cx="20%" cy="70%" r="2" fill="#fff" />
-            <circle cx="45%" cy="30%" r="1.5" fill="#fff" />
-            <circle cx="65%" cy="80%" r="1" fill="#fff" />
-            <circle cx="85%" cy="15%" r="2" fill="#fff" />
-            <circle cx="90%" cy="60%" r="1.5" fill="#fff" />
-            
-            <path d="M 10% 20% L 45% 30% L 85% 15% M 20% 70% L 65% 80% L 90% 60%" stroke="#fff" strokeWidth="0.5" strokeDasharray="3,3" fill="none" />
+            <circle cx="15%" cy="30%" r="2" fill="currentColor" />
+            <circle cx="35%" cy="75%" r="1.5" fill="currentColor" />
+            <circle cx="50%" cy="20%" r="2" fill="currentColor" />
+            <circle cx="70%" cy="65%" r="1.5" fill="currentColor" />
+            <circle cx="85%" cy="35%" r="2" fill="currentColor" />
+            <path d="M 15% 30% L 50% 20% L 85% 35% M 35% 75% L 70% 65%" stroke="currentColor" strokeWidth="0.75" strokeDasharray="4,4" fill="none" />
           </svg>
         </div>
 
         <div className="max-w-[1200px] mx-auto px-6 relative z-10">
           <div className="text-center max-w-3xl mx-auto flex flex-col items-center">
             
-            {/* Tagline sticker */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 text-white rounded-full text-eyebrow font-medium mb-6 backdrop-blur-sm border border-white/15">
+            {/* Tagline badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-eyebrow font-medium mb-6 border border-primary/20 backdrop-blur-sm">
               <Sparkles size={12} className="text-accent-sky" />
-              <span>Dedicated Financial Control for Student Branches</span>
+              <span>Quiet Financial Control for Student Branches</span>
             </div>
 
-            {/* Display-1 Headline */}
-            <h1 className="text-display-2 sm:text-display-1 font-bold leading-none tracking-tighter text-white max-w-2xl">
+            {/* Display-1 Confident Headline */}
+            <h1 className="text-display-2 sm:text-display-1 font-bold leading-none tracking-tighter text-ink">
               Meet the night shift for IEEE financial tracking
             </h1>
 
-            {/* Soft, supportive subtext */}
-            <p className="text-body-md text-white/80 mt-6 max-w-xl leading-relaxed">
+            {/* Subhead */}
+            <p className="text-body-md text-ink-secondary mt-6 max-w-xl leading-relaxed">
               A warm, paper-calm workspace built specifically for technical societies, affinity groups, and projects. No more scattered spreadsheet ledgers or messy audit trails.
             </p>
 
-            {/* CTA button pair */}
+            {/* Action buttons */}
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center w-full sm:w-auto">
               {isAuthenticated ? (
                 <Button
@@ -230,18 +269,18 @@ export default function LandingPage() {
                   onClick={() => navigate('/dashboard')}
                   className="w-full sm:w-auto shadow-elevated bg-primary text-white hover:bg-primary-active flex items-center justify-center gap-2 group"
                 >
-                  <span>Enter Platform</span>
+                  <span>Go to Workspace</span>
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
                 </Button>
               ) : (
                 <>
                   <Link to="/register" className="w-full sm:w-auto">
                     <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-elevated">
-                      Get Finance Pro Free
+                      Get Started Free
                     </Button>
                   </Link>
                   <a href="#features" className="w-full sm:w-auto">
-                    <button className="w-full sm:w-auto px-6 py-2.5 text-button font-medium rounded-full bg-white text-ink hover:bg-canvas-soft shadow-soft-1 transition-colors flex items-center justify-center gap-1.5">
+                    <button className="w-full sm:w-auto px-6 py-2.5 text-button font-medium rounded-full bg-surface text-ink hover:bg-canvas-soft border border-hairline shadow-soft-1 transition-colors flex items-center justify-center gap-1.5">
                       Explore Features
                     </button>
                   </a>
@@ -252,32 +291,32 @@ export default function LandingPage() {
 
           {/* Interactive UI Mockup (styled with shadow-elevated as per DESIGN.md) */}
           <div className="mt-16 w-full max-w-4xl mx-auto bg-surface rounded-xl shadow-elevated border border-hairline overflow-hidden text-ink animate-in fade-in slide-in-from-bottom-8 duration-500">
-            {/* Mock Header Row */}
+            {/* Header Chrome */}
             <div className="bg-canvas-soft border-b border-hairline px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-full bg-red-400/20 text-red-500 font-bold flex items-center justify-center text-[10px]">●</span>
-                <span className="w-3.5 h-3.5 rounded-full bg-yellow-400/20 text-yellow-600 font-bold flex items-center justify-center text-[10px]">●</span>
-                <span className="w-3.5 h-3.5 rounded-full bg-green-400/20 text-green-500 font-bold flex items-center justify-center text-[10px]">●</span>
-                <span className="text-caption text-ink-muted ml-2 font-mono select-none">https://finance.ieee-sb-pro/ledger</span>
+                <span className="w-3 h-3 rounded-full bg-[#ff5f56]"></span>
+                <span className="w-3 h-3 rounded-full bg-[#ffbd2e]"></span>
+                <span className="w-3 h-3 rounded-full bg-[#27c93f]"></span>
+                <span className="text-caption text-ink-muted ml-3 font-mono select-none">finance.ieee-sb.org/dashboard</span>
               </div>
-              <div className="flex gap-1">
-                <span className="w-6 h-1.5 rounded-full bg-ink-faint/30"></span>
-                <span className="w-4 h-1.5 rounded-full bg-ink-faint/20"></span>
+              <div className="flex items-center gap-3">
+                <div className="w-20 h-1.5 rounded-full bg-ink-faint/30"></div>
+                <div className="w-10 h-1.5 rounded-full bg-ink-faint/20"></div>
               </div>
             </div>
 
-            {/* Mock Content */}
-            <div className="flex flex-col md:flex-row h-[380px] bg-surface">
+            {/* Mock Dashboard Layout */}
+            <div className="flex flex-col md:flex-row h-[360px] bg-surface">
               {/* Mock Sidebar */}
               <div className="w-full md:w-48 bg-canvas-soft border-r border-hairline p-4 hidden md:flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 px-2 py-1">
-                    <div className="w-5 h-5 rounded bg-primary/20 text-primary flex items-center justify-center font-bold text-caption">I</div>
-                    <span className="text-body-sm font-semibold">IEEE SB</span>
+                    <div className="w-5 h-5 rounded bg-primary/20 text-primary flex items-center justify-center font-bold text-[10px]">SB</div>
+                    <span className="text-body-sm font-semibold">IEEE Branch</span>
                   </div>
                   <nav className="space-y-1">
                     <span className="flex items-center gap-2 px-2 py-1.5 rounded bg-primary/10 text-primary text-body-sm font-medium">
-                      <LayoutDashboard size={14} /> Dashboard
+                      <LayoutDashboard size={14} /> Ledger
                     </span>
                     <span className="flex items-center gap-2 px-2 py-1.5 text-ink-secondary text-body-sm hover:bg-surface rounded">
                       <Building2 size={14} /> Societies
@@ -293,64 +332,58 @@ export default function LandingPage() {
                     </span>
                   </nav>
                 </div>
-                <div className="text-[11px] text-ink-faint px-2">
-                  v1.2.0 · Team 5 RBAC
+                <div className="text-[10px] text-ink-faint px-2 font-mono">
+                  SECURED · v1.2
                 </div>
               </div>
 
-              {/* Mock Canvas Workspace */}
+              {/* Mock Ledger Container */}
               <div className="flex-1 p-6 flex flex-col justify-between overflow-hidden">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-heading-3 font-bold text-ink">IEEE SB Ledger</h3>
-                      <p className="text-caption text-ink-muted">All tracked transactions across student societies</p>
+                      <h3 className="text-title font-bold text-ink">Active Ledger</h3>
+                      <p className="text-caption text-ink-muted">General accounts of Technical Chapters</p>
                     </div>
                     <div className="flex gap-2">
                       <span className="px-2.5 py-1 text-caption font-medium rounded-md bg-canvas-soft border border-hairline text-ink-secondary">
                         Filter
                       </span>
-                      <span className="px-2.5 py-1 text-caption font-medium rounded-md bg-primary text-white flex items-center gap-1">
+                      <span className="px-2.5 py-1 text-caption font-medium rounded-md bg-primary text-white">
                         Export
                       </span>
                     </div>
                   </div>
 
-                  {/* Summary Cards */}
+                  {/* Summary Metric Row */}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="border border-hairline p-3 rounded-lg bg-surface">
-                      <div className="text-[11px] text-ink-faint font-semibold uppercase">Total Balance</div>
+                      <div className="text-[10px] text-ink-faint font-semibold uppercase">Total Balance</div>
                       <div className="text-heading-3 font-bold text-ink mt-0.5">$3,480.20</div>
                     </div>
                     <div className="border border-hairline p-3 rounded-lg bg-surface">
-                      <div className="text-[11px] text-ink-faint font-semibold uppercase">Allocated</div>
+                      <div className="text-[10px] text-ink-faint font-semibold uppercase">Allocated</div>
                       <div className="text-heading-3 font-bold text-accent-teal mt-0.5">$1,850.00</div>
                     </div>
                     <div className="border border-hairline p-3 rounded-lg bg-surface">
-                      <div className="text-[11px] text-ink-faint font-semibold uppercase">Pending Audit</div>
+                      <div className="text-[10px] text-ink-faint font-semibold uppercase">Pending</div>
                       <div className="text-heading-3 font-bold text-accent-purple-deep mt-0.5">$420.50</div>
                     </div>
                   </div>
 
-                  {/* Ledger Table */}
+                  {/* Ledger Rows */}
                   <div className="border border-hairline rounded-lg overflow-hidden bg-surface">
-                    <div className="bg-canvas-soft border-b border-hairline px-3 py-1.5 grid grid-cols-12 text-[11px] font-semibold text-ink-muted uppercase">
+                    <div className="bg-canvas-soft border-b border-hairline px-3 py-1.5 grid grid-cols-12 text-[10px] font-semibold text-ink-muted uppercase">
                       <div className="col-span-3">Date</div>
-                      <div className="col-span-5">Description</div>
-                      <div className="col-span-2">Category</div>
-                      <div className="col-span-2 text-right">Amount</div>
+                      <div className="col-span-6">Description</div>
+                      <div className="col-span-3 text-right">Amount</div>
                     </div>
                     <div className="divide-y divide-hairline">
-                      {mockLedger.map((row) => (
-                        <div key={row.id} className="px-3 py-2 grid grid-cols-12 text-caption text-ink-secondary items-center hover:bg-canvas-soft/50 transition-colors">
-                          <div className="col-span-3 font-mono text-[11px]">{row.date}</div>
-                          <div className="col-span-5 truncate font-medium text-ink">{row.desc}</div>
-                          <div className="col-span-2">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${row.badgeColor}`}>
-                              {row.category}
-                            </span>
-                          </div>
-                          <div className={`col-span-2 text-right font-mono font-semibold ${row.amount > 0 ? 'text-accent-green' : 'text-ink'}`}>
+                      {mockLedger.slice(0, 3).map((row) => (
+                        <div key={row.id} className="px-3 py-2 grid grid-cols-12 text-caption text-ink-secondary items-center hover:bg-canvas-soft/40 transition-colors">
+                          <div className="col-span-3 font-mono text-[10px]">{row.date}</div>
+                          <div className="col-span-6 truncate font-medium text-ink">{row.desc}</div>
+                          <div className={`col-span-3 text-right font-mono font-semibold ${row.amount > 0 ? 'text-accent-green' : 'text-ink'}`}>
                             {row.amount > 0 ? `+$${row.amount.toFixed(2)}` : `-$${Math.abs(row.amount).toFixed(2)}`}
                           </div>
                         </div>
@@ -359,12 +392,9 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center text-[11px] text-ink-faint pt-2 border-t border-hairline">
-                  <span>Showing 4 of 124 transactions</span>
-                  <span className="flex gap-2">
-                    <button disabled className="hover:underline disabled:opacity-40">Previous</button>
-                    <button className="hover:underline font-semibold text-primary">Next</button>
-                  </span>
+                <div className="flex justify-between items-center text-[10px] text-ink-faint pt-2 border-t border-hairline">
+                  <span>Audit Trail Active</span>
+                  <span className="font-semibold text-primary">Team 5 RBAC Isolated</span>
                 </div>
               </div>
             </div>
@@ -372,11 +402,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── VALUE PROPOSITIONS & FEATURE MATRIX ─── */}
-      <section id="features" className="py-20 lg:py-28 bg-canvas-soft border-b border-hairline">
+      {/* ─── FEATURE SYSTEM & STICKER DECALS ─── */}
+      <section id="features" className="py-20 lg:py-28 border-b border-hairline">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-eyebrow font-bold uppercase text-primary tracking-wider">Features System</span>
+            <span className="text-eyebrow font-bold uppercase text-primary tracking-wider font-semibold">Features System</span>
             <h2 className="text-display-2 font-bold text-ink mt-3">
               One platform. Full financial visibility.
             </h2>
@@ -386,72 +416,73 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Feature Card 1 */}
+            {/* Feature Card 1 (Teal Sticker Decal) */}
             <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
               <div>
-                <div className="w-10 h-10 rounded-md bg-accent-teal/10 text-accent-teal flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Landmark size={20} />
+                {/* Notion-style sticker: flat, non-structural, purely decorative */}
+                <div className="w-12 h-12 rounded-lg bg-accent-teal/10 text-accent-teal flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
+                  <Landmark size={24} />
                 </div>
                 <h3 className="text-heading-3 font-bold text-ink mb-2">Society Ledger</h3>
                 <p className="text-body-sm text-ink-muted">
                   Keep separate balances for technical societies, affinity groups (WIE, YP), and your core student branch. Track every penny.
                 </p>
               </div>
-              <div className="mt-6 flex items-center gap-1.5 text-body-sm font-semibold text-primary">
-                <span>Separate accounting</span>
+              <div className="mt-6 flex items-center gap-1 text-body-sm font-semibold text-accent-teal">
+                <span>Branch accounting</span>
               </div>
             </div>
 
-            {/* Feature Card 2 */}
+            {/* Feature Card 2 (Purple Sticker Decal) */}
             <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
               <div>
-                <div className="w-10 h-10 rounded-md bg-accent-purple/20 text-accent-purple-deep flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Calendar size={20} />
+                <div className="w-12 h-12 rounded-lg bg-accent-purple/20 text-accent-purple-deep flex items-center justify-center mb-6 group-hover:-rotate-6 transition-transform">
+                  <Calendar size={24} />
                 </div>
                 <h3 className="text-heading-3 font-bold text-ink mb-2">Event Budgets</h3>
                 <p className="text-body-sm text-ink-muted">
                   Draft budgets for workshops, annual meetings, and hackathons. Lock down ticket projections and track actual catering or speaker expenses.
                 </p>
               </div>
-              <div className="mt-6 flex items-center gap-1.5 text-body-sm font-semibold text-accent-purple-deep">
+              <div className="mt-6 flex items-center gap-1 text-body-sm font-semibold text-accent-purple-deep">
                 <span>Plan vs. actual cost</span>
               </div>
             </div>
 
-            {/* Feature Card 3 */}
+            {/* Feature Card 3 (Orange Sticker Decal) */}
             <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
               <div>
-                <div className="w-10 h-10 rounded-md bg-accent-orange/10 text-accent-orange flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FolderKanban size={20} />
+                <div className="w-12 h-12 rounded-lg bg-accent-orange/10 text-accent-orange flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
+                  <FolderKanban size={24} />
                 </div>
                 <h3 className="text-heading-3 font-bold text-ink mb-2">Project Grants</h3>
                 <p className="text-body-sm text-ink-muted">
                   Fund student projects (Robotics, Solar, Aero). Monitor milestone spending, request component reimbursements, and archive invoices.
                 </p>
               </div>
-              <div className="mt-6 flex items-center gap-1.5 text-body-sm font-semibold text-accent-orange">
-                <span>Procurement logs</span>
+              <div className="mt-6 flex items-center gap-1 text-body-sm font-semibold text-accent-orange">
+                <span>Milestone tracking</span>
               </div>
             </div>
 
-            {/* Feature Card 4 */}
+            {/* Feature Card 4 (Primary Blue Sticker Decal) */}
             <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
               <div>
-                <div className="w-10 h-10 rounded-md bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FileText size={20} />
+                <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:-rotate-6 transition-transform">
+                  <FileText size={24} />
                 </div>
                 <h3 className="text-heading-3 font-bold text-ink mb-2">Compliance Reports</h3>
                 <p className="text-body-sm text-ink-muted">
                   Instantly compile transaction reports that meet IEEE Section guidelines. Exports in Excel and CSV. Saves weeks of annual auditing work.
                 </p>
               </div>
-              <div className="mt-6 flex items-center gap-1.5 text-body-sm font-semibold text-primary">
+              <div className="mt-6 flex items-center gap-1 text-body-sm font-semibold text-primary">
                 <span>Audits made simple</span>
               </div>
             </div>
           </div>
 
-          {/* Interactive Feature Demo */}
+          {/* Interactive Feature Demo Panel */}
           <div className="mt-16 bg-surface border border-hairline rounded-xl overflow-hidden p-6 lg:p-10 shadow-soft-1">
             <div className="flex flex-col lg:flex-row gap-10 items-center">
               <div className="flex-1 space-y-6">
@@ -465,7 +496,7 @@ export default function LandingPage() {
                   Our role-based isolation matches the hierarchy of your Student Branch. See exactly what you're authorized to access, with no overlapping confusion.
                 </p>
                 
-                {/* Navigation pills inside showcase */}
+                {/* Navigation tabs */}
                 <div className="flex flex-wrap gap-2 pt-2">
                   <button 
                     onClick={() => setActiveTab('societies')}
@@ -494,13 +525,13 @@ export default function LandingPage() {
                 </div>
 
                 <ul className="space-y-3 pt-2">
-                  <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
+                  <li className="flex items-start gap-2 text-body-sm text-ink-secondary">
                     <Check size={16} className="text-accent-green mt-0.5 flex-shrink-0" />
-                    <span><strong>Scoped data isolation:</strong> Treasurer views only their chapter's budget ledger.</span>
+                    <span><strong>Scoped data isolation:</strong> Treasurers view only their chapter's ledger logs.</span>
                   </li>
-                  <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
+                  <li className="flex items-start gap-2 text-body-sm text-ink-secondary">
                     <Check size={16} className="text-accent-green mt-0.5 flex-shrink-0" />
-                    <span><strong>Integrated audit trailing:</strong> Log every action, approval, and receipt download.</span>
+                    <span><strong>Full compliance audits:</strong> Enforce strict envelopes and Team 5 RBAC rules.</span>
                   </li>
                 </ul>
               </div>
@@ -511,7 +542,7 @@ export default function LandingPage() {
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between pb-3 border-b border-hairline">
                       <span className="text-body-sm font-bold text-ink">Societies Ledger</span>
-                      <span className="text-caption text-ink-muted">4 Active Groups</span>
+                      <span className="text-caption text-ink-muted">4 Active Chapters</span>
                     </div>
                     <div className="space-y-2">
                       <div className="bg-surface border border-hairline p-3 rounded flex items-center justify-between hover:shadow-soft-1 transition-shadow">
@@ -599,15 +630,6 @@ export default function LandingPage() {
                           <div className="h-full bg-accent-teal" style={{ width: '50%' }}></div>
                         </div>
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-caption font-medium">
-                          <span>Solar Car telemetry arrays</span>
-                          <span className="font-mono">$1,100 / $1,300</span>
-                        </div>
-                        <div className="h-2 w-full bg-hairline rounded-full overflow-hidden">
-                          <div className="h-full bg-accent-purple-deep" style={{ width: '84.6%' }}></div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -632,9 +654,6 @@ export default function LandingPage() {
                       <button className="w-full py-2 bg-accent-teal text-white rounded text-caption font-semibold flex items-center justify-center gap-1.5">
                         <FileText size={14} /> Download IEEE Excel Ledger (XLSX)
                       </button>
-                      <button className="w-full py-2 bg-surface text-ink-secondary border border-hairline rounded text-caption font-semibold flex items-center justify-center gap-1.5 hover:bg-canvas-soft">
-                        Download Audit Checklist (PDF)
-                      </button>
                     </div>
                   </div>
                 )}
@@ -644,11 +663,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── SOCIETIES HUB SHOWCASE ─── */}
-      <section id="societies" className="py-20 lg:py-28 bg-canvas border-b border-hairline">
+      {/* ─── SOCIETIES HUB SHOWCASE (Good daylight desk theme) ─── */}
+      <section id="societies" className="py-20 lg:py-28 border-b border-hairline">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="max-w-2xl mb-16">
-            <span className="text-eyebrow font-bold uppercase text-accent-purple-deep tracking-wider">Student Chapters</span>
+            <span className="text-eyebrow font-bold uppercase text-accent-purple-deep tracking-wider font-semibold">Student Chapters</span>
             <h2 className="text-display-2 font-bold text-ink mt-3">
               One dashboard for all technical societies
             </h2>
@@ -658,9 +677,9 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Society Card 1 - Teal Block */}
+            {/* Society Card 1 - Computer Society (Teal) */}
             <div className="bg-surface rounded-lg border border-hairline overflow-hidden hover:shadow-soft-1 transition-all">
-              <div className="h-3 bg-accent-teal"></div>
+              <div className="h-2 bg-accent-teal"></div>
               <div className="p-6">
                 <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-accent-teal/10 text-accent-teal mb-3">
                   IEEE-CS
@@ -672,9 +691,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Society Card 2 - Purple Block */}
+            {/* Society Card 2 - Robotics (Purple) */}
             <div className="bg-surface rounded-lg border border-hairline overflow-hidden hover:shadow-soft-1 transition-all">
-              <div className="h-3 bg-accent-purple"></div>
+              <div className="h-2 bg-accent-purple"></div>
               <div className="p-6">
                 <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-accent-purple/20 text-accent-purple-deep mb-3">
                   IEEE-RAS
@@ -686,9 +705,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Society Card 3 - Pink Block */}
+            {/* Society Card 3 - WIE (Pink) */}
             <div className="bg-surface rounded-lg border border-hairline overflow-hidden hover:shadow-soft-1 transition-all">
-              <div className="h-3 bg-accent-pink"></div>
+              <div className="h-2 bg-accent-pink"></div>
               <div className="p-6">
                 <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-accent-pink/15 text-accent-pink mb-3">
                   IEEE-WIE
@@ -700,9 +719,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Society Card 4 - Orange Block */}
+            {/* Society Card 4 - Energy (Orange) */}
             <div className="bg-surface rounded-lg border border-hairline overflow-hidden hover:shadow-soft-1 transition-all">
-              <div className="h-3 bg-accent-orange"></div>
+              <div className="h-2 bg-accent-orange"></div>
               <div className="p-6">
                 <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-accent-orange/10 text-accent-orange mb-3">
                   IEEE-PES
@@ -717,47 +736,40 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── PRICING SECTIONS (as per DESIGN.md specifications) ─── */}
-      <section id="pricing" className="py-20 lg:py-28 bg-canvas-soft border-b border-hairline">
+      {/* ─── PACKAGES & ACCESS (No Prices, Clear Hierarchy) ─── */}
+      <section id="pricing" className="py-20 lg:py-28 border-b border-hairline">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-eyebrow font-bold uppercase text-primary tracking-wider">Plans & Tiers</span>
-            <h2 className="text-display-2 font-bold text-ink mt-3">
-              Clear tiers for any branch scale
-            </h2>
+            <span className="text-eyebrow font-bold uppercase text-primary tracking-wider font-semibold">Packages & Access</span>
             <p className="text-body-md text-ink-muted mt-4">
               Start free with your primary student branch ledger, then unlock advanced workflows, audit logs, and society scopes as you grow.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-[1000px] mx-auto">
-            {/* Tier 1 - Lite (Flat/Soft Style) */}
+            {/* Package 1 - Lite */}
             <div className="bg-surface border border-hairline rounded-xl p-8 flex flex-col justify-between hover:shadow-soft-1 transition-all">
               <div>
-                <span className="text-eyebrow font-bold uppercase text-ink-muted">Student Branch Lite</span>
-                <div className="flex items-baseline gap-1 mt-4">
-                  <span className="text-display-2 font-bold">$0</span>
-                  <span className="text-body-sm text-ink-muted">/ month</span>
-                </div>
-                <p className="text-body-sm text-ink-secondary mt-3">
+                <span className="text-eyebrow font-bold uppercase text-ink-muted font-semibold">Student Branch Lite</span>
+                <p className="text-body-sm text-ink-secondary mt-4">
                   Perfect for small student chapters running a single shared ledger.
                 </p>
                 <hr className="my-6 border-hairline" />
                 <ul className="space-y-3.5">
                   <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
-                    <Check size={16} className="text-accent-green mt-0.5" />
+                    <Check size={16} className="text-accent-green mt-0.5 flex-shrink-0" />
                     <span>Single shared Society scope</span>
                   </li>
                   <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
-                    <Check size={16} className="text-accent-green mt-0.5" />
+                    <Check size={16} className="text-accent-green mt-0.5 flex-shrink-0" />
                     <span>Track income & expenditures</span>
                   </li>
                   <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
-                    <Check size={16} className="text-accent-green mt-0.5" />
+                    <Check size={16} className="text-accent-green mt-0.5 flex-shrink-0" />
                     <span>Basic Excel exports</span>
                   </li>
                   <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
-                    <Check size={16} className="text-accent-green mt-0.5" />
+                    <Check size={16} className="text-accent-green mt-0.5 flex-shrink-0" />
                     <span>Up to 5 active officers</span>
                   </li>
                 </ul>
@@ -771,40 +783,36 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Tier 2 - Pro (Featured, Polarity-flipped bg-ink / dark style) */}
-            <div className="bg-ink text-white rounded-xl p-8 flex flex-col justify-between shadow-elevated relative overflow-hidden transform md:-translate-y-2 border border-ink">
+            {/* Package 2 - Pro (Featured warm paper surface as per spec) */}
+            <div className="bg-canvas-soft text-ink rounded-xl p-8 flex flex-col justify-between border-2 border-primary shadow-soft-1 relative overflow-hidden transform md:-translate-y-2">
               <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
                 Recommended
               </div>
               <div>
-                <span className="text-eyebrow font-bold uppercase text-accent-sky">IEEE Society Pro</span>
-                <div className="flex items-baseline gap-1 mt-4">
-                  <span className="text-display-2 font-bold text-white">$19</span>
-                  <span className="text-body-sm text-white/60">/ month</span>
-                </div>
-                <p className="text-body-sm text-white/80 mt-3">
+                <span className="text-eyebrow font-bold uppercase text-primary font-semibold">IEEE Society Pro</span>
+                <p className="text-body-sm text-ink-secondary mt-4 font-semibold">
                   Complete branch workspace with segregated society ledgers & approvals.
                 </p>
-                <hr className="my-6 border-white/10" />
+                <hr className="my-6 border-hairline" />
                 <ul className="space-y-3.5">
-                  <li className="flex items-start gap-2.5 text-body-sm text-white/90">
-                    <Check size={16} className="text-accent-sky mt-0.5" />
+                  <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
+                    <Check size={16} className="text-primary mt-0.5 flex-shrink-0" />
                     <span><strong>Unlimited Society scopes</strong> (CS, RAS, WIE, etc.)</span>
                   </li>
-                  <li className="flex items-start gap-2.5 text-body-sm text-white/90">
-                    <Check size={16} className="text-accent-sky mt-0.5" />
+                  <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
+                    <Check size={16} className="text-primary mt-0.5 flex-shrink-0" />
                     <span>Event budgeting & project milestones</span>
                   </li>
-                  <li className="flex items-start gap-2.5 text-body-sm text-white/90">
-                    <Check size={16} className="text-accent-sky mt-0.5" />
+                  <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
+                    <Check size={16} className="text-primary mt-0.5 flex-shrink-0" />
                     <span>Team 5 RBAC isolation controls</span>
                   </li>
-                  <li className="flex items-start gap-2.5 text-body-sm text-white/90">
-                    <Check size={16} className="text-accent-sky mt-0.5" />
+                  <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
+                    <Check size={16} className="text-primary mt-0.5 flex-shrink-0" />
                     <span>Receipt upload & inline audits</span>
                   </li>
-                  <li className="flex items-start gap-2.5 text-body-sm text-white/90">
-                    <Check size={16} className="text-accent-sky mt-0.5" />
+                  <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
+                    <Check size={16} className="text-primary mt-0.5 flex-shrink-0" />
                     <span>Standard IEEE Section PDF reports</span>
                   </li>
                 </ul>
@@ -812,27 +820,23 @@ export default function LandingPage() {
               <div className="mt-8">
                 <Link to="/register">
                   <Button variant="primary" size="md" className="w-full">
-                    Start 14-Day Free Trial
+                    Start Free Trial
                   </Button>
                 </Link>
               </div>
             </div>
 
-            {/* Tier 3 - Section Enterprise (Flat/Soft Style) */}
+            {/* Package 3 - Enterprise */}
             <div className="bg-surface border border-hairline rounded-xl p-8 flex flex-col justify-between hover:shadow-soft-1 transition-all">
               <div>
-                <span className="text-eyebrow font-bold uppercase text-ink-muted">Section Enterprise</span>
-                <div className="flex items-baseline gap-1 mt-4">
-                  <span className="text-display-2 font-bold">$89</span>
-                  <span className="text-body-sm text-ink-muted">/ month</span>
-                </div>
-                <p className="text-body-sm text-ink-secondary mt-3">
+                <span className="text-eyebrow font-bold uppercase text-ink-muted font-semibold">Section Enterprise</span>
+                <p className="text-body-sm text-ink-secondary mt-4">
                   For entire IEEE Sections to roll-up & monitor all regional branches.
                 </p>
                 <hr className="my-6 border-hairline" />
                 <ul className="space-y-3.5">
                   <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
-                    <Check size={16} className="text-accent-green mt-0.5" />
+                    <Check size={16} className="text-accent-green mt-0.5 flex-shrink-0" />
                     <span>Manage multiple Student Branches</span>
                   </li>
                   <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
@@ -845,7 +849,7 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-start gap-2.5 text-body-sm text-ink-secondary">
                     <Check size={16} className="text-accent-green mt-0.5" />
-                    <span>99.9% SLA & Dedicated Account Manager</span>
+                    <span>99.9% SLA & Dedicated Support</span>
                   </li>
                 </ul>
               </div>
@@ -862,11 +866,11 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FAQ SECTION ─── */}
-      <section id="faq" className="py-20 lg:py-28 bg-canvas border-b border-hairline">
+      <section id="faq" className="py-20 lg:py-28 border-b border-hairline">
         <div className="max-w-[800px] mx-auto px-6">
           <div className="text-center mb-16">
-            <span className="text-eyebrow font-bold uppercase text-primary tracking-wider">Got Questions?</span>
-            <h2 className="text-display-2 font-bold text-ink mt-3">Frequently Asked Questions</h2>
+            <span className="text-eyebrow font-bold uppercase text-primary tracking-wider font-semibold">Got Questions?</span>
+            <h2 className="text-display-2 font-bold text-ink mt-3 font-semibold">Frequently Asked Questions</h2>
           </div>
 
           <div className="space-y-4">
@@ -912,13 +916,13 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FINAL CTA ─── */}
-      <section className="py-20 bg-secondary text-white text-center relative overflow-hidden">
+      <section className="py-20 bg-canvas text-ink text-center relative overflow-hidden border-t border-hairline">
         {/* Constellation visual */}
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="20%" cy="30%" r="1" fill="#fff" />
-            <circle cx="80%" cy="70%" r="1.5" fill="#fff" />
-            <line x1="20%" y1="30%" x2="80%" y2="70%" stroke="#fff" strokeWidth="0.5" strokeDasharray="5,5" />
+            <circle cx="20%" cy="30%" r="1" fill="currentColor" />
+            <circle cx="80%" cy="70%" r="1.5" fill="currentColor" />
+            <line x1="20%" y1="30%" x2="80%" y2="70%" stroke="currentColor" strokeWidth="0.5" strokeDasharray="5,5" />
           </svg>
         </div>
 
@@ -926,7 +930,7 @@ export default function LandingPage() {
           <h2 className="text-display-2 font-bold leading-tight">
             Simplify your society's accounting today
           </h2>
-          <p className="text-body-md text-white/80 max-w-lg mx-auto">
+          <p className="text-body-md text-ink-secondary max-w-lg mx-auto">
             Take the stress out of audits. Join IEEE Student Branches managing thousands of dollars with quiet, paper-soft confidence.
           </p>
           <div className="pt-4">
