@@ -166,6 +166,33 @@ const defaultMatrixMapping = {
     'roles_access:view': 'limited_own_scope'
   },
 
+  // Society Vice Chair
+  'society_vice_chair': {
+    'finance:view': 'limited_own_scope',
+    'events:*': 'limited_own_scope',
+    'projects:*': 'limited_own_scope',
+    'reports:view': 'limited_own_scope',
+    'reports:create': 'limited_own_scope',
+    'reports:approve': 'approval',
+    'community_hub:*': 'limited_own_scope',
+    'announcements:*': 'limited_own_scope',
+    'members:view': 'limited_own_scope',
+    'dashboard:view': 'limited_own_scope'
+  },
+
+  // Society Secretary
+  'society_secretary': {
+    'finance:view': 'limited_own_scope',
+    'events:*': 'limited_own_scope',
+    'projects:*': 'limited_own_scope',
+    'reports:*': 'limited_own_scope',
+    'reports:approve': 'approval',
+    'community_hub:*': 'limited_own_scope',
+    'announcements:*': 'limited_own_scope',
+    'members:view': 'limited_own_scope',
+    'dashboard:view': 'limited_own_scope'
+  },
+
   // Society Treasurer - finance-heavy
   'society_treasurer': {
     'finance:*': 'limited_own_scope',
@@ -216,6 +243,61 @@ const defaultMatrixMapping = {
     'dashboard:*': 'limited_own_scope',
     'settings:*': 'limited_own_scope',
     'roles_access:view': 'limited_own_scope'
+  },
+
+  // SB Vice Chair
+  'sb_vice_chair': {
+    'finance:view': 'limited_own_scope',
+    'events:*': 'limited_own_scope',
+    'projects:*': 'limited_own_scope',
+    'reports:view': 'limited_own_scope',
+    'reports:create': 'limited_own_scope',
+    'reports:approve': 'approval',
+    'community_hub:*': 'limited_own_scope',
+    'announcements:*': 'limited_own_scope',
+    'members:view': 'limited_own_scope',
+    'dashboard:view': 'limited_own_scope'
+  },
+
+  // SB Secretary
+  'sb_secretary': {
+    'finance:view': 'limited_own_scope',
+    'events:*': 'limited_own_scope',
+    'projects:*': 'limited_own_scope',
+    'reports:*': 'limited_own_scope',
+    'reports:approve': 'approval',
+    'community_hub:*': 'limited_own_scope',
+    'announcements:*': 'limited_own_scope',
+    'members:view': 'limited_own_scope',
+    'dashboard:view': 'limited_own_scope'
+  },
+
+  // SB Treasurer
+  'sb_treasurer': {
+    'finance:*': 'limited_own_scope',
+    'finance:approve': 'approval',
+    'events:view': 'limited_own_scope',
+    'events:create': 'limited_own_scope',
+    'projects:view': 'limited_own_scope',
+    'projects:create': 'limited_own_scope',
+    'reports:view': 'limited_own_scope',
+    'reports:create': 'limited_own_scope',
+    'reports:approve': 'approval',
+    'community_hub:view': 'limited_own_scope',
+    'community_hub:create': 'limited_own_scope',
+    'dashboard:view': 'limited_own_scope',
+    'announcements:view': 'limited_own_scope'
+  },
+
+  // SB Webmaster
+  'sb_webmaster': {
+    'finance:view': 'limited_own_scope',
+    'events:*': 'limited_own_scope',
+    'projects:*': 'limited_own_scope',
+    'community_hub:*': 'limited_own_scope',
+    'announcements:*': 'limited_own_scope',
+    'members:view': 'limited_own_scope',
+    'dashboard:view': 'limited_own_scope'
   },
 
   // IEEE General Member

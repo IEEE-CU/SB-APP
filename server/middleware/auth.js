@@ -60,9 +60,14 @@ const authenticate = async (req, res, next) => {
  * Helper function to generate a JWT for a user.
  * Useful for authentication routes and testing.
  */
-const generateToken = (user) => {
+const generateToken = (user, roleId = null, societyId = null) => {
   return jwt.sign(
-    { id: user._id, email: user.email },
+    {
+      userId: user._id.toString(),
+      roleId: roleId ? roleId.toString() : (user.roleId ? user.roleId.toString() : null),
+      societyId: societyId ? societyId.toString() : (user.societyId ? user.societyId.toString() : null),
+      email: user.email
+    },
     JWT_SECRET,
     { expiresIn: '1d' }
   );

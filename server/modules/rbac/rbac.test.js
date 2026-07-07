@@ -121,9 +121,9 @@ beforeAll(async () => {
   });
 
   // 7. Generate Tokens
-  superAdminToken = generateToken(superAdminUser);
-  treasurerToken = generateToken(treasurerUser);
-  memberToken = generateToken(memberUser);
+  superAdminToken = generateToken(superAdminUser, sbFacultyAdvisorRole._id);
+  treasurerToken = generateToken(treasurerUser, treasurerRole._id, societyA._id);
+  memberToken = generateToken(memberUser, ieeeMemberRole._id);
 });
 
 afterAll(async () => {
