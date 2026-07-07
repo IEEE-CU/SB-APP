@@ -37,3 +37,40 @@
     @apply bg-canvas-soft text-ink font-sans text-body-md antialiased;
   }
 }
+
+/* ── Dashboard animations ──────────────────────────────────────────────────── */
+
+/* Staggered fade + slide-up entrance for stat cards and headings */
+@keyframes dashFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Infinite left-scroll for the society logo marquee strip */
+@keyframes marqueeScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Soft glow pulse on hover (applied via JS-controlled class or used in component) */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  50%       { box-shadow: 0 0 20px 6px rgba(37, 99, 235, 0.12); }
+}
+
+/* Reusable animation classes */
+.dash-fade-up {
+  animation: dashFadeUp 0.5s ease both;
+}
+
+/* Marquee track — applied to the inner flex container that holds doubled society list */
+.marquee-track {
+  animation: marqueeScroll 28s linear infinite;
+  will-change: transform;
+}
+
+/* Pause marquee on hover of the parent overflow container */
+.marquee-container:hover .marquee-track {
+  animation-play-state: paused;
+}
+
