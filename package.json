@@ -1,0 +1,24 @@
+{
+  "name": "ieee-finance-pro-db",
+  "version": "1.0.0",
+  "description": "Database & Storage layer (Team 3) for IEEE Finance Pro",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node server/app.js",
+    "seed": "node server/scripts/seed.js",
+    "backup": "node server/scripts/backup.js",
+    "restore": "node server/scripts/restore.js",
+    "test:db": "node server/scripts/testConnection.js",
+    "test:memory": "node server/scripts/runWithMemoryDb.js test",
+    "seed:memory": "node server/scripts/runWithMemoryDb.js seed"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.3.1"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^9.1.8"
+  }
+}
