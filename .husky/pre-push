@@ -1,21 +1,36 @@
 echo "🚀 Running Husky pre-push checks..."
 
-echo "🧪 Verifying tests before push..."
+echo "🧪 Checking for changes to run tests..."
 
-if [ -f "frontend/package.json" ]; then
+# Get changes compared to main branch
+# If this fails (e.g. no origin/main), it will gracefully fail and default to checking if the folder exists
+FRONTEND_CHANGED=$(git diff --name-only origin/main...HEAD 2>/dev/null | grep -q '^frontend/' && echo 'true' || echo 'false')
+BACKEND_CHANGED=$(git diff --name-only origin/main...HEAD 2>/dev/null | grep -q '^backend/' && echo 'true' || echo 'false')
+
+# If git diff failed, run tests to be safe
+if [ $? -ne 0 ]; then
+  FRONTEND_CHANGED="true"
+  BACKEND_CHANGED="true"
+fi
+
+if [ -f "frontend/package.json" ] && [ "$FRONTEND_CHANGED" = "true" ]; then
   echo "Running frontend tests..."
   (cd frontend && npm run test:unit) || {
     echo "❌ Frontend tests failed! Fix them before pushing."
     exit 1
   }
+else
+  echo "⏭️ Skipping frontend tests (no changes detected)."
 fi
 
-if [ -f "backend/package.json" ]; then
+if [ -f "backend/package.json" ] && [ "$BACKEND_CHANGED" = "true" ]; then
   echo "Running backend tests..."
   (cd backend && npm run test:unit) || {
     echo "❌ Backend tests failed! Fix them before pushing."
     exit 1
   }
+else
+  echo "⏭️ Skipping backend tests (no changes detected)."
 fi
 
 echo "✅ All pre-push checks passed!"

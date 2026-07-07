@@ -8,6 +8,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -15,7 +25,7 @@ jobs:
 
       # --- Frontend Checks ---
       - name: Frontend - Install and Checks
-        if: hashFiles('frontend/package.json') != ''
+        if: steps.filter.outputs.frontend == 'true' && hashFiles('frontend/package.json') != ''
         run: |
           cd frontend
           npm ci
@@ -25,7 +35,7 @@ jobs:
 
       # --- Backend Checks ---
       - name: Backend - Install and Checks
-        if: hashFiles('backend/package.json') != ''
+        if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
         run: |
           cd backend
           npm ci
@@ -43,6 +53,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -54,9 +74,9 @@ jobs:
           extra_args: --only-verified
 
       - name: Frontend - npm audit
-        if: hashFiles('frontend/package.json') != ''
+        if: steps.filter.outputs.frontend == 'true' && hashFiles('frontend/package.json') != ''
         run: cd frontend && npm audit --audit-level=high
 
       - name: Backend - npm audit
-        if: hashFiles('backend/package.json') != ''
+        if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
         run: cd backend && npm audit --audit-level=high

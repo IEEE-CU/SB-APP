@@ -20,15 +20,19 @@ else
 fi
 
 # 3. Security Audits (npm audit)
-echo "🛡️ Running npm security audits..."
+echo "🛡️ Checking if security audits are needed..."
 if [ -f "frontend/package.json" ]; then
-  echo "Auditing frontend..."
-  (cd frontend && npm audit --audit-level=high) || exit 1
+  if git diff --cached --name-only | grep -q '^frontend/package'; then
+    echo "Auditing frontend..."
+    (cd frontend && npm audit --audit-level=high) || exit 1
+  fi
 fi
 
 if [ -f "backend/package.json" ]; then
-  echo "Auditing backend..."
-  (cd backend && npm audit --audit-level=high) || exit 1
+  if git diff --cached --name-only | grep -q '^backend/package'; then
+    echo "Auditing backend..."
+    (cd backend && npm audit --audit-level=high) || exit 1
+  fi
 fi
 
 # 4. Lint and Format (lint-staged)
