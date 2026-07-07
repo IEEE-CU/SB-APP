@@ -1,0 +1,15 @@
+echo "Running Husky pre-commit checks..."
+
+# Check if .env, *.pem, or *.key files are staged for commit
+STAGED_SECRETS=$(git diff --cached --name-only | grep -E '\.env$|\.pem$|\.key$' || true)
+
+if [ -n "$STAGED_SECRETS" ]; then
+  echo "❌ ERROR: You are trying to commit potential secrets!"
+  echo "The following files must be in .gitignore and never committed:"
+  echo "$STAGED_SECRETS"
+  echo "Please remove them from the commit and add them to .gitignore."
+  exit 1
+fi
+
+# Run lint-staged
+npx lint-staged

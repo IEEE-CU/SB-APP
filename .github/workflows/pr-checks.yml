@@ -1,0 +1,58 @@
+name: PR Checks
+on: [pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # --- Frontend Checks ---
+      - name: Frontend - Install and Checks
+        if: hashFiles('frontend/package.json') != ''
+        run: |
+          cd frontend
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm run test:unit
+
+      # --- Backend Checks ---
+      - name: Backend - Install and Checks
+        if: hashFiles('backend/package.json') != ''
+        run: |
+          cd backend
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm run test:unit
+          npm run start:test-server &
+          npx wait-on http://localhost:5000/api/v1/health
+          npm run test:contract
+          node scripts/verify-rbac-matrix.js --baseUrl=http://localhost:5000
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Check for committed secrets (Repo-wide)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+      - name: Frontend - npm audit
+        if: hashFiles('frontend/package.json') != ''
+        run: cd frontend && npm audit --audit-level=high
+
+      - name: Backend - npm audit
+        if: hashFiles('backend/package.json') != ''
+        run: cd backend && npm audit --audit-level=high
