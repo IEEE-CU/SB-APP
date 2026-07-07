@@ -1,0 +1,30 @@
+{
+  "users": [
+    { "id": "u1", "name": "Admin User", "email": "admin@ieee.org", "isActive": true, "roleId": "r1", "createdAt": "2026-01-15T10:00:00.000Z", "updatedAt": "2026-01-15T10:00:00.000Z" },
+    { "id": "u2", "name": "Society Chair", "email": "chair@ieee.org", "isActive": true, "societyId": "s1", "roleId": "r2", "createdAt": "2026-02-10T10:00:00.000Z", "updatedAt": "2026-02-10T10:00:00.000Z" },
+    { "id": "u3", "name": "Treasurer", "email": "treasurer@ieee.org", "isActive": true, "societyId": "s1", "roleId": "r3", "createdAt": "2026-03-05T10:00:00.000Z", "updatedAt": "2026-03-05T10:00:00.000Z" }
+  ],
+  "societies": [
+    { "id": "s1", "name": "IEEE Computer Society", "description": "Leading organization for computer science professionals", "chairId": "u2", "memberIds": ["u1", "u2", "u3"], "createdAt": "2026-01-01T10:00:00.000Z" },
+    { "id": "s2", "name": "IEEE Power & Energy Society", "description": "Advancing electric power engineering", "chairId": "u1", "memberIds": ["u1"], "createdAt": "2026-01-01T10:00:00.000Z" }
+  ],
+  "events": [
+    { "id": "e1", "title": "Annual Tech Summit 2026", "description": "A conference on emerging technologies", "societyId": "s1", "date": "2026-09-15T09:00:00.000Z", "location": "Main Auditorium", "status": "upcoming", "createdAt": "2026-06-01T10:00:00.000Z" },
+    { "id": "e2", "title": "Workshop on AI Ethics", "description": "Exploring ethical implications of AI", "societyId": "s1", "date": "2026-08-20T14:00:00.000Z", "location": "Room 301", "status": "upcoming", "createdAt": "2026-06-10T10:00:00.000Z" }
+  ],
+  "projects": [
+    { "id": "p1", "title": "Campus WiFi Upgrade", "description": "Upgrade campus-wide WiFi infrastructure", "societyId": "s1", "status": "active", "memberIds": ["u1", "u2"], "createdAt": "2026-04-01T10:00:00.000Z" },
+    { "id": "p2", "title": "IEEE Website Redesign", "description": "Modernize the chapter website", "societyId": "s1", "status": "planning", "memberIds": ["u3"], "createdAt": "2026-05-15T10:00:00.000Z" }
+  ],
+  "reports": [
+    { "id": "r1", "title": "Q1 2026 Financial Report", "content": "<p>Revenue: $15,000<br/>Expenses: $8,500<br/>Net: $6,500</p>", "societyId": "s1", "authorId": "u3", "type": "financial", "createdAt": "2026-04-05T10:00:00.000Z" },
+    { "id": "r2", "title": "Annual Activity Report", "content": "<p>Hosted 12 events, 5 workshops, and 3 networking sessions.</p>", "societyId": "s1", "authorId": "u2", "type": "activity", "createdAt": "2026-06-01T10:00:00.000Z" }
+  ],
+  "announcements": [
+    { "id": "a1", "title": "Elections Coming Soon", "content": "<p>Annual officer elections will be held in August. Nominate yourself!</p>", "societyId": "s1", "authorId": "u2", "priority": "high", "createdAt": "2026-06-20T10:00:00.000Z" },
+    { "id": "a2", "title": "New Mentorship Program", "content": "<p>Join our peer mentorship program to connect with senior members.</p>", "societyId": "s1", "authorId": "u1", "priority": "medium", "createdAt": "2026-06-25T10:00:00.000Z" }
+  ],
+  "communityMessages": [
+    { "id": "m1", "content": "Welcome to the IEEE Community Hub!", "authorId": "u1", "societyId": "s1", "createdAt": "2026-06-01T10:00:00.000Z" }
+  ]
+}
