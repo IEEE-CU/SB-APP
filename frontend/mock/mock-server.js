@@ -48,42 +48,113 @@ server.post('/api/v1/auth/login', (req, res) => {
       error: { code: 'VALIDATION_ERROR', message: 'Email and password required' },
     });
   }
-  res.json({
-    success: true,
-    data: {
-      token: 'mock-token-u1',
-      user: { id: 'u1', name: 'Admin User', email },
-    },
-  });
+
+  const db = router.db;
+  const user = db.get('users').find({ email: email.toLowerCase() }).value();
+
+  if (user) {
+    res.json({
+      success: true,
+      data: {
+        token: 'mock-token-' + user.id,
+        user,
+      },
+    });
+  } else {
+    // Fallback: dynamic member user
+    const memberUser = {
+      id: 'u_' + email.replace(/[^a-zA-Z0-9]/g, ''),
+      name: email.split('@')[0].toUpperCase(),
+      email: email.toLowerCase(),
+      isActive: true,
+      roleId: 'member',
+    };
+    res.json({
+      success: true,
+      data: {
+        token: 'mock-token-' + memberUser.id,
+        user: memberUser,
+      },
+    });
+  }
 });
 
 server.post('/api/v1/auth/register', (req, res) => {
   const { name, email } = req.body;
-  const userId = 'u' + Date.now();
+  const userId = 'u_' + (email || 'user').replace(/[^a-zA-Z0-9]/g, '');
+  const newUser = { id: userId, name: name || 'New User', email, roleId: 'member' };
+  
+  const db = router.db;
+  const exists = db.get('users').find({ email }).value();
+  if (!exists) {
+    db.get('users').push(newUser).write();
+  }
+
   res.json({
     success: true,
     data: {
       token: 'mock-token-' + userId,
-      user: { id: userId, name: name || 'New User', email },
+      user: newUser,
     },
   });
 });
 
 // Mock permissions endpoint
 server.get('/api/v1/user/permissions', (req, res) => {
+  const authHeader = req.headers.authorization;
+  let userId = 'u1';
+  if (authHeader && authHeader.startsWith('Bearer mock-token-')) {
+    userId = authHeader.replace('Bearer mock-token-', '');
+  }
+
+  let permissions = [];
+
+  if (userId === 'u1') {
+    permissions = [
+      { module: 'societies', action: 'view', accessLevel: 'admin' },
+      { module: 'events', action: 'view', accessLevel: 'admin' },
+      { module: 'projects', action: 'view', accessLevel: 'admin' },
+      { module: 'reports', action: 'view', accessLevel: 'admin' },
+      { module: 'announcements', action: 'view', accessLevel: 'admin' },
+      { module: 'community', action: 'view', accessLevel: 'read' },
+      { module: 'users', action: 'view', accessLevel: 'superadmin' },
+    ];
+  } else if (userId === 'u2') {
+    permissions = [
+      { module: 'societies', action: 'view', accessLevel: 'admin' },
+      { module: 'events', action: 'view', accessLevel: 'admin' },
+      { module: 'projects', action: 'view', accessLevel: 'admin' },
+      { module: 'reports', action: 'view', accessLevel: 'admin' },
+      { module: 'announcements', action: 'view', accessLevel: 'admin' },
+      { module: 'community', action: 'view', accessLevel: 'read' },
+      { module: 'users', action: 'view', accessLevel: 'none' },
+    ];
+  } else if (userId === 'u3') {
+    permissions = [
+      { module: 'societies', action: 'view', accessLevel: 'read' },
+      { module: 'events', action: 'view', accessLevel: 'write' },
+      { module: 'projects', action: 'view', accessLevel: 'write' },
+      { module: 'reports', action: 'view', accessLevel: 'admin' },
+      { module: 'announcements', action: 'view', accessLevel: 'read' },
+      { module: 'community', action: 'view', accessLevel: 'read' },
+      { module: 'users', action: 'view', accessLevel: 'none' },
+    ];
+  } else {
+    // General Member permissions (no users/admin or reports module access)
+    permissions = [
+      { module: 'societies', action: 'view', accessLevel: 'none' },
+      { module: 'events', action: 'view', accessLevel: 'read' },
+      { module: 'projects', action: 'view', accessLevel: 'read' },
+      { module: 'reports', action: 'view', accessLevel: 'none' },
+      { module: 'announcements', action: 'view', accessLevel: 'read' },
+      { module: 'community', action: 'view', accessLevel: 'write' },
+      { module: 'users', action: 'view', accessLevel: 'none' },
+    ];
+  }
+
   res.json({
     success: true,
-    data: {
-      permissions: [
-        { module: 'societies', action: 'view', accessLevel: 'admin' },
-        { module: 'events', action: 'view', accessLevel: 'admin' },
-        { module: 'projects', action: 'view', accessLevel: 'admin' },
-        { module: 'reports', action: 'view', accessLevel: 'admin' },
-        { module: 'announcements', action: 'view', accessLevel: 'admin' },
-        { module: 'community', action: 'view', accessLevel: 'read' },
-        { module: 'users', action: 'view', accessLevel: 'superadmin' },
-      ],
-    },
+    data: { permissions },
   });
 });
 
