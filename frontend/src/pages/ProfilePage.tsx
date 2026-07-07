@@ -6,7 +6,7 @@ import { Button } from '@/components/ui';
 import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
-  const { user } = useAuthStore();
+  const { user, updateUserProfile } = useAuthStore();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -16,7 +16,8 @@ export default function ProfilePage() {
     if (!user?.id || !name.trim()) return;
     setSaving(true);
     try {
-      await userService.updateUser(user.id, { name: name.trim() });
+      const res = await userService.updateUser(user.id, { name: name.trim() });
+      updateUserProfile(res.data.data);
       toast.success('Profile updated');
       setEditing(false);
     } catch {

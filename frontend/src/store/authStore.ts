@@ -13,18 +13,29 @@ interface AuthState {
   logout: () => void;
   fetchPermissions: () => Promise<void>;
   getAccessLevel: (module: string) => AccessLevel;
+  updateUserProfile: (data: Partial<User>) => void;
 }
+
+const safeParseJSON = <T,>(key: string, fallback: T): T => {
+  try {
+    const val = localStorage.getItem(key);
+    return val ? JSON.parse(val) : fallback;
+  } catch {
+    return fallback;
+  }
+};
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   token: localStorage.getItem('token'),
-  user: null,
-  permissions: [],
+  user: safeParseJSON<User | null>('user', null),
+  permissions: safeParseJSON<Permission[]>('permissions', []),
   isAuthenticated: !!localStorage.getItem('token'),
 
   login: async (email, password) => {
     const res = await authService.login(email, password);
     const { token, user } = res.data.data;
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
     set({ token, user: user as User, isAuthenticated: true });
     await get().fetchPermissions();
   },
@@ -33,26 +44,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const res = await authService.register(name, email, password);
     const { token, user } = res.data.data;
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
     set({ token, user: user as User, isAuthenticated: true });
     await get().fetchPermissions();
   },
 
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('permissions');
     set({ token: null, user: null, permissions: [], isAuthenticated: false });
   },
 
   fetchPermissions: async () => {
     try {
       const res = await api.get('/user/permissions');
-      set({ permissions: res.data.data.permissions || [] });
+      const permissions = res.data.data.permissions || [];
+      localStorage.setItem('permissions', JSON.stringify(permissions));
+      set({ permissions });
     } catch {
-      set({ permissions: [] });
+      // Keep existing permissions if fetch fails (e.g. offline) unless unauthenticated
     }
   },
 
   getAccessLevel: (module) => {
     const perm = get().permissions.find((p) => p.module === module);
     return perm?.accessLevel || 'none';
+  },
+
+  updateUserProfile: (data) => {
+    const currentUser = get().user;
+    if (currentUser) {
+      const updatedUser = { ...currentUser, ...data };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      set({ user: updatedUser });
+    }
   },
 }));

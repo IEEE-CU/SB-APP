@@ -1,6 +1,8 @@
 import jsonServer from 'json-server';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import http from 'http';
+import { Server } from 'socket.io';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const server = jsonServer.create();
@@ -9,6 +11,21 @@ const middlewares = jsonServer.defaults();
 
 server.use(middlewares);
 server.use(jsonServer.bodyParser);
+
+const httpServer = http.createServer(server);
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
+
+io.on('connection', (socket) => {
+  console.log('Socket client connected:', socket.id);
+  socket.on('disconnect', () => {
+    console.log('Socket client disconnected:', socket.id);
+  });
+});
 
 // Envelope wrapper: wrap all responses in { success: true, data: ... }
 server.use((req, res, next) => {
@@ -34,7 +51,7 @@ server.post('/api/v1/auth/login', (req, res) => {
   res.json({
     success: true,
     data: {
-      token: 'mock-jwt-token-' + Date.now(),
+      token: 'mock-token-u1',
       user: { id: 'u1', name: 'Admin User', email },
     },
   });
@@ -42,11 +59,12 @@ server.post('/api/v1/auth/login', (req, res) => {
 
 server.post('/api/v1/auth/register', (req, res) => {
   const { name, email } = req.body;
+  const userId = 'u' + Date.now();
   res.json({
     success: true,
     data: {
-      token: 'mock-jwt-token-' + Date.now(),
-      user: { id: 'u' + Date.now(), name: name || 'New User', email },
+      token: 'mock-token-' + userId,
+      user: { id: userId, name: name || 'New User', email },
     },
   });
 });
@@ -138,8 +156,27 @@ Object.entries(resourceMap).forEach(([apiPath, dbPath]) => {
 
   server.post(apiPath, (req, res) => {
     const db = router.db;
-    const newItem = { id: 'mock-' + Date.now(), ...req.body, createdAt: new Date().toISOString() };
+    const authHeader = req.headers.authorization;
+    let currentUserId = 'u1';
+    if (authHeader && authHeader.startsWith('Bearer mock-token-')) {
+      currentUserId = authHeader.replace('Bearer mock-token-', '');
+    }
+
+    const extraFields = {};
+    if (apiPath === '/api/v1/community/messages' || apiPath === '/api/v1/reports' || apiPath === '/api/v1/announcements') {
+      extraFields.authorId = currentUserId;
+    }
+
+    const newItem = {
+      id: 'mock-' + Date.now(),
+      ...extraFields,
+      ...req.body,
+      createdAt: new Date().toISOString(),
+    };
     db.get(dbPath.replace('/', '')).push(newItem).write();
+    if (apiPath === '/api/v1/community/messages') {
+      io.emit('community:message', newItem);
+    }
     res.status(201).json({ success: true, data: newItem });
   });
 
@@ -176,6 +213,6 @@ Object.entries(resourceMap).forEach(([apiPath, dbPath]) => {
 server.use(router);
 
 const PORT = 5000;
-server.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Mock API server running on http://localhost:${PORT}/api/v1`);
 });
