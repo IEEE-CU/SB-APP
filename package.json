@@ -1,0 +1,21 @@
+{
+  "name": "ieee-finance-pro",
+  "version": "1.0.0",
+  "description": "IEEE Finance Pro root package for Husky pre-commit hooks",
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,jsx,ts,tsx}": [
+      "npx prettier --write --ignore-unknown"
+    ],
+    "backend/**/*.{js,ts}": [
+      "npx prettier --write --ignore-unknown"
+    ]
+  }
+}
