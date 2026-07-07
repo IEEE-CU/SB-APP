@@ -12,7 +12,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', module: null },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', module: null },
   {
     to: '/societies',
     icon: Building2,
@@ -77,7 +77,7 @@ export default function Sidebar() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end={item.to === '/dashboard'}
               className={linkClass}
             >
               <item.icon size={18} />

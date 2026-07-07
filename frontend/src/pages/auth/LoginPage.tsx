@@ -31,7 +31,7 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       toast.success('Welcome back!');
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Login failed';
