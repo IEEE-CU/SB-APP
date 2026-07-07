@@ -33,6 +33,14 @@ If you are a coding agent working on this repository, you **MUST** follow these 
 3. **Route Prefix**: All endpoints MUST reside under `/api/v1/...`.
 4. **Git Branching**: Commit only to your team's designated branch (e.g., Team 5 works and commits on `T5` branch).
 
+5. **User recommended techsack**:
+      • Team 1 (Frontend): React 19, TypeScript, Vite, Tailwind CSS, Zustand, Axios, DOMPurify, Socket.io-client.
+      • Team 2 (Backend API): Node.js, Express, JWT, Helmet/CORS/Mongo-Sanitize security, Jest, Supertest.
+      • Team 3 (Database & Storage): MongoDB, Mongoose, Seeding scripts, MongoDB Memory Server.
+      • Team 4 (External Services): Cloudinary/S3, SendGrid, Gemini AI, Multer file upload security, PDF generation.
+      • Team 5 (Roles & Access Control): Custom middleware, Mongoose RBAC models, validation and testing tools.
+
+
 ---
 
 ## 📜 2. Locked API Contract
