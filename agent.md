@@ -33,13 +33,6 @@ If you are a coding agent working on this repository, you **MUST** follow these 
 3. **Route Prefix**: All endpoints MUST reside under `/api/v1/...`.
 4. **Git Branching**: Commit only to your team's designated branch (e.g., Team 5 works and commits on `T5` branch).
 
-5. **User recommended techsack**:
-      • Team 1 (Frontend): React 19, TypeScript, Vite, Tailwind CSS, Zustand, Axios, DOMPurify, Socket.io-client.
-      • Team 2 (Backend API): Node.js, Express, JWT, Helmet/CORS/Mongo-Sanitize security, Jest, Supertest.
-      • Team 3 (Database & Storage): MongoDB, Mongoose, Seeding scripts, MongoDB Memory Server.
-      • Team 4 (External Services): Cloudinary/S3, SendGrid, Gemini AI, Multer file upload security, PDF generation.
-      • Team 5 (Roles & Access Control): Custom middleware, Mongoose RBAC models, validation and testing tools.
-
 
 ---
 
@@ -535,4 +528,51 @@ Branch convention: each team commits only to its own branch — `T1`, `T2`, `T3`
 
 ---
 
-## 🧷 8. System Prompt Prefix (paste before every task you give your agent)
+## 🧷 8. Techstack
+
+  ### 📱 1. Frontend (Team 1) — Web App Interface
+
+  • React 19 & TypeScript: Provides a robust, type-safe environment for building interactive user interfaces.
+  • Vite: A modern, extremely fast build tool that replaces slower tools like Webpack.
+  • Tailwind CSS: A utility-first CSS framework for fast styling.
+  • Zustand: A lightweight, fast, and simple state management library (simpler than Redux).
+  • Axios: A helper library to make HTTP/API calls to the backend.
+  • DOMPurify: Sanitizes HTML to prevent Cross-Site Scripting (XSS) attacks when displaying user-generated messages.
+  • Socket.io-client: Enables real-time, bi-directional communication (crucial for instant messaging/updates in the
+  Community Hub).
+  ──────
+  ### 🔌 2. Backend API (Team 2) — Main Web Server
+
+  • Node.js & Express: The foundation runtime and framework for serving the API routes.
+  • JWT ( jsonwebtoken ): Generates secure tokens for user session management (authentication) without needing
+  stateful sessions.
+  • Security Middleware ( helmet ,  cors ,  mongo-sanitize ):
+      •  helmet : Sets secure HTTP headers to prevent attacks.
+      •  cors : Controls which external domains can talk to the backend.
+      •  mongo-sanitize : Prevents NoSQL Injection attacks.
+  • Jest & Supertest: Used for writing automated tests to verify that API endpoints respond correctly.
+  ──────
+  ### 🗄️ 3. Database & Storage (Team 3) — Data Management
+
+  • MongoDB: A NoSQL document database ideal for flexible data schemas.
+  • Mongoose: A library that maps MongoDB documents to JavaScript objects and enforces schemas.
+  • Idempotent Seeding Scripts: Populate the database with default roles, permissions, and settings safely (without
+  duplicates) when the server starts.
+  • MongoDB Memory Server: Runs a temporary database completely in memory. This is highly useful for unit tests so
+  they run fast and don't overwrite real data.
+  ──────
+  ### ☁️ 4. External Services (Team 4) — Heavy Integrations
+
+  • Cloudinary / AWS S3: Offloads file hosting (e.g., invoices, profile pictures, receipts) to cloud storage.
+  • SendGrid: Sends emails (e.g., password resets, financial statements).
+  • Gemini AI ( @google/generative-ai ): Powers smart assistant features, like scanning financial receipts or
+  summarizing budgets.
+  • Multer: Middleware that securely parses uploaded files and restricts allowed file sizes/types.
+  • PDFKit: Generates dynamic PDF downloads (e.g., generating a PDF invoice or report).
+  ──────
+  ### 🛡️ 5. Roles & Access Control (Team 5) — Security & RBAC
+
+  • Custom Middleware ( requirePermission ,  attachScope ): Express functions that intercept incoming requests to
+  ensure the authenticated user has the permissions needed to perform that action.
+  • Mongoose RBAC Models: Schemas ( Role ,  Permission ,  RolePermission ) stored in the database to map what each
+  user role is allowed to do dynamically.
