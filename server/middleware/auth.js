@@ -12,8 +12,9 @@ const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
+        success: false,
         error: {
-          code: 'UNAUTHORIZED',
+          code: 'UNAUTHENTICATED',
           message: 'Access token is missing or invalid'
         }
       });
@@ -27,8 +28,9 @@ const authenticate = async (req, res, next) => {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(401).json({
+        success: false,
         error: {
-          code: 'UNAUTHORIZED',
+          code: 'UNAUTHENTICATED',
           message: 'User does not exist or has been deactivated'
         }
       });
@@ -37,18 +39,22 @@ const authenticate = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    let code = 'UNAUTHENTICATED';
     let message = 'Invalid or expired token';
     if (error.name === 'TokenExpiredError') {
+      code = 'TOKEN_EXPIRED';
       message = 'Token has expired';
     }
     return res.status(401).json({
+      success: false,
       error: {
-        code: 'UNAUTHORIZED',
+        code,
         message
       }
     });
   }
 };
+
 
 /**
  * Helper function to generate a JWT for a user.

@@ -46,4 +46,15 @@ PermissionSchema.pre('save', function (next) {
   next();
 });
 
+// Serialize _id to id and remove __v in API responses
+PermissionSchema.set('toJSON', {
+  transform: (doc, ret) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+});
+
 module.exports = mongoose.model('Permission', PermissionSchema);
+

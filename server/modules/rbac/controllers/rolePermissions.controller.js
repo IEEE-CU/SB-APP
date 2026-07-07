@@ -25,7 +25,7 @@ const getRolePermissions = async (req, res, next) => {
           filter.role = roleDoc._id;
         } else {
           // If role name not found, return empty data
-          return res.status(200).json({ data: [] });
+          return res.status(200).json({ success: true, data: [] });
         }
       }
     }
@@ -38,7 +38,7 @@ const getRolePermissions = async (req, res, next) => {
       
       // If no permissions match the module, return empty list
       if (permissionsFilterList.length === 0) {
-        return res.status(200).json({ data: [] });
+        return res.status(200).json({ success: true, data: [] });
       }
       
       filter.permission = { $in: permissionsFilterList };
@@ -49,6 +49,7 @@ const getRolePermissions = async (req, res, next) => {
       .populate('permission');
 
     return res.status(200).json({
+      success: true,
       data: matrix
     });
   } catch (error) {
@@ -67,8 +68,9 @@ const updateRolePermission = async (req, res, next) => {
 
     if (!roleInput || !permissionInput || !accessLevel) {
       return res.status(400).json({
+        success: false,
         error: {
-          code: 'BAD_REQUEST',
+          code: 'VALIDATION_ERROR',
           message: 'Missing required fields: role, permission, accessLevel'
         }
       });
@@ -78,8 +80,9 @@ const updateRolePermission = async (req, res, next) => {
     const validLevels = ['full', 'limited_own_scope', 'approval', 'none'];
     if (!validLevels.includes(accessLevel)) {
       return res.status(400).json({
+        success: false,
         error: {
-          code: 'BAD_REQUEST',
+          code: 'VALIDATION_ERROR',
           message: `Invalid accessLevel. Must be one of: ${validLevels.join(', ')}`
         }
       });
@@ -94,8 +97,9 @@ const updateRolePermission = async (req, res, next) => {
 
     if (!isAuthorized) {
       return res.status(403).json({
+        success: false,
         error: {
-          code: 'FORBIDDEN',
+          code: 'PERMISSION_DENIED',
           message: 'Only Super Admin or Faculty Advisors can assign or update role permissions'
         }
       });
@@ -109,6 +113,7 @@ const updateRolePermission = async (req, res, next) => {
       const roleDoc = await Role.findOne({ name: roleInput.toLowerCase().trim() });
       if (!roleDoc) {
         return res.status(404).json({
+          success: false,
           error: { code: 'NOT_FOUND', message: `Role "${roleInput}" not found` }
         });
       }
@@ -123,6 +128,7 @@ const updateRolePermission = async (req, res, next) => {
       const permissionDoc = await Permission.findOne({ key: permissionInput.trim() });
       if (!permissionDoc) {
         return res.status(404).json({
+          success: false,
           error: { code: 'NOT_FOUND', message: `Permission key "${permissionInput}" not found` }
         });
       }
@@ -158,7 +164,7 @@ const updateRolePermission = async (req, res, next) => {
     });
 
     return res.status(200).json({
-      message: 'Role permission matrix updated successfully',
+      success: true,
       data: updated
     });
   } catch (error) {

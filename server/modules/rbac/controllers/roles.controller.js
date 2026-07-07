@@ -28,12 +28,13 @@ const getRoles = async (req, res, next) => {
     const total = await Role.countDocuments(filter);
 
     return res.status(200).json({
+      success: true,
       data: roles,
-      pagination: {
-        total,
+      meta: {
         page,
         limit,
-        pages: Math.ceil(total / limit)
+        totalItems: total,
+        totalPages: Math.ceil(total / limit)
       }
     });
   } catch (error) {
@@ -51,8 +52,9 @@ const createRole = async (req, res, next) => {
 
     if (!name || !displayName || !level || !scope) {
       return res.status(400).json({
+        success: false,
         error: {
-          code: 'BAD_REQUEST',
+          code: 'VALIDATION_ERROR',
           message: 'Missing required fields: name, displayName, level, scope'
         }
       });
@@ -63,8 +65,9 @@ const createRole = async (req, res, next) => {
     
     if ((isSystemRole || level === 'super_admin') && !isSuperAdmin) {
       return res.status(403).json({
+        success: false,
         error: {
-          code: 'FORBIDDEN',
+          code: 'PERMISSION_DENIED',
           message: 'Only the SB Faculty Advisor (Super Admin) can create system roles or super_admin level roles'
         }
       });
@@ -75,8 +78,9 @@ const createRole = async (req, res, next) => {
     const existingRole = await Role.findOne({ name: normalizedName });
     if (existingRole) {
       return res.status(409).json({
+        success: false,
         error: {
-          code: 'CONFLICT',
+          code: 'DUPLICATE_RESOURCE',
           message: `Role with name "${name}" already exists`
         }
       });
@@ -111,7 +115,7 @@ const createRole = async (req, res, next) => {
     });
 
     return res.status(201).json({
-      message: 'Role created successfully',
+      success: true,
       data: newRole
     });
   } catch (error) {

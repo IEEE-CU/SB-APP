@@ -79,7 +79,6 @@ beforeAll(async () => {
   });
 
   // 3. Seed Role-Permissions Matrix
-  // Treasurer gets view:finance (limited) and create:finance (limited)
   await RolePermission.create({
     role: treasurerRole._id,
     permission: viewFinancePerm._id,
@@ -91,8 +90,6 @@ beforeAll(async () => {
     permission: createFinancePerm._id,
     accessLevel: 'limited_own_scope'
   });
-
-  // IEEE member gets no permissions mapped (defaults to none)
 
   // 4. Seed Societies
   societyA = await Society.create({ name: 'Computer Society', code: 'CS', description: 'IEEE CS' });
@@ -140,59 +137,64 @@ describe('RBAC System Test Suite', () => {
     
     it('should block requests without a token (401)', async () => {
       const res = await request(app)
-        .get('/api/roles');
+        .get('/api/v1/roles');
       
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('UNAUTHORIZED');
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHENTICATED');
     });
 
     it('should block requests with an invalid token (401)', async () => {
       const res = await request(app)
-        .get('/api/roles')
+        .get('/api/v1/roles')
         .set('Authorization', 'Bearer invalid_token_here');
       
       expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHENTICATED');
     });
 
     it('should block access for roles without specific permissions (403)', async () => {
-      // General member Charlie tries to view roles, which requires roles_access:view
+      // General member Charlie tries to view roles
       const res = await request(app)
-        .get('/api/roles')
+        .get('/api/v1/roles')
         .set('Authorization', `Bearer ${memberToken}`);
       
       expect(res.status).toBe(403);
-      expect(res.body.error.code).toBe('FORBIDDEN');
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('PERMISSION_DENIED');
     });
   });
 
   describe('Super Admin (Advisor) Bypass', () => {
     it('should allow super admin to view roles even without role permission in matrix', async () => {
       const res = await request(app)
-        .get('/api/roles')
+        .get('/api/v1/roles')
         .set('Authorization', `Bearer ${superAdminToken}`);
       
       expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
       expect(res.body.data).toBeDefined();
     });
 
     it('should resolve full permissions for Super Admin for all module actions', async () => {
       const res = await request(app)
-        .get('/api/user/permissions')
+        .get('/api/v1/user/permissions')
         .set('Authorization', `Bearer ${superAdminToken}`);
       
       expect(res.status).toBe(200);
-      expect(res.body.role).toBe('sb_faculty_advisor');
-      expect(res.body.scope.type).toBe('global');
-      expect(res.body.permissions['finance:create']).toBe('full');
-      expect(res.body.permissions['roles_access:create']).toBe('full');
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.role).toBe('sb_faculty_advisor');
+      expect(res.body.data.scope.type).toBe('global');
+      expect(res.body.data.permissions['finance:create']).toBe('full');
+      expect(res.body.data.permissions['roles_access:create']).toBe('full');
     });
   });
 
   describe('Role & Permission Mapping (Treasurer)', () => {
     it('should allow Society Treasurer to access finance endpoints', async () => {
-      // Create a test request that resolves permissions for finance module
       const res = await request(app)
-        .post('/api/access/check')
+        .post('/api/v1/access/check')
         .set('Authorization', `Bearer ${superAdminToken}`)
         .send({
           userId: treasurerUser._id,
@@ -201,13 +203,14 @@ describe('RBAC System Test Suite', () => {
         });
       
       expect(res.status).toBe(200);
-      expect(res.body.allowed).toBe(true);
-      expect(res.body.accessLevel).toBe('limited_own_scope');
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.allowed).toBe(true);
+      expect(res.body.data.accessLevel).toBe('limited_own_scope');
     });
 
     it('should block Treasurer from settings module (which is none by default)', async () => {
       const res = await request(app)
-        .post('/api/access/check')
+        .post('/api/v1/access/check')
         .set('Authorization', `Bearer ${superAdminToken}`)
         .send({
           userId: treasurerUser._id,
@@ -216,33 +219,33 @@ describe('RBAC System Test Suite', () => {
         });
       
       expect(res.status).toBe(200);
-      expect(res.body.allowed).toBe(false);
-      expect(res.body.accessLevel).toBe('none');
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.allowed).toBe(false);
+      expect(res.body.data.accessLevel).toBe('none');
     });
   });
 
   describe('Scope Isolation between Societies', () => {
     it('should return society scope metadata for Treasurer User in permissions response', async () => {
       const res = await request(app)
-        .get('/api/user/permissions')
+        .get('/api/v1/user/permissions')
         .set('Authorization', `Bearer ${treasurerToken}`);
       
       expect(res.status).toBe(200);
-      expect(res.body.role).toBe('society_treasurer');
-      expect(res.body.scope.type).toBe('society');
-      expect(res.body.scope.societyId).toBe(societyA._id.toString());
-      expect(res.body.permissions.finance).toBe('limited_own_scope');
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.role).toBe('society_treasurer');
+      expect(res.body.data.scope.type).toBe('society');
+      expect(res.body.data.scope.societyId).toBe(societyA._id.toString());
+      expect(res.body.data.permissions.finance).toBe('limited_own_scope');
     });
   });
 
   describe('Audit Logging Verification', () => {
     it('should log audit entries on successful access check', async () => {
-      // Clear logs first
       await AuditLog.deleteMany({});
 
-      // Perform a check that succeeds
       await request(app)
-        .post('/api/access/check')
+        .post('/api/v1/access/check')
         .set('Authorization', `Bearer ${treasurerToken}`)
         .send({
           userId: treasurerUser._id,
@@ -257,9 +260,8 @@ describe('RBAC System Test Suite', () => {
     });
 
     it('should log audit entries on denied access attempts', async () => {
-      // Charlie tries to view roles and is denied
       await request(app)
-        .get('/api/roles')
+        .get('/api/v1/roles')
         .set('Authorization', `Bearer ${memberToken}`);
 
       const audit = await AuditLog.findOne({ user: memberUser._id, module: 'roles_access', result: 'denied' });
@@ -270,13 +272,11 @@ describe('RBAC System Test Suite', () => {
 
   describe('Permission Matrix Upsert', () => {
     it('should update access levels in the matrix dynamically without redeployment', async () => {
-      // 1. Double check Charlie has no access to finance:create
       let chResBefore = await resolvePermissions(memberUser._id, true);
       expect(chResBefore.permissions['finance:create']).toBe('none');
 
-      // 2. Perform matrix update to grant ieee_member full access to finance:create
       const matrixRes = await request(app)
-        .post('/api/role-permissions')
+        .post('/api/v1/role-permissions')
         .set('Authorization', `Bearer ${superAdminToken}`)
         .send({
           role: 'ieee_member',
@@ -285,9 +285,9 @@ describe('RBAC System Test Suite', () => {
         });
 
       expect(matrixRes.status).toBe(200);
+      expect(matrixRes.body.success).toBe(true);
       expect(matrixRes.body.data.accessLevel).toBe('full');
 
-      // 3. Resolve Charlie's permissions again (bypassing/invalidating cache)
       let chResAfter = await resolvePermissions(memberUser._id, true);
       expect(chResAfter.permissions['finance:create']).toBe('full');
     });
@@ -298,7 +298,6 @@ describe('RBAC System Test Suite', () => {
       const systemRole = await Role.findOne({ name: 'sb_faculty_advisor' });
       expect(systemRole).toBeDefined();
 
-      // Attempt to delete it
       let err = null;
       try {
         await Role.deleteOne({ _id: systemRole._id });
@@ -332,5 +331,21 @@ describe('RBAC System Test Suite', () => {
       expect(checkDoc).toBeNull();
     });
   });
-});
 
+  describe('Serialization Layers', () => {
+    it('should serialize _id to id in responses and remove __v', async () => {
+      const res = await request(app)
+        .get('/api/v1/roles')
+        .set('Authorization', `Bearer ${superAdminToken}`);
+      
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.length).toBeGreaterThan(0);
+      
+      const role = res.body.data[0];
+      expect(role.id).toBeDefined();
+      expect(role._id).toBeUndefined();
+      expect(role.__v).toBeUndefined();
+    });
+  });
+});

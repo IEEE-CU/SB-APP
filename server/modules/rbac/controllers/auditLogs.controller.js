@@ -1,5 +1,6 @@
 const AuditLog = require('../models/AuditLog');
 const Role = require('../models/Role');
+const UserRole = require('../models/UserRole');
 
 /**
  * GET /api/audit-logs
@@ -8,17 +9,18 @@ const Role = require('../models/Role');
  */
 const getAuditLogs = async (req, res, next) => {
   try {
-    // Restrict access to super_admin or faculty_advisor level roles
-    const userRoleDoc = await Role.findOne({ name: req.userRole });
-    const isAuthorized = userRoleDoc && (
-      userRoleDoc.level === 'super_admin' || 
-      userRoleDoc.level === 'faculty_advisor'
+    // Resolve current user's role level to ensure they are authorized
+    const currentUserRole = await UserRole.findOne({ user: req.user._id }).populate('role');
+    const isAuthorized = currentUserRole && currentUserRole.role && (
+      currentUserRole.role.level === 'super_admin' || 
+      currentUserRole.role.level === 'faculty_advisor'
     );
 
     if (!isAuthorized) {
       return res.status(403).json({
+        success: false,
         error: {
-          code: 'FORBIDDEN',
+          code: 'PERMISSION_DENIED',
           message: 'Only Super Admin (SB Faculty Advisor) and Faculty Advisors can view audit logs'
         }
       });
@@ -63,12 +65,13 @@ const getAuditLogs = async (req, res, next) => {
     const total = await AuditLog.countDocuments(filter);
 
     return res.status(200).json({
+      success: true,
       data: logs,
-      pagination: {
-        total,
+      meta: {
         page,
         limit,
-        pages: Math.ceil(total / limit)
+        totalItems: total,
+        totalPages: Math.ceil(total / limit)
       }
     });
   } catch (error) {

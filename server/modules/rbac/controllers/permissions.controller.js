@@ -20,6 +20,7 @@ const getPermissions = async (req, res, next) => {
     });
 
     return res.status(200).json({
+      success: true,
       data: grouped
     });
   } catch (error) {
@@ -37,8 +38,9 @@ const createPermission = async (req, res, next) => {
 
     if (!modName || !action) {
       return res.status(400).json({
+        success: false,
         error: {
-          code: 'BAD_REQUEST',
+          code: 'VALIDATION_ERROR',
           message: 'Missing required fields: module, action'
         }
       });
@@ -47,8 +49,9 @@ const createPermission = async (req, res, next) => {
     // Only Super Admin can create permissions
     if (req.userRole !== 'sb_faculty_advisor') {
       return res.status(403).json({
+        success: false,
         error: {
-          code: 'FORBIDDEN',
+          code: 'PERMISSION_DENIED',
           message: 'Only the SB Faculty Advisor (Super Admin) can create permissions'
         }
       });
@@ -58,8 +61,9 @@ const createPermission = async (req, res, next) => {
     const existingPermission = await Permission.findOne({ key });
     if (existingPermission) {
       return res.status(409).json({
+        success: false,
         error: {
-          code: 'CONFLICT',
+          code: 'DUPLICATE_RESOURCE',
           message: `Permission with key "${key}" already exists`
         }
       });
@@ -91,7 +95,7 @@ const createPermission = async (req, res, next) => {
     });
 
     return res.status(201).json({
-      message: 'Permission created successfully',
+      success: true,
       data: newPermission
     });
   } catch (error) {

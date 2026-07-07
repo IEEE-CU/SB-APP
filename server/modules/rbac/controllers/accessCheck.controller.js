@@ -2,6 +2,7 @@ const { resolvePermissions } = require('../services/resolvePermissions');
 const { logAudit } = require('../services/auditLogger');
 const Role = require('../models/Role');
 const User = require('../../../models/User');
+const UserRole = require('../models/UserRole');
 
 
 /**
@@ -16,16 +17,17 @@ const getUserPermissions = async (req, res, next) => {
 
     if (userId) {
       // Accessing another user's permissions is restricted to super_admin and faculty_advisor
-      const userRoleDoc = await Role.findOne({ name: req.userRole });
-      const isAuthorized = userRoleDoc && (
-        userRoleDoc.level === 'super_admin' || 
-        userRoleDoc.level === 'faculty_advisor'
+      const currentUserRole = await UserRole.findOne({ user: req.user._id }).populate('role');
+      const isAuthorized = currentUserRole && currentUserRole.role && (
+        currentUserRole.role.level === 'super_admin' || 
+        currentUserRole.role.level === 'faculty_advisor'
       );
 
       if (!isAuthorized) {
         return res.status(403).json({
+          success: false,
           error: {
-            code: 'FORBIDDEN',
+            code: 'PERMISSION_DENIED',
             message: 'Only Super Admin and Faculty Advisors can view other users\' permissions'
           }
         });
@@ -34,7 +36,10 @@ const getUserPermissions = async (req, res, next) => {
     }
 
     const resolved = await resolvePermissions(targetUserId);
-    return res.status(200).json(resolved);
+    return res.status(200).json({
+      success: true,
+      data: resolved
+    });
   } catch (error) {
     next(error);
   }
@@ -52,8 +57,9 @@ const checkAccess = async (req, res, next) => {
 
     if (!userId || !targetModule || !targetAction) {
       return res.status(400).json({
+        success: false,
         error: {
-          code: 'BAD_REQUEST',
+          code: 'VALIDATION_ERROR',
           message: 'Missing required fields: userId, module, action'
         }
       });
@@ -72,9 +78,12 @@ const checkAccess = async (req, res, next) => {
     // Check society scoping constraint
     if (allowed && resolved.scope.type === 'society' && !resolved.scope.societyId && resolved.role !== 'sb_faculty_advisor') {
       return res.status(200).json({
-        allowed: false,
-        accessLevel: 'none',
-        reason: 'Role requires a society scope, but no society was assigned to user.'
+        success: true,
+        data: {
+          allowed: false,
+          accessLevel: 'none',
+          reason: 'Role requires a society scope, but no society was assigned to user.'
+        }
       });
     }
 
@@ -95,9 +104,12 @@ const checkAccess = async (req, res, next) => {
     });
 
     return res.status(200).json({
-      allowed,
-      accessLevel,
-      reason
+      success: true,
+      data: {
+        allowed,
+        accessLevel,
+        reason
+      }
     });
   } catch (error) {
     next(error);

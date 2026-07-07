@@ -23,4 +23,15 @@ const RolePermissionSchema = new mongoose.Schema({
 // Compound unique index on (role, permission)
 RolePermissionSchema.index({ role: 1, permission: 1 }, { unique: true });
 
+// Serialize _id to id and remove __v in API responses
+RolePermissionSchema.set('toJSON', {
+  transform: (doc, ret) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+});
+
 module.exports = mongoose.model('RolePermission', RolePermissionSchema);
+

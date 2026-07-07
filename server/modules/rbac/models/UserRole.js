@@ -28,4 +28,15 @@ const UserRoleSchema = new mongoose.Schema({
   }
 });
 
+// Serialize _id to id and remove __v in API responses
+UserRoleSchema.set('toJSON', {
+  transform: (doc, ret) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+});
+
 module.exports = mongoose.model('UserRole', UserRoleSchema);
+

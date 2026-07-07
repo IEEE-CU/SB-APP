@@ -13,8 +13,9 @@ const requirePermission = (module, action) => {
     try {
       if (!req.user) {
         return res.status(401).json({
+          success: false,
           error: {
-            code: 'UNAUTHORIZED',
+            code: 'UNAUTHENTICATED',
             message: 'User is not authenticated'
           }
         });
@@ -43,8 +44,9 @@ const requirePermission = (module, action) => {
         });
 
         return res.status(403).json({
+          success: false,
           error: {
-            code: 'FORBIDDEN',
+            code: 'PERMISSION_DENIED',
             message: 'You do not have permission to perform this action'
           }
         });
@@ -64,8 +66,9 @@ const requirePermission = (module, action) => {
         });
 
         return res.status(403).json({
+          success: false,
           error: {
-            code: 'FORBIDDEN',
+            code: 'PERMISSION_DENIED',
             message: 'Access denied: No society scope assigned to your role'
           }
         });
@@ -105,7 +108,8 @@ const requireRole = (...roleNames) => {
     try {
       if (!req.user) {
         return res.status(401).json({
-          error: { code: 'UNAUTHORIZED', message: 'User is not authenticated' }
+          success: false,
+          error: { code: 'UNAUTHENTICATED', message: 'User is not authenticated' }
         });
       }
 
@@ -126,8 +130,9 @@ const requireRole = (...roleNames) => {
         });
 
         return res.status(403).json({
+          success: false,
           error: {
-            code: 'FORBIDDEN',
+            code: 'PERMISSION_DENIED',
             message: 'Access denied: Insufficient role privileges'
           }
         });
