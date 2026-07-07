@@ -527,4 +527,3 @@ Branch convention: each team commits only to its own branch — `T1`, `T2`, `T3`
 
 ---
 
-## 🧷 8. System Prompt Prefix (paste before every task you give your agent)
