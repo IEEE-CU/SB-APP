@@ -15,7 +15,7 @@ const router = express.Router();
 // Rate limiter for access check endpoint to prevent abuse
 const accessCheckLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 100, // Limit each IP to 100 requests per minute
+  max: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit in dev/test
   standardHeaders: true,
   legacyHeaders: false,
   message: {
