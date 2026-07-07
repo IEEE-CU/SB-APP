@@ -33,7 +33,7 @@ jobs:
           npm run typecheck
           npm run test:unit
           npm run start:test-server &
-          npx wait-on http://localhost:5000/api/v1/health
+          npx wait-on --timeout 60000 http://localhost:5000/api/v1/health
           npm run test:contract
           node scripts/verify-rbac-matrix.js --baseUrl=http://localhost:5000
 
@@ -49,7 +49,7 @@ jobs:
           cache: 'npm'
 
       - name: Check for committed secrets (Repo-wide)
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@v3.74.0
         with:
           extra_args: --only-verified
 
