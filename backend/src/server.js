@@ -5,7 +5,7 @@ require('dotenv').config();
 const REQUIRED_ENV_VARS = ['MONGODB_URI', 'JWT_SECRET'];
 const missingEnvVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
 if (missingEnvVars.length > 0) {
-    console.error(`❌ Missing required environment variable(s): ${missingEnvVars.join(', ')}`);
+    console.error(` Missing required environment variable(s): ${missingEnvVars.join(', ')}`);
     console.error('   Copy .env.example to .env and fill in the values.');
     process.exit(1);
 }
@@ -33,7 +33,7 @@ if (ENABLE_CLUSTER && cluster.isPrimary) {
 
     cluster.on('exit', (worker, code, signal) => {
         if (shuttingDown) return;
-        console.error(`⚠️  Worker ${worker.process.pid} exited (code=${code}, signal=${signal}). Forking a replacement...`);
+        console.error(`  Worker ${worker.process.pid} exited (code=${code}, signal=${signal}). Forking a replacement...`);
         cluster.fork();
     });
 
@@ -65,7 +65,7 @@ function startServer() {
     const { generalLimiter } = require('./middleware/rateLimiter');
 
     const app = express();
-    const PORT = process.env.PORT || 3001;
+    const PORT = process.env.PORT || 5000;
 
     connectDB();
 
@@ -100,7 +100,7 @@ function startServer() {
     }
 
     // API Routes
-    app.use('/api', routes);
+    app.use('/api/v1', routes);
 
     // Root endpoint
     app.get('/', (req, res) => {
@@ -108,7 +108,7 @@ function startServer() {
             success: true,
             message: 'IEEE Finance Pro Backend API',
             version: '1.0.0',
-            documentation: '/api/health'
+            documentation: '/api/v1/health'
         });
     });
 
@@ -119,18 +119,17 @@ function startServer() {
     // Start server
     const server = app.listen(PORT, () => {
         console.log(`
-╔══════════════════════════════════════════════════════════╗
-║                                                          ║
-║   🚀 IEEE Finance Pro Backend                            ║
-║                                                          ║
-║   Server:  http://localhost:${PORT}                        ║
-║   API:     http://localhost:${PORT}/api                    ║
-║   Health:  http://localhost:${PORT}/api/health             ║
-║                                                          ║
-║   Mode:    ${process.env.NODE_ENV || 'development'}                               ║
-║   PID:     ${process.pid}                                        ║
-║                                                          ║
-╚══════════════════════════════════════════════════════════╝
+                                                        
+   IEEE Finance Pro Backend                            
+                                                          
+   Server:  http://localhost:${PORT}
+   API:     http://localhost:${PORT}/api/v1
+   Health:  http://localhost:${PORT}/api/v1/health
+                                                        
+   Mode:    ${process.env.NODE_ENV || 'development'}              
+   PID:     ${process.pid}                                        
+                                                          
+
   `);
     });
 

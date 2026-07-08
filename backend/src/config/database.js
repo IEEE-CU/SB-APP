@@ -14,7 +14,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * killing the process on the first failure. The HTTP server starts
  * regardless of DB state, so a hard `process.exit(1)` here would take down
  * every in-flight request over what is often a transient blip (DNS hiccup,
- * Atlas failover, brief network partition). Once connected, /api/health
+ * Atlas failover, brief network partition). Once connected, /api/v1/health
  * reflects real connectivity so a load balancer can route around an instance
  * that's still struggling - the process itself stays alive to recover.
  */
@@ -52,7 +52,7 @@ const connectDB = async () => {
                 console.error('   - Verify your IP is whitelisted in MongoDB Atlas');
                 console.error('   - Ensure credentials are correct');
                 console.error('⚠️  Giving up on initial connection. The server will keep running and');
-                console.error('   /api/health will report 503 until the database becomes reachable.');
+                console.error('   /api/v1/health will report 503 until the database becomes reachable.');
                 return null;
             }
 

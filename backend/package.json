@@ -6,8 +6,13 @@
   "scripts": {
     "start": "node src/server.js",
     "start:cluster": "ENABLE_CLUSTER=true node src/server.js",
+    "start:test-server": "node scripts/start-test-server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/scripts/seed.js"
+    "seed": "node src/scripts/seed.js",
+    "lint": "eslint .",
+    "typecheck": "node scripts/typecheck.js",
+    "test:unit": "node --test test/unit",
+    "test:contract": "node --test test/contract"
   },
   "keywords": [
     "ieee",
@@ -32,7 +37,11 @@
     "mongoose": "^8.2.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "eslint": "^9.39.4",
+    "globals": "^15.15.0",
+    "mongodb-memory-server": "^10.4.3",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.2.2"
   },
   "engines": {
     "node": ">=18.0.0"

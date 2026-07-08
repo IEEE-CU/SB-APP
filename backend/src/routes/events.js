@@ -1,6 +1,6 @@
 const express = require('express');
 const Event = require('../models/Event');
-const { authenticate, societyAccess, officeBearerOrAdmin } = require('../middleware/auth');
+const { authenticate, societyAccess } = require('../middleware/auth');
 const { parseLimit } = require('../utils/pagination');
 
 const router = express.Router();

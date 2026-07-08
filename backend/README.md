@@ -32,7 +32,7 @@ npm run dev
 ## ⚙️ Environment Variables
 
 ```env
-PORT=3001
+PORT=5000
 NODE_ENV=development
 MONGODB_URI=mongodb://localhost:27017/ieee_finance
 JWT_SECRET=your-secret-key-change-in-production
@@ -161,9 +161,9 @@ JWT_EXPIRES_IN=7d
 ### Authentication
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| POST | `/api/auth/login` | Login with email/password | Public |
-| GET | `/api/auth/me` | Get current user profile | Authenticated |
-| POST | `/api/auth/change-password` | Change password | Authenticated |
+| POST | `/api/v1/auth/login` | Login with email/password | Public |
+| GET | `/api/v1/auth/me` | Get current user profile | Authenticated |
+| POST | `/api/v1/auth/change-password` | Change password | Authenticated |
 
 **Login Request:**
 ```json
@@ -195,37 +195,37 @@ JWT_EXPIRES_IN=7d
 ### Users (Admin Only)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/users` | List all users |
-| GET | `/api/users/:id` | Get user details |
-| POST | `/api/users/:id/reset-password` | Reset user password |
+| GET | `/api/v1/users` | List all users |
+| GET | `/api/v1/users/:id` | Get user details |
+| POST | `/api/v1/users/:id/reset-password` | Reset user password |
 
 ---
 
 ### Societies
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| GET | `/api/societies` | List all societies | All |
-| GET | `/api/societies/:id` | Get society details | All |
-| PATCH | `/api/societies/:id/budget` | Update budget | Admin |
-| PATCH | `/api/societies/:id/logo` | Update logo | Admin/OB |
-| GET | `/api/societies/:id/office-bearers` | Get office bearers | All |
-| POST | `/api/societies/:id/office-bearers` | Add office bearer | Admin/OB |
-| PUT | `/api/societies/:id/office-bearers/:obId` | Update office bearer | Admin/OB |
-| DELETE | `/api/societies/:id/office-bearers/:obId` | Remove office bearer | Admin/OB |
-| GET | `/api/societies/:id/members` | Get members | All |
-| POST | `/api/societies/:id/members` | Add member | Admin/OB |
-| DELETE | `/api/societies/:id/members/:memberId` | Remove member | Admin/OB |
+| GET | `/api/v1/societies` | List all societies | All |
+| GET | `/api/v1/societies/:id` | Get society details | All |
+| PATCH | `/api/v1/societies/:id/budget` | Update budget | Admin |
+| PATCH | `/api/v1/societies/:id/logo` | Update logo | Admin/OB |
+| GET | `/api/v1/societies/:id/office-bearers` | Get office bearers | All |
+| POST | `/api/v1/societies/:id/office-bearers` | Add office bearer | Admin/OB |
+| PUT | `/api/v1/societies/:id/office-bearers/:obId` | Update office bearer | Admin/OB |
+| DELETE | `/api/v1/societies/:id/office-bearers/:obId` | Remove office bearer | Admin/OB |
+| GET | `/api/v1/societies/:id/members` | Get members | All |
+| POST | `/api/v1/societies/:id/members` | Add member | Admin/OB |
+| DELETE | `/api/v1/societies/:id/members/:memberId` | Remove member | Admin/OB |
 
 ---
 
 ### Transactions
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| GET | `/api/transactions` | List all transactions | Admin |
-| GET | `/api/transactions/society/:id` | Get society transactions | Admin/OB (own) |
-| POST | `/api/transactions` | Create transaction | Admin/OB |
-| PUT | `/api/transactions/:id` | Update transaction | Admin/OB |
-| DELETE | `/api/transactions/:id` | Delete transaction | Admin/OB |
+| GET | `/api/v1/transactions` | List all transactions | Admin |
+| GET | `/api/v1/transactions/society/:id` | Get society transactions | Admin/OB (own) |
+| POST | `/api/v1/transactions` | Create transaction | Admin/OB |
+| PUT | `/api/v1/transactions/:id` | Update transaction | Admin/OB |
+| DELETE | `/api/v1/transactions/:id` | Delete transaction | Admin/OB |
 
 **Create Transaction:**
 ```json
@@ -244,51 +244,51 @@ JWT_EXPIRES_IN=7d
 ### Events
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| GET | `/api/events` | List all events | All |
-| GET | `/api/events/society/:id` | Get society events | All |
-| POST | `/api/events` | Create event | Admin/OB |
-| PUT | `/api/events/:id` | Update event | Admin/OB |
-| DELETE | `/api/events/:id` | Delete event | Admin/OB |
+| GET | `/api/v1/events` | List all events | All |
+| GET | `/api/v1/events/society/:id` | Get society events | All |
+| POST | `/api/v1/events` | Create event | Admin/OB |
+| PUT | `/api/v1/events/:id` | Update event | Admin/OB |
+| DELETE | `/api/v1/events/:id` | Delete event | Admin/OB |
 
 ---
 
 ### Projects
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| GET | `/api/projects` | List all projects | All |
-| GET | `/api/projects/society/:id` | Get society projects | All |
-| POST | `/api/projects` | Create project | Admin/OB |
-| PUT | `/api/projects/:id` | Update project | Admin/OB |
-| DELETE | `/api/projects/:id` | Delete project | Admin/OB |
+| GET | `/api/v1/projects` | List all projects | All |
+| GET | `/api/v1/projects/society/:id` | Get society projects | All |
+| POST | `/api/v1/projects` | Create project | Admin/OB |
+| PUT | `/api/v1/projects/:id` | Update project | Admin/OB |
+| DELETE | `/api/v1/projects/:id` | Delete project | Admin/OB |
 
 ---
 
 ### Calendar Events
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| GET | `/api/calendar` | List all calendar events | All |
-| GET | `/api/calendar/society/:id` | Get society events | All |
-| POST | `/api/calendar` | Create event | Admin/OB |
-| PUT | `/api/calendar/:id` | Update event | Admin/OB |
-| DELETE | `/api/calendar/:id` | Delete event | Admin/OB |
+| GET | `/api/v1/calendar` | List all calendar events | All |
+| GET | `/api/v1/calendar/society/:id` | Get society events | All |
+| POST | `/api/v1/calendar` | Create event | Admin/OB |
+| PUT | `/api/v1/calendar/:id` | Update event | Admin/OB |
+| DELETE | `/api/v1/calendar/:id` | Delete event | Admin/OB |
 
 ---
 
 ### Announcements
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| GET | `/api/announcements` | List announcements | All (filtered by role) |
-| POST | `/api/announcements` | Create announcement | Admin/OB |
-| PUT | `/api/announcements/:id` | Update announcement | Admin/OB |
-| DELETE | `/api/announcements/:id` | Delete announcement | Admin/OB |
+| GET | `/api/v1/announcements` | List announcements | All (filtered by role) |
+| POST | `/api/v1/announcements` | Create announcement | Admin/OB |
+| PUT | `/api/v1/announcements/:id` | Update announcement | Admin/OB |
+| DELETE | `/api/v1/announcements/:id` | Delete announcement | Admin/OB |
 
 ---
 
 ### Dashboard
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| GET | `/api/dashboard` | Overall statistics | Admin |
-| GET | `/api/dashboard/society/:id` | Society statistics | Admin/OB (own) |
+| GET | `/api/v1/dashboard` | Overall statistics | Admin |
+| GET | `/api/v1/dashboard/society/:id` | Society statistics | Admin/OB (own) |
 
 **Dashboard Response:**
 ```json

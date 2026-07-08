@@ -3,7 +3,6 @@
  */
 
 require('dotenv').config();
-const mongoose = require('mongoose');
 const connectDB = require('../config/database');
 const User = require('../models/User');
 const Society = require('../models/Society');
