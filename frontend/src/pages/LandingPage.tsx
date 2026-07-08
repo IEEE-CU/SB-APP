@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
 import {
   Building2,
   Calendar,
@@ -33,24 +34,7 @@ export default function LandingPage() {
   >("finance");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // Dark Mode State with LocalStorage Persistence
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("theme") === "dark";
-  });
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [darkMode]);
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
+  const { darkMode, toggleDarkMode } = useThemeStore();
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
