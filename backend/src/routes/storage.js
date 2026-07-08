@@ -1,6 +1,26 @@
-const express = require('express');
+const express = require("express");
+const upload = require("../middleware/upload");
+const StorageController = require("../controllers/storageController");
 
 const router = express.Router();
 
-// Placeholder: register storage routes when Team 4 route mounting is approved.
+const storageController = new StorageController();
+
+/**
+ * Storage router for Team 4 external service uploads.
+ *
+ * This router only wires multipart upload parsing to the storage controller
+ * and does not contain any business logic, Azure SDK calls, or persistence.
+ */
+
+/**
+ * POST /upload
+ * Accepts a single uploaded file and delegates handling to StorageController.
+ */
+router.post(
+  "/upload",
+  upload.single("file"),
+  storageController.upload.bind(storageController),
+);
+
 module.exports = router;
