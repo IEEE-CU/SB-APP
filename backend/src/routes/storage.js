@@ -23,4 +23,10 @@ router.post(
   storageController.upload.bind(storageController),
 );
 
+/**
+ * DELETE /:blobName
+ * Deletes a stored blob by its name without using Multer.
+ */
+router.delete("/:blobName", storageController.delete.bind(storageController));
+
 module.exports = router;

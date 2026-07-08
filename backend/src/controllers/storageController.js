@@ -35,6 +35,37 @@ class StorageController {
       return next(error);
     }
   }
+
+  /**
+   * Deletes a blob identified by req.params.blobName and returns delete metadata.
+   *
+   * @param {Object} req - Express request object.
+   * @param {Object} res - Express response object.
+   * @param {Function} next - Express error handler.
+   * @returns {Promise<void>}
+   */
+  async delete(req, res, next) {
+    try {
+      const { blobName } = req.params;
+
+      if (!blobName) {
+        return res.status(400).json({
+          success: false,
+          message: "Blob name is required.",
+        });
+      }
+
+      const result = await storageService.deleteFile(blobName);
+
+      return res.status(200).json({
+        success: true,
+        message: "File deleted successfully.",
+        data: result,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
 
 module.exports = StorageController;
