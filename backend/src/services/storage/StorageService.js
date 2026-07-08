@@ -1,4 +1,4 @@
-const AzureBlobProvider = require('./AzureBlobProvider');
+const AzureBlobProvider = require('./storage-provider/AzureBlobProvider');
 
 // Storage provider abstraction. Placeholder: add provider selection and mapping here.
 class StorageService {

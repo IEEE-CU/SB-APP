@@ -1,4 +1,4 @@
-const storageService = require('../services/storage');
+const storageService = require('../services/storage/storage-provider');
 
 // Thin controller shell. Placeholder: delegate request handling to the storage service.
 const storageController = {
