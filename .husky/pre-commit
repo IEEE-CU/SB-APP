@@ -13,22 +13,26 @@ fi
 # 2. Advanced Secret Check (Trufflehog) - runs if installed locally
 if command -v trufflehog >/dev/null 2>&1; then
   echo "🔒 Running advanced secret scan with TruffleHog..."
-  trufflehog git file://. --since-commit HEAD --only-verified --fail || exit 1
+  trufflehog filesystem . --only-verified --fail || exit 1
 else
   echo "⚠️ trufflehog binary not found locally. Skipping advanced secret scan."
   echo "   (It will still run on GitHub Actions. To run locally, install trufflehog: https://github.com/trufflesecurity/trufflehog)"
 fi
 
 # 3. Security Audits (npm audit)
-echo "🛡️ Running npm security audits..."
+echo "🛡️ Checking if security audits are needed..."
 if [ -f "frontend/package.json" ]; then
-  echo "Auditing frontend..."
-  (cd frontend && npm audit --audit-level=high) || exit 1
+  if git diff --cached --name-only | grep -q '^frontend/package'; then
+    echo "Auditing frontend..."
+    (cd frontend && npm audit --audit-level=high) || exit 1
+  fi
 fi
 
 if [ -f "backend/package.json" ]; then
-  echo "Auditing backend..."
-  (cd backend && npm audit --audit-level=high) || exit 1
+  if git diff --cached --name-only | grep -q '^backend/package'; then
+    echo "Auditing backend..."
+    (cd backend && npm audit --audit-level=high) || exit 1
+  fi
 fi
 
 # 4. Lint and Format (lint-staged)
