@@ -1,4 +1,5 @@
 const StorageService = require("../services/storage/StorageService");
+const path = require("path");
 
 const storageService = new StorageService();
 
@@ -31,6 +32,40 @@ class StorageController {
         message: "File uploaded successfully.",
         data: result,
       });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
+   * Streams a blob identified by req.params.blobName back to the client.
+   *
+   * @param {Object} req - Express request object.
+   * @param {Object} res - Express response object.
+   * @param {Function} next - Express error handler.
+   * @returns {Promise<void>}
+   */
+  async download(req, res, next) {
+    try {
+      const { blobName } = req.params;
+
+      if (!blobName) {
+        return res.status(400).json({
+          success: false,
+          message: "Blob name is required.",
+        });
+      }
+
+      const file = await storageService.downloadFile(blobName);
+
+      res.setHeader("Content-Type", file.contentType);
+      res.setHeader("Content-Length", String(file.contentLength));
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${path.basename(blobName)}"`,
+      );
+
+      return file.stream.pipe(res);
     } catch (error) {
       return next(error);
     }

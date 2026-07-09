@@ -24,6 +24,15 @@ router.post(
 );
 
 /**
+ * GET /download/:blobName
+ * Streams a stored blob by name without using Multer.
+ */
+router.get(
+  "/download/:blobName",
+  storageController.download.bind(storageController),
+);
+
+/**
  * DELETE /:blobName
  * Deletes a stored blob by its name without using Multer.
  */

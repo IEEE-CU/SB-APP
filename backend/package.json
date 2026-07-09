@@ -11,7 +11,7 @@
     "seed": "node src/scripts/seed.js",
     "lint": "eslint .",
     "typecheck": "node scripts/typecheck.js",
-    "test:unit": "node --test test/unit",
+    "test:unit": "node --test test/unit/*.test.js",
     "test:contract": "node --test test/contract"
   },
   "keywords": [

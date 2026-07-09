@@ -50,6 +50,26 @@ class StorageService {
   }
 
   /**
+   * Downloads a blob through the configured storage provider.
+   *
+   * @param {string} blobName - Blob name supplied by the caller.
+   * @returns {Promise<Object>} Provider-independent download metadata.
+   */
+  async downloadFile(blobName) {
+    if (!blobName || typeof blobName !== "string") {
+      throw new Error("Blob name is required.");
+    }
+
+    if (!this.provider || typeof this.provider.downloadBlob !== "function") {
+      throw new Error(
+        "Storage provider does not implement downloadBlob(blobName).",
+      );
+    }
+
+    return this.provider.downloadBlob(blobName);
+  }
+
+  /**
    * Validates the Multer file contract expected by uploadFile().
    *
    * @param {Object} file - Multer file object.

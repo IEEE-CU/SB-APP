@@ -79,6 +79,75 @@ class AzureBlobProvider {
   }
 
   /**
+   * Downloads a blob from Azure Blob Storage and returns normalized stream metadata.
+   *
+   * @param {string} blobName - Name of the blob to download.
+   * @returns {Promise<Object>} Normalized download result.
+   */
+  async downloadBlob(blobName) {
+    try {
+      if (!blobName || typeof blobName !== "string") {
+        throw new Error("Invalid blobName: a non-empty string is required.");
+      }
+
+      const { connectionString, containerName } = this.config || {};
+
+      if (!connectionString) {
+        throw new Error(
+          "Azure configuration is missing AZURE_STORAGE_CONNECTION_STRING.",
+        );
+      }
+
+      if (!containerName) {
+        throw new Error(
+          "Azure configuration is missing AZURE_STORAGE_CONTAINER_NAME.",
+        );
+      }
+
+      const blobServiceClient =
+        BlobServiceClient.fromConnectionString(connectionString);
+      const containerClient =
+        blobServiceClient.getContainerClient(containerName);
+      const blobClient = containerClient.getBlobClient(blobName);
+
+      const exists = await blobClient.exists();
+
+      if (!exists) {
+        throw new Error(
+          `Blob "${blobName}" does not exist in container "${containerName}".`,
+        );
+      }
+
+      const downloadResponse = await blobClient.download();
+      const properties = await blobClient.getProperties();
+      const stream = downloadResponse.readableStreamBody;
+
+      if (!stream) {
+        throw new Error(
+          `Azure did not return a readable stream for blob "${blobName}".`,
+        );
+      }
+
+      return {
+        blobName,
+        stream,
+        contentType:
+          downloadResponse.contentType ||
+          properties.contentType ||
+          "application/octet-stream",
+        contentLength:
+          downloadResponse.contentLength || properties.contentLength || 0,
+        lastModified: downloadResponse.lastModified || properties.lastModified,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `AzureBlobProvider.downloadBlob failed for "${blobName || "unknown"}": ${message}`,
+      );
+    }
+  }
+
+  /**
    * Deletes a blob from Azure Blob Storage and returns normalized delete metadata.
    *
    * @param {string} blobName - Name of the blob to delete.
