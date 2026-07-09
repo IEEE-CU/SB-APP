@@ -70,6 +70,19 @@ class StorageService {
   }
 
   /**
+   * Lists blobs through the configured storage provider.
+   *
+   * @returns {Promise<Array<Object>>} Provider-independent blob metadata list.
+   */
+  async listFiles() {
+    if (!this.provider || typeof this.provider.listBlobs !== "function") {
+      throw new Error("Storage provider does not implement listBlobs().");
+    }
+
+    return this.provider.listBlobs();
+  }
+
+  /**
    * Validates the Multer file contract expected by uploadFile().
    *
    * @param {Object} file - Multer file object.

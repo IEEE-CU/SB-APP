@@ -72,6 +72,28 @@ class StorageController {
   }
 
   /**
+   * Lists all blobs in the configured storage container.
+   *
+   * @param {Object} req - Express request object.
+   * @param {Object} res - Express response object.
+   * @param {Function} next - Express error handler.
+   * @returns {Promise<void>}
+   */
+  async list(req, res, next) {
+    try {
+      const files = await storageService.listFiles();
+
+      return res.status(200).json({
+        success: true,
+        count: files.length,
+        data: files,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
    * Deletes a blob identified by req.params.blobName and returns delete metadata.
    *
    * @param {Object} req - Express request object.

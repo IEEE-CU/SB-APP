@@ -148,6 +148,53 @@ class AzureBlobProvider {
   }
 
   /**
+   * Lists all blobs in Azure Blob Storage and returns normalized metadata.
+   *
+   * @returns {Promise<Array<Object>>} Normalized blob metadata list.
+   */
+  async listBlobs() {
+    try {
+      const { connectionString, containerName } = this.config || {};
+
+      if (!connectionString) {
+        throw new Error(
+          "Azure configuration is missing AZURE_STORAGE_CONNECTION_STRING.",
+        );
+      }
+
+      if (!containerName) {
+        throw new Error(
+          "Azure configuration is missing AZURE_STORAGE_CONTAINER_NAME.",
+        );
+      }
+
+      const blobServiceClient =
+        BlobServiceClient.fromConnectionString(connectionString);
+      const containerClient =
+        blobServiceClient.getContainerClient(containerName);
+      const blobs = [];
+
+      for await (const blobItem of containerClient.listBlobsFlat()) {
+        blobs.push({
+          blobName: blobItem.name,
+          size: blobItem.properties?.contentLength || 0,
+          contentType:
+            blobItem.properties?.contentType || "application/octet-stream",
+          lastModified: blobItem.properties?.lastModified,
+          etag: blobItem.properties?.etag,
+        });
+      }
+
+      return blobs;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `AzureBlobProvider.listBlobs failed for container "${this.config?.containerName || "unknown"}": ${message}`,
+      );
+    }
+  }
+
+  /**
    * Deletes a blob from Azure Blob Storage and returns normalized delete metadata.
    *
    * @param {string} blobName - Name of the blob to delete.

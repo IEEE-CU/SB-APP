@@ -24,6 +24,12 @@ router.post(
 );
 
 /**
+ * GET /files
+ * Returns metadata for every stored blob in the configured container.
+ */
+router.get("/files", storageController.list.bind(storageController));
+
+/**
  * GET /download/:blobName
  * Streams a stored blob by name without using Multer.
  */
