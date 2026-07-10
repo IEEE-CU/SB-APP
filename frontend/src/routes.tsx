@@ -24,8 +24,13 @@ import AnnouncementDetailPage from '@/pages/announcements/AnnouncementDetailPage
 import AnnouncementFormPage from '@/pages/announcements/AnnouncementFormPage';
 import CommunityPage from '@/pages/community/CommunityPage';
 import UserManagementPage from '@/pages/admin/UserManagementPage';
+import LandingPage from '@/pages/LandingPage';
 
 export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <LandingPage />,
+  },
   {
     element: <AuthLayout />,
     children: [
@@ -39,7 +44,7 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
-          { path: '/', element: <DashboardPage /> },
+          { path: '/dashboard', element: <DashboardPage /> },
           { path: '/profile', element: <ProfilePage /> },
           { path: '/change-password', element: <ChangePasswordPage /> },
           { path: '/societies', element: <SocietyListPage /> },

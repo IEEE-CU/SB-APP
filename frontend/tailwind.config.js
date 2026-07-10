@@ -1,27 +1,28 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0075de',
-          active: '#005bab',
+          DEFAULT: 'var(--color-primary, #0075de)',
+          active: 'var(--color-primary-active, #005bab)',
         },
-        secondary: '#213183',
+        secondary: 'var(--color-secondary, #213183)',
         'on-primary': '#ffffff',
         canvas: {
-          DEFAULT: '#ffffff',
-          soft: '#f6f5f4',
+          DEFAULT: 'var(--color-canvas, #ffffff)',
+          soft: 'var(--color-canvas-soft, #f6f5f4)',
         },
-        surface: '#ffffff',
+        surface: 'var(--color-surface, #ffffff)',
         ink: {
-          DEFAULT: '#000000',
-          secondary: '#31302e',
-          muted: '#615d59',
-          faint: '#a39e98',
+          DEFAULT: 'var(--color-ink, #000000)',
+          secondary: 'var(--color-ink-secondary, #31302e)',
+          muted: 'var(--color-ink-muted, #615d59)',
+          faint: 'var(--color-ink-faint, #a39e98)',
         },
-        hairline: '#e6e6e6',
+        hairline: 'var(--color-hairline, #e6e6e6)',
         accent: {
           sky: '#62aef0',
           purple: {

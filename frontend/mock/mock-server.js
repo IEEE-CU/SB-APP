@@ -1,4 +1,5 @@
 import jsonServer from 'json-server';
+import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import http from 'http';
@@ -11,6 +12,16 @@ const middlewares = jsonServer.defaults();
 
 server.use(middlewares);
 server.use(jsonServer.bodyParser);
+
+// ── Static logo assets ────────────────────────────────────────────────────────
+// Serves logos from frontend/public/logos/ at GET /logos/*
+// This allows the mock server (port 5000) to serve logos when running standalone.
+// In Vite dev mode (npm run dev), Vite also serves public/ directly at / .
+// TODO(backend): When Team 4 serves logos via Cloudinary/S3, remove this block
+//   and update LOGO_EXT_MAP in DashboardPage.tsx to use full URLs from the API.
+server.use('/logos', express.static(join(__dirname, '../public/logos')));
+
+
 
 const httpServer = http.createServer(server);
 const io = new Server(httpServer, {

@@ -13,6 +13,8 @@ export interface User {
 export interface Society {
   id: string;
   name: string;
+  shortName?: string;   // e.g. "CS", "WIE" — used in society logo cards
+  logoSlug?: string;    // lowercase slug matching /public/logos/{slug}_logo.{ext}
   description?: string;
   chairId?: string;
   memberIds: string[];

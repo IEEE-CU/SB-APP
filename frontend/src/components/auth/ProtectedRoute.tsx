@@ -32,7 +32,7 @@ export default function ProtectedRoute({
     };
     const userLevel = levels[perm?.accessLevel || 'none'] || 0;
     const needLevel = levels[requiredAction] || required[requiredAction] || 1;
-    if (userLevel < needLevel) return <Navigate to="/" replace />;
+    if (userLevel < needLevel) return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;
