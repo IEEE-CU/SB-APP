@@ -19,9 +19,9 @@
 }
 
 .dark {
-  --color-canvas: #000000;
-  --color-canvas-soft: #000000;
-  --color-surface: #121212;
+  --color-canvas: #0a0a0a;
+  --color-canvas-soft: #121212;
+  --color-surface: #1a1a1a;
   --color-ink: #ffffff;
   --color-ink-secondary: rgba(255, 255, 255, 0.9);
   --color-ink-muted: rgba(255, 255, 255, 0.6);
@@ -58,6 +58,15 @@
   50%       { box-shadow: 0 0 20px 6px rgba(37, 99, 235, 0.12); }
 }
 
+/* Hides scrollbar for native scroll containers while keeping functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
 /* Reusable animation classes */
 .dash-fade-up {
   animation: dashFadeUp 0.5s ease both;
@@ -72,5 +81,21 @@
 /* Pause marquee on hover of the parent overflow container */
 .marquee-container:hover .marquee-track {
   animation-play-state: paused;
+}
+
+/* Image placeholder with dotted grid (graph paper style) */
+.img-placeholder {
+  background-color: var(--color-canvas-soft);
+  background-image: radial-gradient(var(--color-hairline) 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
+  border: 1px dashed var(--color-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-ink-muted);
+  font-size: var(--text-caption);
+  font-family: monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 

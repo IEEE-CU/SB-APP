@@ -31,16 +31,21 @@
  *  TODO: implement GRADIENT_BY_STATUS[event.status] once palette is agreed.
  */
 
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Building2, Calendar, FolderKanban, FileText,
-  ChevronLeft, ChevronRight, MapPin,
-} from 'lucide-react';
-import PermissionGate from '@/components/PermissionGate';
-import { eventService } from '@/services/events';
-import { societyService } from '@/services/societies';
-import type { Event, Society } from '@/types/models';
+  Building2,
+  Calendar,
+  FolderKanban,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+} from "lucide-react";
+import PermissionGate from "@/components/PermissionGate";
+import { eventService } from "@/services/events";
+import { societyService } from "@/services/societies";
+import type { Event, Society } from "@/types/models";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LOGO UTILITY
@@ -57,21 +62,21 @@ import type { Event, Society } from '@/types/models';
  * (Cloudinary/S3), delete this map and return society.logoUrl directly.
  */
 const LOGO_EXT_MAP: Record<string, string> = {
-  cs:    'png',
-  pes:   'webp',
-  pels:  'png',
-  ras:   'png',
-  aess:  'png',
-  aps:   'png',
-  cis:   'png',
-  grss:  'png',
-  mtts:  'webp',
-  sight: 'webp',
-  wie:   'webp',
+  cs: "png",
+  pes: "webp",
+  pels: "png",
+  ras: "png",
+  aess: "png",
+  aps: "png",
+  cis: "png",
+  grss: "png",
+  mtts: "webp",
+  sight: "webp",
+  wie: "webp",
 };
 
 function getLogoSrc(slug: string): string {
-  const ext = LOGO_EXT_MAP[slug.toLowerCase()] ?? 'png';
+  const ext = LOGO_EXT_MAP[slug.toLowerCase()] ?? "png";
   return `/logos/${slug.toLowerCase()}_logo.${ext}`;
 }
 
@@ -81,24 +86,36 @@ function getLogoSrc(slug: string): string {
 
 const STAT_CARDS = [
   {
-    module: 'societies', label: 'Societies', icon: Building2,
-    path: '/societies',
-    accentRgb: '42,157,153',   accentHex: '#2a9d99',
+    module: "societies",
+    label: "Societies",
+    icon: Building2,
+    path: "/societies",
+    accentRgb: "42,157,153",
+    accentHex: "#2a9d99",
   },
   {
-    module: 'events',    label: 'Events',    icon: Calendar,
-    path: '/events',
-    accentRgb: '37,99,235',    accentHex: '#2563eb',
+    module: "events",
+    label: "Events",
+    icon: Calendar,
+    path: "/events",
+    accentRgb: "37,99,235",
+    accentHex: "#2563eb",
   },
   {
-    module: 'projects',  label: 'Projects',  icon: FolderKanban,
-    path: '/projects',
-    accentRgb: '221,91,0',     accentHex: '#dd5b00',
+    module: "projects",
+    label: "Projects",
+    icon: FolderKanban,
+    path: "/projects",
+    accentRgb: "221,91,0",
+    accentHex: "#dd5b00",
   },
   {
-    module: 'reports',   label: 'Reports',   icon: FileText,
-    path: '/reports',
-    accentRgb: '33,49,131',    accentHex: '#213183',
+    module: "reports",
+    label: "Reports",
+    icon: FileText,
+    path: "/reports",
+    accentRgb: "33,49,131",
+    accentHex: "#213183",
   },
 ] as const;
 
@@ -196,41 +213,98 @@ function StatCards() {
 
 /** TODO(gradient): Swap with final palette from /ideas.md */
 const EVENT_GRADIENT_PLACEHOLDER =
-  'linear-gradient(135deg, #1e40af 0%, #1e3a8a 55%, #0f2460 100%)';
+  "linear-gradient(135deg, #1e40af 0%, #1e3a8a 55%, #0f2460 100%)";
 
 function EventsCarousel() {
-  const navigate   = useNavigate();
-  const [events, setEvents]         = useState<Event[]>([]);
-  const [index, setIndex]           = useState(0);
-  const [loading, setLoading]       = useState(true);
+  const navigate = useNavigate();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Refs for managing the native scrolling and auto-advance timer
+  const scrollRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   // TODO(backend): Swap env var when Team 2 deploys to staging.
   useEffect(() => {
-    eventService.getEvents(1, 10)
+    eventService
+      .getEvents(1, 10)
       .then((res) => setEvents(res.data.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  // ── Navigation ────────────────────────────────────────────────────────────
-  const goTo = useCallback((i: number) => {
-    if (!events.length) return;
-    setIndex(((i % events.length) + events.length) % events.length);
-  }, [events.length]);
+  // ── Native Scrolling & Infinite Loop Trick ────────────────────────────────
+  // We append a clone of the first event to the end of the list.
+  // When the user smoothly scrolls to this clone, the `onScroll` handler detects it
+  // and instantly jumps back to the real first slide with animation disabled.
+  // This creates a flawless infinite loop for both buttons and native swipe gestures!
+  const displayEvents = events.length > 1 ? [...events, events[0]] : events;
 
-  const handleManual = (i: number) => {
+  const scrollTo = useCallback(
+    (index: number, behavior: ScrollBehavior = "smooth") => {
+      if (!scrollRef.current) return;
+      const container = scrollRef.current;
+      const slideWidth = container.clientWidth;
+
+      // Set scroll behavior on the fly
+      container.style.scrollBehavior = behavior;
+      container.scrollLeft = index * slideWidth;
+
+      // Always revert back to smooth after a tiny delay for subsequent native scrolls
+      if (behavior === "auto") {
+        requestAnimationFrame(() => {
+          if (container) container.style.scrollBehavior = "smooth";
+        });
+      }
+    },
+    [],
+  );
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current || events.length <= 1) return;
+    const container = scrollRef.current;
+    const slideWidth = container.clientWidth;
+    const scrollPos = container.scrollLeft;
+
+    // Calculate which slide we are currently looking at
+    const currentIndex = Math.round(scrollPos / slideWidth);
+
+    if (currentIndex === events.length) {
+      // We reached the cloned slide at the end!
+      // Jump back to index 0 instantly to create the infinite loop illusion.
+      setActiveIndex(0);
+      scrollTo(0, "auto");
+    } else {
+      setActiveIndex(currentIndex);
+    }
+  }, [events.length, scrollTo]);
+
+  const handleManual = (nextIndex: number) => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    goTo(i);
+
+    // If going backwards from 0, jump to the clone instantly, then animate to the last real slide
+    if (nextIndex < 0 && events.length > 1) {
+      scrollTo(events.length, "auto");
+      requestAnimationFrame(() => {
+        scrollTo(events.length - 1, "smooth");
+      });
+    } else {
+      scrollTo(nextIndex, "smooth");
+    }
   };
 
   // ── Auto-advance ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (events.length <= 1) return;
-    timerRef.current = setTimeout(() => goTo(index + 1), 4500);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [index, events.length, goTo]);
+    timerRef.current = setTimeout(() => {
+      handleManual(activeIndex + 1);
+    }, 4500);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [activeIndex, events.length, scrollTo]);
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
@@ -238,7 +312,7 @@ function EventsCarousel() {
       <div
         className="w-full rounded-2xl animate-pulse"
         style={{
-          minHeight: 'clamp(200px, 38vh, 400px)',
+          minHeight: "clamp(200px, 38vh, 400px)",
           background: EVENT_GRADIENT_PLACEHOLDER,
           opacity: 0.3,
         }}
@@ -247,16 +321,17 @@ function EventsCarousel() {
   }
 
   // ── Empty state ───────────────────────────────────────────────────────────
-  // TODO(backend): Shown when GET /api/v1/events returns data: []
   if (events.length === 0) {
     return (
       <div
         className="w-full rounded-2xl border border-hairline bg-surface
                    flex flex-col items-center justify-center gap-3 text-center px-6"
-        style={{ minHeight: 'clamp(160px, 28vh, 280px)' }}
+        style={{ minHeight: "clamp(160px, 28vh, 280px)" }}
       >
         <Calendar size={36} className="text-ink-faint" />
-        <p className="text-body-sm font-semibold text-ink-secondary">No events yet</p>
+        <p className="text-body-sm font-semibold text-ink-secondary">
+          No events yet
+        </p>
         <p className="text-caption text-ink-faint max-w-xs">
           Events will appear here once added via the Events module.
         </p>
@@ -266,38 +341,32 @@ function EventsCarousel() {
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl"
-      style={{ minHeight: 'clamp(220px, 40vh, 420px)' }}
+      className="relative overflow-hidden rounded-2xl group"
+      style={{ minHeight: "clamp(220px, 40vh, 420px)" }}
       role="region"
       aria-label="Events carousel"
       aria-roledescription="carousel"
     >
-      {/* ── Sliding track ─────────────────────────────────────────────────
-       *   - Each slide is flex-shrink-0 w-full (= 100% of the outer div).
-       *   - translateX(-N * 100%) moves exactly N slides to the left.
-       *   - transition on `transform` (not opacity) gives the slide effect.
-       *   - will-change: transform → GPU compositing layer, no layout thrash.
+      {/* ── Sliding track (Native Scroll Snapping) ──────────────────────────
+       *   - `overflow-x-auto` + `snap-x` allows flawless native trackpad/touch swipes.
+       *   - `no-scrollbar` hides the UI scrollbar.
        */}
       <div
-        className="flex h-full"
-        style={{
-          transform: `translateX(-${index * 100}%)`,
-          transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
-          willChange: 'transform',
-        }}
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex h-full w-full overflow-x-auto snap-x snap-mandatory no-scrollbar"
+        style={{ scrollBehavior: "smooth" }}
       >
-        {events.map((event) => (
+        {displayEvents.map((event, i) => (
           <div
-            key={event.id}
-            className="relative flex-shrink-0 w-full"
-            style={{ minHeight: 'clamp(220px, 40vh, 420px)' }}
+            key={`${event.id}-${i}`}
+            className="relative flex-shrink-0 w-full snap-center"
+            style={{ minHeight: "clamp(220px, 40vh, 420px)" }}
             role="group"
             aria-roledescription="slide"
             aria-label={event.title}
           >
-            {/* Slide gradient background
-             * TODO(gradient): Replace with GRADIENT_BY_STATUS[event.status]
-             */}
+            {/* Slide gradient background */}
             <div
               className="absolute inset-0"
               style={{ background: EVENT_GRADIENT_PLACEHOLDER }}
@@ -306,59 +375,50 @@ function EventsCarousel() {
               <div
                 className="absolute inset-0 opacity-[0.08] pointer-events-none"
                 style={{
-                  backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
-                  backgroundSize: '28px 28px',
+                  backgroundImage:
+                    "radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)",
+                  backgroundSize: "28px 28px",
                 }}
               />
             </div>
 
             {/* Slide content */}
             <div
-              className="relative flex flex-col justify-end h-full
-                         p-5 sm:p-8 lg:p-10"
-              style={{ minHeight: 'clamp(220px, 40vh, 420px)' }}
+              className="relative flex flex-col justify-end h-full p-5 sm:p-8 lg:p-10"
+              style={{ minHeight: "clamp(220px, 40vh, 420px)" }}
             >
-              {/* Status badge */}
-              <span
-                className="self-start inline-flex items-center px-3 py-1 mb-3 rounded-full capitalize
-                           bg-black/25 backdrop-blur-sm border border-white/20
-                           text-white text-eyebrow font-semibold"
-              >
+              <span className="self-start inline-flex items-center px-3 py-1 mb-3 rounded-full capitalize bg-black/25 backdrop-blur-sm border border-white/20 text-white text-eyebrow font-semibold">
                 {event.status}
               </span>
 
-              {/* Title — strong text-shadow for legibility over any gradient */}
               <h2
                 className="text-white font-bold leading-tight mb-2"
                 style={{
-                  fontSize: 'clamp(1.2rem, 3vw + 0.5rem, 2rem)',
-                  textShadow: '0 2px 8px rgba(0,0,0,0.45)',
+                  fontSize: "clamp(1.2rem, 3vw + 0.5rem, 2rem)",
+                  textShadow: "0 2px 8px rgba(0,0,0,0.45)",
                 }}
               >
                 {event.title}
               </h2>
 
-              {/* Description */}
               {event.description && (
                 <p
                   className="text-white/90 text-body-sm mb-3 line-clamp-2 max-w-xl"
-                  style={{ textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
+                  style={{ textShadow: "0 1px 4px rgba(0,0,0,0.3)" }}
                 >
                   {event.description}
                 </p>
               )}
 
-              {/* Date + location meta */}
               <div
-                className="flex flex-wrap items-center gap-x-5 gap-y-1
-                           text-white/85 text-caption font-medium mb-5"
-                style={{ textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
+                className="flex flex-wrap items-center gap-x-5 gap-y-1 text-white/85 text-caption font-medium mb-5"
+                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}
               >
                 {event.date && (
                   <span className="flex items-center gap-1.5">
                     <Calendar size={13} aria-hidden="true" />
                     {new Date(event.date).toLocaleDateString(undefined, {
-                      dateStyle: 'medium',
+                      dateStyle: "medium",
                     })}
                   </span>
                 )}
@@ -370,13 +430,9 @@ function EventsCarousel() {
                 )}
               </div>
 
-              {/* View details CTA */}
               <button
                 onClick={() => navigate(`/events/${event.id}`)}
-                className="self-start px-5 py-2.5 rounded-lg font-medium text-body-sm
-                           bg-white text-primary
-                           hover:bg-white/90 active:bg-white/80
-                           transition-all duration-200 shadow-soft-1"
+                className="self-start px-5 py-2.5 rounded-lg font-medium text-body-sm bg-white text-primary hover:bg-white/90 active:bg-white/80 transition-all duration-200 shadow-soft-1"
               >
                 View Details →
               </button>
@@ -387,13 +443,8 @@ function EventsCarousel() {
 
       {/* ── Left arrow ────────────────────────────────────────────────────── */}
       <button
-        onClick={() => handleManual(index - 1)}
-        className="absolute left-3 top-1/2 -translate-y-1/2
-                   w-9 h-9 sm:w-10 sm:h-10 rounded-full
-                   bg-black/30 hover:bg-black/50 backdrop-blur-sm
-                   border border-white/25
-                   flex items-center justify-center text-white
-                   transition-all duration-200 z-10"
+        onClick={() => handleManual(activeIndex - 1)}
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-white/25 flex items-center justify-center text-white transition-all duration-200 z-10 opacity-0 group-hover:opacity-100 focus:opacity-100"
         aria-label="Previous event"
       >
         <ChevronLeft size={18} />
@@ -401,13 +452,8 @@ function EventsCarousel() {
 
       {/* ── Right arrow ───────────────────────────────────────────────────── */}
       <button
-        onClick={() => handleManual(index + 1)}
-        className="absolute right-3 top-1/2 -translate-y-1/2
-                   w-9 h-9 sm:w-10 sm:h-10 rounded-full
-                   bg-black/30 hover:bg-black/50 backdrop-blur-sm
-                   border border-white/25
-                   flex items-center justify-center text-white
-                   transition-all duration-200 z-10"
+        onClick={() => handleManual(activeIndex + 1)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-white/25 flex items-center justify-center text-white transition-all duration-200 z-10 opacity-0 group-hover:opacity-100 focus:opacity-100"
         aria-label="Next event"
       >
         <ChevronRight size={18} />
@@ -416,8 +462,7 @@ function EventsCarousel() {
       {/* ── Dot indicators ────────────────────────────────────────────────── */}
       {events.length > 1 && (
         <div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2
-                     flex items-center gap-2 z-10"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10"
           role="tablist"
           aria-label="Event slides"
         >
@@ -425,16 +470,17 @@ function EventsCarousel() {
             <button
               key={i}
               role="tab"
-              aria-selected={i === index}
+              aria-selected={i === activeIndex}
               aria-label={`Go to slide ${i + 1}`}
               onClick={() => handleManual(i)}
               className="rounded-full transition-all duration-300"
               style={{
-                width:      i === index ? 22 : 7,
-                height:     7,
-                background: i === index
-                  ? 'rgba(255,255,255,0.95)'
-                  : 'rgba(255,255,255,0.40)',
+                width: i === activeIndex ? 22 : 7,
+                height: 7,
+                background:
+                  i === activeIndex
+                    ? "rgba(255,255,255,0.95)"
+                    : "rgba(255,255,255,0.40)",
               }}
             />
           ))}
@@ -471,12 +517,14 @@ function EventsCarousel() {
 function SocietyMarquee() {
   const navigate = useNavigate();
   const [societies, setSocieties] = useState<Society[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   // TODO(backend): societyService already targets VITE_API_BASE_URL/societies.
   useEffect(() => {
-    societyService.getSocieties(1, 50)
+    societyService
+      .getSocieties(1, 50)
       .then((res) => setSocieties(res.data.data))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -487,14 +535,29 @@ function SocietyMarquee() {
   }
   if (societies.length === 0) return null;
 
+  // Sort societies alphabetically
+  const sortedSocieties = [...societies].sort((a, b) => {
+    return sortOrder === "asc"
+      ? a.name.localeCompare(b.name)
+      : b.name.localeCompare(a.name);
+  });
+
   // Duplicate list → seamless infinite loop
-  const doubled = [...societies, ...societies];
+  const doubled = [...sortedSocieties, ...sortedSocieties];
 
   return (
     <div>
-      <h2 className="text-body-sm font-semibold text-ink-secondary uppercase tracking-widest mb-3">
-        Our Societies
-      </h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-heading-3 font-bold text-ink">Our Societies</h2>
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+          className="text-caption font-medium bg-surface border border-hairline rounded-md px-2 py-1 text-ink-secondary outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="asc">Sort A-Z</option>
+          <option value="desc">Sort Z-A</option>
+        </select>
+      </div>
 
       {/* marquee-container class in index.css pauses .marquee-track on hover */}
       <div
@@ -502,15 +565,15 @@ function SocietyMarquee() {
                    border border-hairline bg-surface py-3"
         style={{
           maskImage:
-            'linear-gradient(to right, transparent 0%, black 7%, black 93%, transparent 100%)',
+            "linear-gradient(to right, transparent 0%, black 7%, black 93%, transparent 100%)",
           WebkitMaskImage:
-            'linear-gradient(to right, transparent 0%, black 7%, black 93%, transparent 100%)',
+            "linear-gradient(to right, transparent 0%, black 7%, black 93%, transparent 100%)",
         }}
       >
         {/* marquee-track: CSS animation defined in index.css (marqueeScroll, 28s linear infinite) */}
         <div
           className="marquee-track flex gap-4"
-          style={{ width: 'max-content' }}
+          style={{ width: "max-content" }}
           aria-hidden="true"
         >
           {doubled.map((society, i) => (
@@ -537,15 +600,15 @@ function SocietyLogoCard({ society, onClick }: SocietyLogoCardProps) {
   const [imgError, setImgError] = useState(false);
 
   // logoSlug from mock/real API — lowercase slug e.g. "cs", "wie", "ras"
-  const slug = society.logoSlug ?? '';
+  const slug = society.logoSlug ?? "";
 
   // shortName from API or auto-derived from initials
   const shortName =
     society.shortName ??
     society.name
-      .split(' ')
+      .split(" ")
       .map((w) => w[0])
-      .join('')
+      .join("")
       .slice(0, 5)
       .toUpperCase();
 
@@ -562,8 +625,8 @@ function SocietyLogoCard({ society, onClick }: SocietyLogoCardProps) {
                  hover:scale-105 hover:border-primary/40 hover:shadow-soft-1
                  focus:outline-none focus:ring-2 focus:ring-primary/30"
       style={{
-        width:        'clamp(80px, 9vw, 96px)',
-        paddingBlock: '12px',
+        width: "clamp(80px, 9vw, 96px)",
+        paddingBlock: "12px",
       }}
     >
       {/* Logo image — with letter-avatar fallback */}
@@ -582,11 +645,7 @@ function SocietyLogoCard({ society, onClick }: SocietyLogoCardProps) {
           />
         ) : (
           /* Fallback: shown when logoSlug is missing or image fails to load */
-          /* ⚠️  If this shows instead of logos, restart the mock server     */
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center
-                       text-eyebrow font-bold bg-primary/10 text-primary"
-          >
+          <div className="w-full h-full rounded-lg flex items-center justify-center img-placeholder">
             {shortName.slice(0, 3)}
           </div>
         )}
@@ -611,31 +670,34 @@ function SocietyLogoCard({ society, onClick }: SocietyLogoCardProps) {
 export default function DashboardPage() {
   return (
     <div className="relative flex flex-col gap-6 sm:gap-8">
-
       {/* Decorative soft gradient blobs — only on wider screens */}
       <div
         className="hidden lg:block absolute -top-10 -right-10 w-72 h-72 rounded-full
                    pointer-events-none opacity-[0.08] blur-3xl -z-10"
-        style={{ background: 'radial-gradient(circle, #2563eb, transparent 70%)' }}
+        style={{
+          background: "radial-gradient(circle, #2563eb, transparent 70%)",
+        }}
         aria-hidden="true"
       />
       <div
         className="hidden lg:block absolute top-72 -left-16 w-56 h-56 rounded-full
                    pointer-events-none opacity-[0.06] blur-3xl -z-10"
-        style={{ background: 'radial-gradient(circle, #213183, transparent 70%)' }}
+        style={{
+          background: "radial-gradient(circle, #213183, transparent 70%)",
+        }}
         aria-hidden="true"
       />
 
       {/* Page heading */}
       <div className="relative">
         <h1 className="dash-fade-up text-heading-1 font-bold text-ink">
-          Dashboard
+          IEEE Student Branch, ____
         </h1>
         <p
           className="dash-fade-up text-body-sm text-ink-muted mt-1"
-          style={{ animationDelay: '60ms' }}
+          style={{ animationDelay: "60ms" }}
         >
-          IEEE Finance Pro — your chapter management hub
+          IEEE Student Branch, ____ — your unified workspace
         </p>
       </div>
 
@@ -648,14 +710,14 @@ export default function DashboardPage() {
       <section aria-label="Upcoming events">
         <div
           className="dash-fade-up flex items-center justify-between mb-3"
-          style={{ animationDelay: '120ms' }}
+          style={{ animationDelay: "120ms" }}
         >
           <h2 className="text-heading-3 font-bold text-ink">Events</h2>
           {/*
            * TODO: Add "View all →" link to /events once post-backend UX is agreed.
            */}
         </div>
-        <div className="dash-fade-up" style={{ animationDelay: '170ms' }}>
+        <div className="dash-fade-up" style={{ animationDelay: "170ms" }}>
           <EventsCarousel />
         </div>
       </section>
@@ -664,11 +726,10 @@ export default function DashboardPage() {
       <section
         aria-label="Our societies"
         className="dash-fade-up pb-2"
-        style={{ animationDelay: '230ms' }}
+        style={{ animationDelay: "230ms" }}
       >
         <SocietyMarquee />
       </section>
-
     </div>
   );
 }
