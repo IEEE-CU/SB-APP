@@ -55,7 +55,7 @@ const levels: Record<string, number> = {
 
 export default function Sidebar({
   isOpen = false,
-  onClose,
+  onClose: _onClose,
 }: {
   isOpen?: boolean;
   onClose?: () => void;

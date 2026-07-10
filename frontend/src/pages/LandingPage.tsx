@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
 import {
-  Building2,
   Calendar,
   FolderKanban,
   FileText,
@@ -20,8 +19,6 @@ import {
   Sun,
   Moon,
   Landmark,
-  Users,
-  Bell,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 
