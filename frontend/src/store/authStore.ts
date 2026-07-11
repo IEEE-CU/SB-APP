@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import type { User, Permission, AccessLevel } from '@/types/models';
-import { authService } from '@/services/auth';
-import api from '@/lib/api';
+import { create } from "zustand";
+import type { User, Permission, AccessLevel } from "@/types/models";
+import { authService } from "@/services/auth";
+import api from "@/lib/api";
 
 interface AuthState {
   token: string | null;
@@ -16,7 +16,7 @@ interface AuthState {
   updateUserProfile: (data: Partial<User>) => void;
 }
 
-const safeParseJSON = <T,>(key: string, fallback: T): T => {
+const safeParseJSON = <T>(key: string, fallback: T): T => {
   try {
     const val = localStorage.getItem(key);
     return val ? JSON.parse(val) : fallback;
@@ -26,41 +26,51 @@ const safeParseJSON = <T,>(key: string, fallback: T): T => {
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  token: localStorage.getItem('token'),
-  user: safeParseJSON<User | null>('user', null),
-  permissions: safeParseJSON<Permission[]>('permissions', []),
-  isAuthenticated: !!localStorage.getItem('token'),
+  token: localStorage.getItem("token"),
+  user: safeParseJSON<User | null>("user", null),
+  permissions: safeParseJSON<Permission[]>("permissions", []),
+  isAuthenticated: !!localStorage.getItem("token"),
 
   login: async (email, password) => {
-    const res = await authService.login(email, password);
-    const { token, user } = res.data.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    set({ token, user: user as User, isAuthenticated: true });
-    await get().fetchPermissions();
+    try {
+      const res = await authService.login(email, password);
+      const { token, user } = res.data.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      set({ token, user: user as User, isAuthenticated: true });
+      await get().fetchPermissions();
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
+    }
   },
 
   register: async (name, email, password) => {
-    const res = await authService.register(name, email, password);
-    const { token, user } = res.data.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    set({ token, user: user as User, isAuthenticated: true });
-    await get().fetchPermissions();
+    try {
+      const res = await authService.register(name, email, password);
+      const { token, user } = res.data.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      set({ token, user: user as User, isAuthenticated: true });
+      await get().fetchPermissions();
+    } catch (error) {
+      console.error("Registration failed:", error);
+      throw error;
+    }
   },
 
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('permissions');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("permissions");
     set({ token: null, user: null, permissions: [], isAuthenticated: false });
   },
 
   fetchPermissions: async () => {
     try {
-      const res = await api.get('/user/permissions');
+      const res = await api.get("/user/permissions");
       const permissions = res.data.data.permissions || [];
-      localStorage.setItem('permissions', JSON.stringify(permissions));
+      localStorage.setItem("permissions", JSON.stringify(permissions));
       set({ permissions });
     } catch {
       // Keep existing permissions if fetch fails (e.g. offline) unless unauthenticated
@@ -69,14 +79,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   getAccessLevel: (module) => {
     const perm = get().permissions.find((p) => p.module === module);
-    return perm?.accessLevel || 'none';
+    return perm?.accessLevel || "none";
   },
 
   updateUserProfile: (data) => {
     const currentUser = get().user;
     if (currentUser) {
       const updatedUser = { ...currentUser, ...data };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem("user", JSON.stringify(updatedUser));
       set({ user: updatedUser });
     }
   },

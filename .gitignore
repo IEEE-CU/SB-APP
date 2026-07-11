@@ -26,9 +26,12 @@ yarn-error.log*
 Thumbs.db
 
 # Misc
+.agents
 .mimocode
 ideas.md
 vision.md
 frontend-design-general.md
 frontendAesthetics.md
 SKILL_Creator.md
+artifacts/report.md
+artifacts/test.md

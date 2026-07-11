@@ -33,6 +33,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   Building2,
   Calendar,
@@ -231,28 +232,36 @@ function EventsCarousel() {
     eventService
       .getEvents(1, 10)
       .then((res) => setEvents(res.data.data))
-      .catch(() => {})
+      .catch((err) =>
+        toast.error(err.response?.data?.message || "Failed to load events"),
+      )
       .finally(() => setLoading(false));
   }, []);
 
-  // ── Native Scrolling & Infinite Loop Trick ────────────────────────────────
-  // We append a clone of the first event to the end of the list.
-  // When the user smoothly scrolls to this clone, the `onScroll` handler detects it
-  // and instantly jumps back to the real first slide with animation disabled.
-  // This creates a flawless infinite loop for both buttons and native swipe gestures!
-  const displayEvents = events.length > 1 ? [...events, events[0]] : events;
+  // ── Native Scrolling & Bi-directional Infinite Loop ───────────────────────
+  // We sandwich real slides between a cloned last slide at position 0 and a
+  // cloned first slide at the end. This makes scrolling left from the first
+  // real slide wrap seamlessly to the last real slide, and vice versa.
+  //
+  //  displayEvents = [clone_of_last, ...events, clone_of_first]
+  //  Initial scroll position = index 1 (the first real slide)
+  //
+  const displayEvents =
+    events.length > 1
+      ? [events[events.length - 1], ...events, events[0]]
+      : events;
+
+  // Real slide activeIndex (0-based, refers to events[]), not display index
+  // Display index of the first real slide = 1 (because we prepend a clone)
+  const displayOffset = events.length > 1 ? 1 : 0;
 
   const scrollTo = useCallback(
-    (index: number, behavior: ScrollBehavior = "smooth") => {
+    (displayIndex: number, behavior: ScrollBehavior = "smooth") => {
       if (!scrollRef.current) return;
       const container = scrollRef.current;
       const slideWidth = container.clientWidth;
-
-      // Set scroll behavior on the fly
       container.style.scrollBehavior = behavior;
-      container.scrollLeft = index * slideWidth;
-
-      // Always revert back to smooth after a tiny delay for subsequent native scrolls
+      container.scrollLeft = displayIndex * slideWidth;
       if (behavior === "auto") {
         requestAnimationFrame(() => {
           if (container) container.style.scrollBehavior = "smooth";
@@ -262,38 +271,48 @@ function EventsCarousel() {
     [],
   );
 
+  // Jump to index 1 (first real slide) on mount once events load
+  useEffect(() => {
+    if (events.length > 1) {
+      scrollTo(displayOffset, "auto");
+    }
+  }, [events.length, displayOffset, scrollTo]);
+
   const handleScroll = useCallback(() => {
     if (!scrollRef.current || events.length <= 1) return;
     const container = scrollRef.current;
     const slideWidth = container.clientWidth;
     const scrollPos = container.scrollLeft;
+    const currentDisplayIndex = Math.round(scrollPos / slideWidth);
 
-    // Calculate which slide we are currently looking at
-    const currentIndex = Math.round(scrollPos / slideWidth);
-
-    if (currentIndex === events.length) {
-      // We reached the cloned slide at the end!
-      // Jump back to index 0 instantly to create the infinite loop illusion.
-      setActiveIndex(0);
-      scrollTo(0, "auto");
-    } else {
-      setActiveIndex(currentIndex);
-    }
-  }, [events.length, scrollTo]);
-
-  const handleManual = (nextIndex: number) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-
-    // If going backwards from 0, jump to the clone instantly, then animate to the last real slide
-    if (nextIndex < 0 && events.length > 1) {
+    if (currentDisplayIndex === 0) {
+      // Scrolled to the cloned-last prepended slide → jump to real last
+      setActiveIndex(events.length - 1);
       scrollTo(events.length, "auto");
-      requestAnimationFrame(() => {
-        scrollTo(events.length - 1, "smooth");
-      });
+    } else if (currentDisplayIndex === events.length + 1) {
+      // Scrolled to the cloned-first appended slide → jump to real first
+      setActiveIndex(0);
+      scrollTo(displayOffset, "auto");
     } else {
-      scrollTo(nextIndex, "smooth");
+      setActiveIndex(currentDisplayIndex - displayOffset);
     }
-  };
+  }, [events.length, displayOffset, scrollTo]);
+
+  const handleManual = useCallback(
+    (nextRealIndex: number) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      // Wrap around
+      const clamped =
+        nextRealIndex < 0
+          ? events.length - 1
+          : nextRealIndex >= events.length
+            ? 0
+            : nextRealIndex;
+      scrollTo(clamped + displayOffset, "smooth");
+      setActiveIndex(clamped);
+    },
+    [events.length, displayOffset, scrollTo],
+  );
 
   // ── Auto-advance ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -304,7 +323,7 @@ function EventsCarousel() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [activeIndex, events.length, scrollTo]);
+  }, [activeIndex, events.length, scrollTo, handleManual]);
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
@@ -526,7 +545,9 @@ function SocietyMarquee() {
     societyService
       .getSocieties(1, 50)
       .then((res) => setSocieties(res.data.data))
-      .catch(() => {})
+      .catch((err) =>
+        toast.error(err.response?.data?.message || "Failed to load societies"),
+      )
       .finally(() => setLoading(false));
   }, []);
 

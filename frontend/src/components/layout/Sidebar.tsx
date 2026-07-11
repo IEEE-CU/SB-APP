@@ -8,8 +8,10 @@ import {
   Megaphone,
   MessageCircle,
   Users,
+  Settings,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", module: null },
@@ -56,11 +58,14 @@ const levels: Record<string, number> = {
 export default function Sidebar({
   isOpen = false,
   onClose: _onClose,
+  isDesktopOpen = true,
 }: {
   isOpen?: boolean;
   onClose?: () => void;
+  isDesktopOpen?: boolean;
 }) {
   const { user, permissions } = useAuthStore();
+  const { uiOpacity } = useThemeStore();
 
   const canAccess = (module: string | null) => {
     if (!module) return true;
@@ -72,78 +77,75 @@ export default function Sidebar({
     `relative flex items-center gap-3 px-4 py-2.5 rounded-lg text-body-sm transition-all duration-200 group ${
       isActive
         ? "bg-primary/10 text-primary font-semibold"
-        : "text-ink-secondary hover:bg-canvas-soft hover:text-ink"
+        : "text-ink-secondary hover:bg-white/5 hover:text-ink"
     }`;
+
+  const navLink = (
+    item: { to: string; icon: React.ElementType; label: string },
+    endMatch = false,
+  ) => (
+    <NavLink key={item.to} to={item.to} end={endMatch} className={linkClass}>
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" />
+          )}
+          <item.icon
+            size={17}
+            className={
+              isActive
+                ? "text-primary"
+                : "text-ink-muted group-hover:text-ink-secondary transition-colors"
+            }
+          />
+          <span>{item.label}</span>
+        </>
+      )}
+    </NavLink>
+  );
 
   return (
     <aside
-      className={`fixed lg:static inset-y-0 left-0 w-[240px] bg-surface/95 lg:bg-surface/60 backdrop-blur-xl border-r border-hairline/50 flex flex-col py-6 shadow-xl lg:shadow-sm z-50 transition-transform duration-300 ease-in-out ${
-        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      className={`fixed inset-y-0 left-0 top-16 w-[240px] backdrop-blur-2xl border-r border-white/10 dark:border-white/8 flex flex-col py-5 z-40 transition-transform duration-300 ease-in-out ${
+        // Mobile: slides in/out based on isOpen
+        // Desktop: slides out if isDesktopOpen is false
+        isOpen
+          ? "translate-x-0"
+          : !isDesktopOpen
+            ? "-translate-x-full"
+            : "-translate-x-full lg:translate-x-0"
       }`}
+      style={{
+        backgroundColor: `color-mix(in srgb, var(--color-surface) ${uiOpacity}%, transparent)`,
+      }}
     >
-      <nav className="flex flex-col gap-1.5 px-4 flex-1 overflow-y-auto">
+      <nav className="flex flex-col gap-1 px-3 flex-1 overflow-y-auto">
         {navItems.map((item) =>
-          canAccess(item.module) ? (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/dashboard"}
-              className={linkClass}
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-md"></span>
-                  )}
-                  <item.icon
-                    size={18}
-                    className={
-                      isActive
-                        ? "text-primary"
-                        : "text-ink-muted group-hover:text-ink-secondary transition-colors"
-                    }
-                  />
-                  <span>{item.label}</span>
-                </>
-              )}
-            </NavLink>
-          ) : null,
+          canAccess(item.module)
+            ? navLink(item, item.to === "/dashboard")
+            : null,
         )}
 
+        {/* Settings always visible */}
+        <div className="mt-auto pt-2">
+          {navLink({ to: "/settings", icon: Settings, label: "Settings" })}
+        </div>
+
         {adminItems.some((item) => canAccess(item.module)) && (
-          <div className="mt-6 pt-4 border-t border-hairline/60">
+          <div className="pt-4 border-t border-white/10 dark:border-white/8">
             <p className="text-eyebrow font-bold tracking-wider text-ink-faint uppercase px-4 mb-2">
               Admin
             </p>
             {adminItems.map((item) =>
-              canAccess(item.module) ? (
-                <NavLink key={item.to} to={item.to} className={linkClass}>
-                  {({ isActive }) => (
-                    <>
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-md"></span>
-                      )}
-                      <item.icon
-                        size={18}
-                        className={
-                          isActive
-                            ? "text-primary"
-                            : "text-ink-muted group-hover:text-ink-secondary transition-colors"
-                        }
-                      />
-                      <span>{item.label}</span>
-                    </>
-                  )}
-                </NavLink>
-              ) : null,
+              canAccess(item.module) ? navLink(item) : null,
             )}
           </div>
         )}
       </nav>
 
       {/* User Info Badge at the bottom */}
-      <div className="px-4 mt-auto">
-        <div className="p-3 bg-canvas-soft/80 border border-hairline/60 rounded-xl flex items-center gap-3 shadow-soft-1">
+      <div className="px-3 mt-6">
+        <div className="p-3 bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/8 rounded-xl flex items-center gap-3 backdrop-blur-sm">
           <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-caption uppercase flex-shrink-0">
             {user?.name?.[0] || "U"}
           </div>
