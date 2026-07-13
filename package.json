@@ -5,13 +5,13 @@
   "main": "server/app.js",
   "scripts": {
     "prepare": "husky",
-    "start": "node server/app.js",
-    "seed": "node server/scripts/seed.js",
-    "backup": "node server/scripts/backup.js",
-    "restore": "node server/scripts/restore.js",
-    "test:db": "node server/scripts/testConnection.js",
-    "test:memory": "node server/scripts/runWithMemoryDb.js test",
-    "seed:memory": "node server/scripts/runWithMemoryDb.js seed"
+    "start": "node backend/src/server.js",
+    "seed": "node backend/src/scripts/seed.js",
+    "backup": "node backend/src/scripts/backup.js",
+    "restore": "node backend/src/scripts/restore.js",
+    "test:db": "node backend/src/scripts/testConnection.js",
+    "test:memory": "node backend/src/scripts/runWithMemoryDb.js test",
+    "seed:memory": "node backend/src/scripts/runWithMemoryDb.js seed"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.33.0",

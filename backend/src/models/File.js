@@ -1,12 +1,40 @@
 const mongoose = require("mongoose");
+const toJson = require("./plugins/toJson");
 
-const FileSchema = new mongoose.Schema(
+const fileSchema = new mongoose.Schema(
   {
-    // Placeholder: define persisted metadata for uploaded files.
+    filename: {
+      type: String,
+      required: true,
+    },
+    originalName: {
+      type: String,
+      required: true,
+    },
+    mimeType: {
+      type: String,
+      required: true,
+    },
+    size: {
+      type: Number,
+      required: true,
+    },
+    url: {
+      type: String,
+      required: true,
+    },
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   {
     timestamps: true,
   },
 );
 
-module.exports = mongoose.model("File", FileSchema);
+fileSchema.plugin(toJson);
+
+const File = mongoose.model("File", fileSchema);
+module.exports = File;
