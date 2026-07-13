@@ -11,7 +11,7 @@
     "seed": "node src/scripts/seed.js",
     "lint": "eslint .",
     "typecheck": "node scripts/typecheck.js",
-    "test:unit": "node --test test/unit",
+    "test:unit": "node --test test/unit/*.test.js",
     "test:contract": "node --test test/contract"
   },
   "keywords": [
@@ -23,6 +23,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@azure/storage-blob": "^12.33.0",
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
@@ -34,7 +35,8 @@
     "helmet": "^8.2.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.2.0"
+    "mongoose": "^8.2.0",
+    "multer": "^2.2.0"
   },
   "devDependencies": {
     "eslint": "^9.39.4",

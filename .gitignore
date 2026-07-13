@@ -32,3 +32,42 @@ vision.md
 frontend-design-general.md
 frontendAesthetics.md
 SKILL_Creator.md
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Build output
+dist/
+build/
+coverage/
+
+# Uploads
+uploads/
+
+# IDE folders
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

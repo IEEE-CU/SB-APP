@@ -17,5 +17,11 @@
     "backend/**/*.{js,ts}": [
       "npx prettier --write --ignore-unknown"
     ]
+  },
+  "dependencies": {
+    "@azure/storage-blob": "^12.33.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.2.0"
   }
 }
