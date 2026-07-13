@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { PaginationMeta } from '@/types/api';
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { PaginationMeta } from "@/types/api";
 
 interface PaginationProps {
   meta: PaginationMeta;
@@ -7,6 +7,7 @@ interface PaginationProps {
 }
 
 export default function Pagination({ meta, onPageChange }: PaginationProps) {
+  if (!meta) return null;
   const { page, totalPages } = meta;
   if (totalPages <= 1) return null;
 
