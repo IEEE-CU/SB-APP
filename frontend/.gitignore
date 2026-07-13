@@ -26,3 +26,9 @@ dist-ssr/
 # Logs
 *.log
 npm-debug.log*
+
+# Society logos (binary assets — stored outside git, copy to public/logos/ locally)
+public/logos/
+
+# Local ideas / scratchpad (never commit)
+ideas.md

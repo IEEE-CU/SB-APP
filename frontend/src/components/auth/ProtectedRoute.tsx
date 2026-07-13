@@ -1,5 +1,5 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuthStore } from "@/store/authStore";
 
 interface ProtectedRouteProps {
   requiredModule?: string;
@@ -30,9 +30,9 @@ export default function ProtectedRoute({
       delete: 3,
       admin: 3,
     };
-    const userLevel = levels[perm?.accessLevel || 'none'] || 0;
+    const userLevel = levels[perm?.accessLevel || "none"] || 0;
     const needLevel = levels[requiredAction] || required[requiredAction] || 1;
-    if (userLevel < needLevel) return <Navigate to="/" replace />;
+    if (userLevel < needLevel) return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;

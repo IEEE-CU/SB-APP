@@ -1,30 +1,144 @@
 {
   "users": [
-    { "id": "u1", "name": "Admin User", "email": "admin@ieee.org", "isActive": true, "roleId": "r1", "createdAt": "2026-01-15T10:00:00.000Z", "updatedAt": "2026-01-15T10:00:00.000Z" },
-    { "id": "u2", "name": "Society Chair", "email": "chair@ieee.org", "isActive": true, "societyId": "s1", "roleId": "r2", "createdAt": "2026-02-10T10:00:00.000Z", "updatedAt": "2026-02-10T10:00:00.000Z" },
-    { "id": "u3", "name": "Treasurer", "email": "treasurer@ieee.org", "isActive": true, "societyId": "s1", "roleId": "r3", "createdAt": "2026-03-05T10:00:00.000Z", "updatedAt": "2026-03-05T10:00:00.000Z" }
+    { "id": "u1", "name": "Admin User",    "email": "admin@ieee.org",     "isActive": true, "roleId": "r1", "createdAt": "2026-01-15T10:00:00.000Z", "updatedAt": "2026-01-15T10:00:00.000Z" },
+    { "id": "u2", "name": "Society Chair", "email": "chair@ieee.org",     "isActive": true, "societyId": "s-cs",  "roleId": "r2", "createdAt": "2026-02-10T10:00:00.000Z", "updatedAt": "2026-02-10T10:00:00.000Z" },
+    { "id": "u3", "name": "Treasurer",     "email": "treasurer@ieee.org", "isActive": true, "societyId": "s-cs",  "roleId": "r3", "createdAt": "2026-03-05T10:00:00.000Z", "updatedAt": "2026-03-05T10:00:00.000Z" }
   ],
+
   "societies": [
-    { "id": "s1", "name": "IEEE Computer Society", "description": "Leading organization for computer science professionals", "chairId": "u2", "memberIds": ["u1", "u2", "u3"], "createdAt": "2026-01-01T10:00:00.000Z" },
-    { "id": "s2", "name": "IEEE Power & Energy Society", "description": "Advancing electric power engineering", "chairId": "u1", "memberIds": ["u1"], "createdAt": "2026-01-01T10:00:00.000Z" }
+    {
+      "id": "s-cs",   "shortName": "CS",    "logoSlug": "cs",
+      "name": "IEEE Computer Society",
+      "description": "Leading organization for computer science and engineering professionals worldwide.",
+      "chairId": "u2", "memberIds": ["u1", "u2", "u3"],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-pes",  "shortName": "PES",   "logoSlug": "pes",
+      "name": "IEEE Power & Energy Society",
+      "description": "Advancing electric power engineering for a sustainable future.",
+      "chairId": "u1", "memberIds": ["u1"],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-pels", "shortName": "PELS",  "logoSlug": "pels",
+      "name": "IEEE Power Electronics Society",
+      "description": "Advancing power electronics technology and applications across industries.",
+      "chairId": null, "memberIds": [],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-ras",  "shortName": "RAS",   "logoSlug": "ras",
+      "name": "IEEE Robotics & Automation Society",
+      "description": "Advancing innovation, education and research in robotics and automation.",
+      "chairId": null, "memberIds": [],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-aess", "shortName": "AESS",  "logoSlug": "aess",
+      "name": "IEEE Aerospace & Electronic Systems Society",
+      "description": "Covering systems, theories and applications in aerospace and electronics.",
+      "chairId": null, "memberIds": [],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-aps",  "shortName": "APS",   "logoSlug": "aps",
+      "name": "IEEE Antennas & Propagation Society",
+      "description": "Developing antennas and propagation technologies for communication systems.",
+      "chairId": null, "memberIds": [],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-cis",  "shortName": "CIS",   "logoSlug": "cis",
+      "name": "IEEE Computational Intelligence Society",
+      "description": "Advancing computational intelligence for science and technology applications.",
+      "chairId": null, "memberIds": [],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-grss", "shortName": "GRSS",  "logoSlug": "grss",
+      "name": "IEEE Geoscience & Remote Sensing Society",
+      "description": "Advancing geoscience and remote sensing research and technology globally.",
+      "chairId": null, "memberIds": [],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-mtts", "shortName": "MTTS",  "logoSlug": "mtts",
+      "name": "IEEE Microwave Theory & Techniques Society",
+      "description": "Advancing microwave theory and its applications across industries.",
+      "chairId": null, "memberIds": [],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-sight","shortName": "SIGHT", "logoSlug": "sight",
+      "name": "IEEE SIGHT",
+      "description": "Special Interest Group on Humanitarian Technology — technology for good.",
+      "chairId": null, "memberIds": [],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "s-wie",  "shortName": "WIE",   "logoSlug": "wie",
+      "name": "IEEE Women in Engineering",
+      "description": "Empowering women in engineering and inspiring girls worldwide to pursue STEM.",
+      "chairId": null, "memberIds": [],
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    }
   ],
+
   "events": [
-    { "id": "e1", "title": "Annual Tech Summit 2026", "description": "A conference on emerging technologies", "societyId": "s1", "date": "2026-09-15T09:00:00.000Z", "location": "Main Auditorium", "status": "upcoming", "createdAt": "2026-06-01T10:00:00.000Z" },
-    { "id": "e2", "title": "Workshop on AI Ethics", "description": "Exploring ethical implications of AI", "societyId": "s1", "date": "2026-08-20T14:00:00.000Z", "location": "Room 301", "status": "upcoming", "createdAt": "2026-06-10T10:00:00.000Z" }
+    {
+      "id": "e1", "title": "Annual Tech Summit 2026",
+      "description": "A flagship conference on emerging technologies including AI, quantum computing, and 6G networks.",
+      "societyId": "s-cs", "date": "2026-09-15T09:00:00.000Z",
+      "location": "Main Auditorium", "status": "upcoming",
+      "createdAt": "2026-06-01T10:00:00.000Z"
+    },
+    {
+      "id": "e2", "title": "Workshop on AI Ethics",
+      "description": "An in-depth exploration of ethical implications of artificial intelligence in society and industry.",
+      "societyId": "s-cs", "date": "2026-08-20T14:00:00.000Z",
+      "location": "Room 301", "status": "upcoming",
+      "createdAt": "2026-06-10T10:00:00.000Z"
+    },
+    {
+      "id": "e3", "title": "IEEE Hackathon: Build for Impact",
+      "description": "48-hour hackathon focused on building humanitarian tech solutions. Open to all IEEE members.",
+      "societyId": "s-sight", "date": "2026-10-05T08:00:00.000Z",
+      "location": "Innovation Lab", "status": "upcoming",
+      "createdAt": "2026-06-15T10:00:00.000Z"
+    },
+    {
+      "id": "e4", "title": "Robotics Competition Showcase",
+      "description": "Annual Robocon training and qualification event. All RAS members compete in a live field challenge.",
+      "societyId": "s-ras", "date": "2026-07-25T10:00:00.000Z",
+      "location": "Engineering Hall B", "status": "ongoing",
+      "createdAt": "2026-06-20T10:00:00.000Z"
+    },
+    {
+      "id": "e5", "title": "WIE Leadership Summit",
+      "description": "Annual leadership development summit for women in engineering. Panels, mentorship sessions, and networking.",
+      "societyId": "s-wie", "date": "2026-08-10T09:30:00.000Z",
+      "location": "Conference Center A", "status": "upcoming",
+      "createdAt": "2026-06-25T10:00:00.000Z"
+    }
   ],
+
   "projects": [
-    { "id": "p1", "title": "Campus WiFi Upgrade", "description": "Upgrade campus-wide WiFi infrastructure", "societyId": "s1", "status": "active", "memberIds": ["u1", "u2"], "createdAt": "2026-04-01T10:00:00.000Z" },
-    { "id": "p2", "title": "IEEE Website Redesign", "description": "Modernize the chapter website", "societyId": "s1", "status": "planning", "memberIds": ["u3"], "createdAt": "2026-05-15T10:00:00.000Z" }
+    { "id": "p1", "title": "Campus WiFi Upgrade",        "description": "Upgrade campus-wide WiFi infrastructure",     "societyId": "s-cs", "status": "active",    "memberIds": ["u1", "u2"], "createdAt": "2026-04-01T10:00:00.000Z" },
+    { "id": "p2", "title": "IEEE Website Redesign",       "description": "Modernize the chapter website",               "societyId": "s-cs", "status": "planning",  "memberIds": ["u3"],       "createdAt": "2026-05-15T10:00:00.000Z" }
   ],
+
   "reports": [
-    { "id": "r1", "title": "Q1 2026 Financial Report", "content": "<p>Revenue: $15,000<br/>Expenses: $8,500<br/>Net: $6,500</p>", "societyId": "s1", "authorId": "u3", "type": "financial", "createdAt": "2026-04-05T10:00:00.000Z" },
-    { "id": "r2", "title": "Annual Activity Report", "content": "<p>Hosted 12 events, 5 workshops, and 3 networking sessions.</p>", "societyId": "s1", "authorId": "u2", "type": "activity", "createdAt": "2026-06-01T10:00:00.000Z" }
+    { "id": "r1", "title": "Q1 2026 Financial Report", "content": "<p>Revenue: $15,000<br/>Expenses: $8,500<br/>Net: $6,500</p>", "societyId": "s-cs", "authorId": "u3", "type": "financial", "createdAt": "2026-04-05T10:00:00.000Z" },
+    { "id": "r2", "title": "Annual Activity Report",   "content": "<p>Hosted 12 events, 5 workshops, and 3 networking sessions.</p>",       "societyId": "s-cs", "authorId": "u2", "type": "activity",  "createdAt": "2026-06-01T10:00:00.000Z" }
   ],
+
   "announcements": [
-    { "id": "a1", "title": "Elections Coming Soon", "content": "<p>Annual officer elections will be held in August. Nominate yourself!</p>", "societyId": "s1", "authorId": "u2", "priority": "high", "createdAt": "2026-06-20T10:00:00.000Z" },
-    { "id": "a2", "title": "New Mentorship Program", "content": "<p>Join our peer mentorship program to connect with senior members.</p>", "societyId": "s1", "authorId": "u1", "priority": "medium", "createdAt": "2026-06-25T10:00:00.000Z" }
+    { "id": "a1", "title": "Elections Coming Soon",   "content": "<p>Annual officer elections will be held in August. Nominate yourself!</p>",            "societyId": "s-cs", "authorId": "u2", "priority": "high",   "createdAt": "2026-06-20T10:00:00.000Z" },
+    { "id": "a2", "title": "New Mentorship Program",  "content": "<p>Join our peer mentorship program to connect with senior members.</p>",              "societyId": "s-cs", "authorId": "u1", "priority": "medium", "createdAt": "2026-06-25T10:00:00.000Z" }
   ],
+
   "communityMessages": [
-    { "id": "m1", "content": "Welcome to the IEEE Community Hub!", "authorId": "u1", "societyId": "s1", "createdAt": "2026-06-01T10:00:00.000Z" }
+    { "id": "m1", "content": "Welcome to the IEEE Community Hub!", "authorId": "u1", "societyId": "s-cs", "createdAt": "2026-06-01T10:00:00.000Z" }
   ]
 }
