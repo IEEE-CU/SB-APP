@@ -1,0 +1,49 @@
+{
+  "name": "ieee-finance-backend",
+  "version": "1.0.0",
+  "description": "Backend API for IEEE Finance Pro with MongoDB",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "start:cluster": "ENABLE_CLUSTER=true node src/server.js",
+    "start:test-server": "node scripts/start-test-server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/scripts/seed.js",
+    "lint": "eslint .",
+    "typecheck": "node scripts/typecheck.js",
+    "test:unit": "node --test test/unit",
+    "test:contract": "node --test test/contract"
+  },
+  "keywords": [
+    "ieee",
+    "finance",
+    "mongodb",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.5.2",
+    "express-validator": "^7.0.1",
+    "helmet": "^8.2.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.4",
+    "globals": "^15.15.0",
+    "mongodb-memory-server": "^10.4.3",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

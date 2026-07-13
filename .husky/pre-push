@@ -1,0 +1,36 @@
+echo "🚀 Running Husky pre-push checks..."
+
+echo "🧪 Checking for changes to run tests..."
+
+# Run diff once, capture output and exit code
+DIFF_OUTPUT=$(git diff --name-only origin/main...HEAD 2>/dev/null)
+if [ $? -ne 0 ]; then
+  # If diff fails (e.g. no origin/main), default to running tests to be safe
+  FRONTEND_CHANGED="true"
+  BACKEND_CHANGED="true"
+else
+  echo "$DIFF_OUTPUT" | grep -q '^frontend/' && FRONTEND_CHANGED="true" || FRONTEND_CHANGED="false"
+  echo "$DIFF_OUTPUT" | grep -q '^backend/' && BACKEND_CHANGED="true" || BACKEND_CHANGED="false"
+fi
+
+if [ -f "frontend/package.json" ] && [ "$FRONTEND_CHANGED" = "true" ]; then
+  echo "Running frontend tests..."
+  (cd frontend && npm run test:unit) || {
+    echo "❌ Frontend tests failed! Fix them before pushing."
+    exit 1
+  }
+else
+  echo "⏭️ Skipping frontend tests (no changes detected)."
+fi
+
+if [ -f "backend/package.json" ] && [ "$BACKEND_CHANGED" = "true" ]; then
+  echo "Running backend tests..."
+  (cd backend && npm run test:unit) || {
+    echo "❌ Backend tests failed! Fix them before pushing."
+    exit 1
+  }
+else
+  echo "⏭️ Skipping backend tests (no changes detected)."
+fi
+
+echo "✅ All pre-push checks passed!"

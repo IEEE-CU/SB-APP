@@ -1,9 +1,10 @@
 {
   "name": "ieee-finance-pro-db",
   "version": "1.0.0",
-  "description": "Database & Storage layer (Team 3) for IEEE Finance Pro",
+  "description": "Database & Storage layer (Team 3) with pre-commit hooks",
   "main": "server/app.js",
   "scripts": {
+    "prepare": "husky",
     "start": "node server/app.js",
     "seed": "node server/scripts/seed.js",
     "backup": "node server/scripts/backup.js",
@@ -19,6 +20,16 @@
     "mongoose": "^8.3.1"
   },
   "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
     "mongodb-memory-server": "^9.1.8"
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,jsx,ts,tsx}": [
+      "npx prettier --write --ignore-unknown"
+    ],
+    "backend/**/*.{js,ts}": [
+      "npx prettier --write --ignore-unknown"
+    ]
   }
 }

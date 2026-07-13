@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-canvas: #ffffff;
+  --color-canvas-soft: #ffffff;
+  --color-surface: #ffffff;
+  --color-ink: #000000;
+  --color-ink-secondary: #31302e;
+  --color-ink-muted: #615d59;
+  --color-ink-faint: #a39e98;
+  --color-hairline: #e6e6e6;
+  --color-primary: #2563eb;
+  --color-primary-active: #1d4ed8;
+  --color-secondary: #2563eb;
+}
+
+.dark {
+  --color-canvas: #0a0a0a;
+  --color-canvas-soft: #121212;
+  --color-surface: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-ink-secondary: rgba(255, 255, 255, 0.9);
+  --color-ink-muted: rgba(255, 255, 255, 0.6);
+  --color-ink-faint: rgba(255, 255, 255, 0.4);
+  --color-hairline: #222222;
+  --color-primary: #60a5fa;
+  --color-primary-active: #3b82f6;
+  --color-secondary: #60a5fa;
+}
+
+@layer base {
+  body {
+    @apply bg-canvas-soft text-ink font-sans text-body-md antialiased;
+  }
+}
+
+/* ── Dashboard animations ──────────────────────────────────────────────────── */
+
+/* Staggered fade + slide-up entrance for stat cards and headings */
+@keyframes dashFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Infinite left-scroll for the society logo marquee strip */
+@keyframes marqueeScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Soft glow pulse on hover (applied via JS-controlled class or used in component) */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  50%       { box-shadow: 0 0 20px 6px rgba(37, 99, 235, 0.12); }
+}
+
+/* Hides scrollbar for native scroll containers while keeping functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Reusable animation classes */
+.dash-fade-up {
+  animation: dashFadeUp 0.5s ease both;
+}
+
+/* Marquee track — applied to the inner flex container that holds doubled society list */
+.marquee-track {
+  animation: marqueeScroll 28s linear infinite;
+  will-change: transform;
+}
+
+/* Pause marquee on hover of the parent overflow container */
+.marquee-container:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Image placeholder with dotted grid (graph paper style) */
+.img-placeholder {
+  background-color: var(--color-canvas-soft);
+  background-image: radial-gradient(var(--color-hairline) 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
+  border: 1px dashed var(--color-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-ink-muted);
+  font-size: var(--text-caption);
+  font-family: monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
