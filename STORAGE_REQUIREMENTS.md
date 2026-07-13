@@ -7,40 +7,57 @@
 | FR-1 | Accept a single uploaded file. |
 | FR-2 | Upload using multipart/form-data. |
 | FR-3 | Store files in Azure Blob Storage. |
-| FR-4 | Generate unique filenames. |
-| FR-5 | Preserve original filename in the returned metadata. |
-| FR-6 | Return metadata after upload. |
-| FR-7 | Return HTTP 201 on success. |
-| FR-8 | Support provider abstraction. |
-| FR-9 | Keep `StorageService` cloud independent. |
-| FR-10 | Accept in-memory Multer uploads. |
+| FR-4 | Generate unique blob names. |
+| FR-5 | Preserve the original filename in the returned metadata. |
+| FR-6 | Return upload metadata after success. |
+| FR-7 | Return HTTP 201 for a successful upload. |
+| FR-8 | Download files by blob name. |
+| FR-9 | Stream downloads directly to the client. |
+| FR-10 | Set `Content-Type`, `Content-Length`, and `Content-Disposition` on downloads. |
+| FR-11 | Delete files by blob name. |
+| FR-12 | Return delete confirmation metadata. |
+| FR-13 | List stored files. |
+| FR-14 | Return metadata only when listing files. |
+| FR-15 | Return the total file count in list responses. |
+| FR-16 | Support provider abstraction. |
+| FR-17 | Keep `StorageService` cloud independent. |
+| FR-18 | Use an Azure-specific provider for SDK operations. |
+| FR-19 | Use in-memory Multer uploads. |
+| FR-20 | Enforce a 10 MB upload limit. |
+| FR-21 | Support standalone testing for upload, download, delete, and list flows. |
 
 ## Non Functional Requirements
 
 ### Performance
 - Upload handling should avoid writing temporary files to disk.
-- Metadata assembly should be lightweight and synchronous where possible.
+- Downloads should stream directly rather than buffering entire files in memory.
+- List responses should return metadata only and not fetch file contents.
 
 ### Reliability
-- Missing files should fail fast with a clear 400 response.
+- Missing file and missing blob name cases should fail fast with clear 400 responses.
 - Azure failures should surface with contextual errors.
+- The standalone test server should allow direct verification without altering production routes.
 
 ### Availability
-- The upload service should remain available through the main backend application.
+- The storage module should remain available through the main backend application.
 - The standalone test server is for local validation only.
 
 ### Scalability
 - The provider abstraction should allow future storage backends without changing service consumers.
+- The module should support future pagination for large blob inventories.
 
 ### Maintainability
 - HTTP handling, business logic, and cloud SDK calls are separated into distinct layers.
+- The storage service should remain cloud-provider agnostic.
 
 ### Security
-- The middleware currently avoids disk storage.
-- File type validation, authentication, and authorization are deferred to future work.
+- The middleware should avoid disk storage.
+- Authentication and authorization are deferred to future work.
+- File validation, virus scanning, and signed URL generation are future enhancements.
 
 ### Extensibility
 - The service is structured so future storage providers can be added.
+- Additional blob processing features such as image optimization can be added later.
 
 ### Portability
 - The module uses standard Node.js and Express patterns and can be executed in a local development environment.
@@ -57,14 +74,11 @@
 
 | Variable | Description |
 |---|---|
-| `AZURE_STORAGE_CONNECTION_STRING` | Connection string used to create the Azure `BlobServiceClient`. |
-| `AZURE_STORAGE_ACCOUNT_NAME` | Azure storage account name placeholder used by configuration. |
-| `AZURE_STORAGE_CONTAINER_NAME` | Azure container name used for uploads. |
-| `AZURE_STORAGE_ENDPOINT` | Optional Azure endpoint placeholder. |
-| `MAX_FILE_SIZE` | Generic upload size configuration placeholder. |
-| `ALLOWED_FILE_TYPES` | Generic MIME type configuration placeholder. |
-| `UPLOAD_TEMP_DIR` | Upload temp path placeholder for future workflows. |
-| `UPLOAD_ALLOWED_EXTENSIONS` | Upload extension placeholder for future workflows. |
+| `AZURE_STORAGE_CONNECTION_STRING` | Required connection string used to create the Azure `BlobServiceClient`. |
+| `AZURE_STORAGE_CONTAINER_NAME` | Required Azure container name used for storage operations. |
+| `AZURE_STORAGE_ACCOUNT_NAME` | Azure storage account name placeholder used by the shared Azure config. |
+| `MAX_FILE_SIZE` | Shared configuration value present in `backend/src/config/azure.js`. The upload middleware still enforces a fixed 10 MB limit. |
+| `ALLOWED_FILE_TYPES` | Shared configuration value present in `backend/src/config/azure.js`. |
 | `GEMINI_API_KEY` | Non-storage environment variable present in the shared backend `.env`. |
 | `GEMINI_MODEL` | Non-storage environment variable present in the shared backend `.env`. |
 | `GEMINI_BASE_URL` | Non-storage environment variable present in the shared backend `.env`. |
@@ -88,18 +102,25 @@
 
 ## API Contract
 
-### Request
+### Base Path
+The main backend mounts the storage router under `/api/v1/storage`.
+
+The standalone storage test server mounts the same router under `/api/storage` for local validation only.
+
+### Upload
+
+#### Request
 - Method: `POST`
-- Path: `/api/storage/upload`
+- Path: `/api/v1/storage/upload`
 - Content-Type: `multipart/form-data`
 - Field name: `file`
 
-### Response
+#### Response
 - HTTP `201` on success.
 - HTTP `400` when no file is provided.
 - HTTP `500` for unexpected failures.
 
-### Response Body
+#### Response Body
 ```json
 {
   "success": true,
@@ -116,12 +137,55 @@
 }
 ```
 
+### Download
+
+#### Request
+- Method: `GET`
+- Path: `/api/v1/storage/download/:blobName`
+- No request body.
+
+#### Response
+- HTTP `200` on success.
+- HTTP `400` when `blobName` is missing.
+- HTTP `500` for unexpected failures.
+- Response body is a stream, not JSON.
+
+#### Response Headers
+- `Content-Type`
+- `Content-Length`
+- `Content-Disposition`
+
+### Delete
+
+#### Request
+- Method: `DELETE`
+- Path: `/api/v1/storage/:blobName`
+- No request body.
+
+#### Response
+- HTTP `200` on success.
+- HTTP `400` when `blobName` is missing.
+- HTTP `500` for unexpected failures.
+
+### List Files
+
+#### Request
+- Method: `GET`
+- Path: `/api/v1/storage/files`
+- No request body.
+
+#### Response
+- HTTP `200` on success.
+- HTTP `500` for unexpected failures.
+- Response body contains metadata only and includes `count`.
+
 ## Assumptions
 - Upload requests arrive as multipart/form-data.
 - The incoming file is available on `req.file` after Multer parsing.
 - Azure credentials are provided through environment variables.
-- The Azure container name is configured before upload execution.
-- Downstream callers will inspect the response body for the normalized metadata.
+- The Azure container name is configured before storage execution.
+- Downloads are streamed directly to the response.
+- Downstream callers will inspect the response body for the normalized metadata on upload, list, and delete operations.
 
 ## Constraints
 - Do not use Express routes to implement storage business logic.
@@ -129,18 +193,17 @@
 - Do not require controllers to perform cloud SDK operations.
 - Do not require `StorageService` to know about Azure-specific SDK details beyond the provider contract.
 - Do not persist upload metadata to MongoDB in this phase.
+- Do not return download URLs in place of streamed file responses.
 
 ## Future Enhancements
-- Delete support
-- List support
-- Download support
-- Signed URL generation
 - Authentication
 - Authorization
 - File validation by MIME type
 - Virus scanning
 - Image optimization
+- Pagination
+- Signed URL generation
 - Database persistence for file records
 
 ## Summary
-These requirements describe the implemented upload-only storage module and the surrounding constraints that keep the architecture modular, testable, and ready for future expansion.
+These requirements describe the implemented Azure-backed storage module with upload, download, delete, and list operations. The constraints keep the architecture modular, testable, and ready for future expansion.

@@ -1,40 +1,62 @@
 # Storage Module Documentation
 
 ## Overview
-The storage module provides file upload support for the IEEE ERP backend. Its current responsibility is to accept a single file from a multipart/form-data request, validate that a file exists at the controller boundary, and upload the file to Azure Blob Storage through a provider abstraction.
+The storage module provides Azure Blob Storage support for the backend. It currently implements four operations: upload, download, delete, and list files. The module is structured so HTTP handling, storage orchestration, and cloud SDK calls remain separated.
 
 ### Purpose
-- Accept files from clients through a standard HTTP upload endpoint.
-- Keep the upload flow separated from HTTP routing concerns.
+- Accept file uploads from clients through a multipart/form-data endpoint.
+- Stream downloaded blobs directly to the client without returning a download URL.
+- Support blob deletion and metadata listing for stored files.
 - Keep storage logic cloud-provider agnostic through `StorageService`.
 - Isolate Azure SDK usage inside `AzureBlobProvider`.
 
-### High-Level Architecture
-The module follows a layered design:
+## Architecture
+The module uses a layered design:
 
-- `upload.js` handles multipart parsing with Multer.
-- `storage.js` defines the HTTP route.
-- `StorageController` handles request/response behavior.
-- `StorageService` contains upload orchestration and naming logic.
-- `AzureBlobProvider` contains Azure SDK calls.
+- `middleware/upload.js` configures Multer with in-memory storage and a 10 MB upload limit.
+- `routes/storage.js` defines the storage HTTP routes.
+- `StorageController` handles request validation and HTTP responses.
+- `StorageService` performs provider-agnostic storage orchestration.
+- `AzureBlobProvider` contains Azure-specific SDK calls.
+- Azure Blob Storage is the backing store.
 
 ```mermaid
 flowchart TD
-  A[Frontend] --> B[POST /api/storage/upload]
-  B --> C[upload.single("file")]
-  C --> D[StorageController]
-  D --> E[StorageService]
-  E --> F[AzureBlobProvider]
-  F --> G[Azure Blob Storage]
-  G --> H[Metadata Response]
+  A[Client] --> B[POST /api/v1/storage/upload]
+  A --> C[GET /api/v1/storage/files]
+  A --> D[GET /api/v1/storage/download/:blobName]
+  A --> E[DELETE /api/v1/storage/:blobName]
+
+  B --> F[upload.single("file")]
+  F --> G[StorageController.upload]
+  C --> H[StorageController.list]
+  D --> I[StorageController.download]
+  E --> J[StorageController.delete]
+
+  G --> K[StorageService.uploadFile]
+  H --> L[StorageService.listFiles]
+  I --> M[StorageService.downloadFile]
+  J --> N[StorageService.deleteFile]
+
+  K --> O[AzureBlobProvider.uploadBlob]
+  L --> P[AzureBlobProvider.listBlobs]
+  M --> Q[AzureBlobProvider.downloadBlob]
+  N --> R[AzureBlobProvider.deleteBlob]
+
+  O --> S[Azure Blob Storage]
+  P --> S
+  Q --> S
+  R --> S
 ```
 
-`StorageService` is the abstraction layer that keeps the module cloud-provider agnostic. If the storage backend changes later, only the provider implementation should need to change.
+`StorageService` remains cloud-provider agnostic. If the backend storage provider changes later, the controller and route contract can stay the same.
 
 ## Folder Structure
 
 ```text
 backend/src/
+├── config/
+│   └── azure.js
 ├── controllers/
 │   └── storageController.js
 ├── middleware/
@@ -49,53 +71,206 @@ backend/src/
 │           └── index.js
 └── tests/
     ├── storageApiTestServer.js
+    ├── testAzureUpload.js
+    ├── testStorageServiceDelete.js
+    ├── testStorageServiceDownload.js
+    ├── testStorageServiceListFiles.js
     └── testStorageServiceUpload.js
 ```
 
-## Upload Request Flow
-The complete upload lifecycle is:
+## Upload Flow
+The upload request flow is:
 
 ```text
-Frontend
+Client
 ↓
-POST /api/storage/upload
+POST /api/v1/storage/upload
 ↓
 upload.single("file")
 ↓
-StorageController
+StorageController.upload
 ↓
-StorageService
+StorageService.uploadFile
 ↓
-AzureBlobProvider
+AzureBlobProvider.uploadBlob
 ↓
 Azure Blob Storage
 ↓
-Metadata Response
+JSON metadata response
 ```
 
-### Layer Responsibilities
+### Upload Responsibilities
 | Layer | Responsibility |
 |---|---|
-| Frontend | Sends a multipart/form-data request containing one file field named `file`. |
-| `POST /api/storage/upload` | Public upload endpoint exposed by the storage router. |
-| `upload.single("file")` | Parses the multipart request and places the uploaded file on `req.file`. |
-| `StorageController` | Checks that `req.file` exists and converts the request into a service call. |
-| `StorageService` | Validates the file shape, generates a unique stored name, and orchestrates provider upload. |
-| `AzureBlobProvider` | Performs Azure SDK upload operations and reads blob properties. |
-| Azure Blob Storage | Persists the file in the configured container. |
-| Metadata Response | Returns normalized upload metadata to the caller. |
+| Client | Sends a multipart/form-data request with a single file field named `file`. |
+| `upload.single("file")` | Parses the request in memory and populates `req.file`. |
+| `StorageController` | Returns `400` when no file is provided and forwards valid uploads to the service. |
+| `StorageService` | Validates the Multer file shape, generates a unique stored name, and calls the provider. |
+| `AzureBlobProvider` | Creates the blob in Azure, then reads blob properties for returned metadata. |
+| Azure Blob Storage | Stores the uploaded file in the configured container. |
+
+### Upload Details
+- The request must use `multipart/form-data`.
+- The file field name must be `file`.
+- Multer uses `memoryStorage()`, so the file is kept in memory, not written to disk.
+- The upload limit is 10 MB.
+- `StorageService` generates a unique blob name using the `stored-<timestamp>-<uuid><extension>` pattern.
+- The returned metadata includes `originalName`, `storedName`, `path`, `url`, `contentType`, `size`, and `uploadedAt`.
+
+## Download Flow
+The download endpoint streams the blob directly to the client.
+
+```text
+Client
+↓
+GET /api/v1/storage/download/:blobName
+↓
+StorageController.download
+↓
+StorageService.downloadFile
+↓
+AzureBlobProvider.downloadBlob
+↓
+Readable stream piped to the response
+```
+
+### Download Responsibilities
+| Layer | Responsibility |
+|---|---|
+| Client | Requests a stored blob by name. |
+| `StorageController` | Validates `blobName`, sets response headers, and pipes the stream to the response. |
+| `StorageService` | Delegates the download to the configured provider. |
+| `AzureBlobProvider` | Retrieves the blob stream and metadata from Azure Blob Storage. |
+
+### Download Headers
+The response is a streamed file response, not a JSON payload.
+
+- `Content-Type`: set from the blob metadata
+- `Content-Length`: set from the blob metadata
+- `Content-Disposition`: set to `attachment; filename="<blobName>"`
+
+## Delete Flow
+The delete endpoint removes a blob by name.
+
+```text
+Client
+↓
+DELETE /api/v1/storage/:blobName
+↓
+StorageController.delete
+↓
+StorageService.deleteFile
+↓
+AzureBlobProvider.deleteBlob
+↓
+Azure Blob Storage
+↓
+JSON delete response
+```
+
+### Delete Responsibilities
+| Layer | Responsibility |
+|---|---|
+| Client | Sends the blob name as the `blobName` path parameter. |
+| `StorageController` | Returns `400` when the parameter is missing and forwards valid requests to the service. |
+| `StorageService` | Delegates deletion to the configured provider and normalizes the returned metadata. |
+| `AzureBlobProvider` | Deletes the blob from Azure Blob Storage. |
+
+## List Files Flow
+The list endpoint returns blob metadata only.
+
+```text
+Client
+↓
+GET /api/v1/storage/files
+↓
+StorageController.list
+↓
+StorageService.listFiles
+↓
+AzureBlobProvider.listBlobs
+↓
+JSON metadata response
+```
+
+### List Responsibilities
+| Layer | Responsibility |
+|---|---|
+| Client | Requests the current blob inventory. |
+| `StorageController` | Returns the list and the total `count`. |
+| `StorageService` | Delegates to the configured provider. |
+| `AzureBlobProvider` | Enumerates blobs and returns metadata only. |
+
+### List Output Fields
+The list response includes metadata only and does not download file contents.
+
+- `blobName`
+- `size`
+- `contentType`
+- `lastModified`
+- `etag`
+- `count`
+
+## Controller Responsibilities
+
+### StorageController
+- `upload(req, res, next)` returns `400` if `req.file` is missing and `201` on success.
+- `download(req, res, next)` validates `blobName`, sets stream headers, and pipes the readable stream to the response.
+- `list(req, res, next)` returns the blob array and `count`.
+- `delete(req, res, next)` validates `blobName` and returns deletion metadata.
+- Unexpected errors are passed to `next(error)`.
+
+## Service Responsibilities
+
+### StorageService
+- Validates the Multer upload shape before calling the provider.
+- Generates a unique blob name while preserving the original file extension.
+- Remains cloud-provider agnostic by calling provider methods such as `uploadBlob`, `downloadBlob`, `listBlobs`, and `deleteBlob`.
+- Normalizes returned metadata so the controller can respond consistently.
+
+## Provider Responsibilities
+
+### AzureBlobProvider
+- Owns all Azure SDK interaction.
+- Builds a `BlobServiceClient` from the configured connection string.
+- Ensures the target container exists for upload.
+- Uploads blob data, streams downloads, deletes blobs, and lists blob metadata.
+- Returns normalized Azure metadata including `etag` and `lastModified` where available.
+- Keeps Azure-specific code isolated from the service and controller layers.
+
+## Middleware Responsibilities
+
+### upload.js
+- Uses Multer with `memoryStorage()`.
+- Applies a 10 MB `fileSize` limit.
+- Keeps file validation outside the middleware so the controller and service can handle request logic explicitly.
 
 ## API Documentation
 
-### Endpoint
-`POST /api/storage/upload`
+### Base Path
+The main backend mounts the storage router under `/api/v1/storage`.
 
-### Request
+The standalone storage test server mounts the same router under `/api/storage` for local validation only.
+
+### 1. Upload File
+
+#### Endpoint
+`POST /api/v1/storage/upload`
+
+#### Purpose
+Upload a single file to Azure Blob Storage and return normalized metadata.
+
+#### Request
 - `Content-Type: multipart/form-data`
-- Field: `file`
+- Field name: `file`
 
-### Success Response
-HTTP status: `201 Created`
+#### Parameters
+| Name | Location | Required | Description |
+|---|---|---|---|
+| `file` | form-data field | Yes | Single file to upload. |
+
+#### Response
+HTTP `201 Created`
 
 ```json
 {
@@ -113,135 +288,237 @@ HTTP status: `201 Created`
 }
 ```
 
-### Returned Fields
-| Field | Description |
+#### Status Codes
+| Status | Meaning |
 |---|---|
-| `originalName` | The original filename supplied by the client. |
-| `storedName` | The unique filename used for blob storage. |
-| `path` | The provider-normalized stored path or blob name. |
-| `url` | The blob URL returned by Azure Blob Storage. |
-| `contentType` | The MIME type associated with the uploaded file. |
-| `size` | The stored file size in bytes. |
-| `uploadedAt` | ISO 8601 timestamp indicating when the upload metadata was assembled. |
+| 201 | Upload succeeded. |
+| 400 | No file was provided. |
+| 500 | Unexpected controller, service, or provider error. |
 
-## Components
+#### Example Request
+```bash
+curl -X POST http://localhost:5000/api/v1/storage/upload \
+  -F "file=@./example.txt"
+```
 
-### StorageController
-- Receives the HTTP request.
-- Verifies that `req.file` exists.
-- Returns HTTP `400` with `No file uploaded.` if the file is missing.
-- Calls `storageService.uploadFile(req.file)`.
-- Returns HTTP `201` with the upload metadata on success.
-- Passes unexpected errors to `next(error)`.
+#### Example Response
+See the JSON example above.
 
-### StorageService
-- Contains the business logic for file upload orchestration.
-- Validates the Multer file shape.
-- Generates a unique stored filename while preserving the original extension.
-- Delegates upload work to the configured provider through `uploadBlob({ buffer, blobName, contentType })`.
-- Returns provider-independent metadata.
-- Remains cloud-provider agnostic.
+#### Possible Errors
+- `No file uploaded.` when `req.file` is missing.
+- Azure configuration errors when required connection values are absent.
+- Provider errors if upload or metadata retrieval fails.
 
-### AzureBlobProvider
-- Owns all Azure SDK interaction.
-- Validates the Azure upload inputs.
-- Builds a `BlobServiceClient` from the Azure connection string.
-- Ensures the container exists.
-- Uploads the file buffer to Azure Blob Storage.
-- Retrieves blob properties after upload.
-- Returns normalized blob metadata.
+### 2. List Files
 
-### `upload.js` Middleware
-- Uses Multer with `memoryStorage()`.
-- Keeps uploaded files in memory instead of writing them to disk.
-- Applies a 10 MB file size limit.
-- Leaves file type validation to later layers.
-- Exports the configured Multer instance so the route can choose `single`, `array`, or `fields`.
+#### Endpoint
+`GET /api/v1/storage/files`
 
-### `storage.js` Route
-- Creates the `POST /upload` endpoint.
-- Applies `upload.single('file')`.
-- Calls `storageController.upload.bind(storageController)`.
-- Contains no business logic, Azure code, database access, or file validation.
+#### Purpose
+Return metadata for all blobs in the configured Azure container.
 
-## Azure Configuration
-The following environment variables are used by the storage module.
+#### Request
+- No body is required.
 
-| Variable | Purpose | Used By |
-|---|---|---|
-| `AZURE_STORAGE_CONNECTION_STRING` | Azure connection string used to create the BlobServiceClient. | `AzureBlobProvider` |
-| `AZURE_STORAGE_ACCOUNT_NAME` | Azure storage account name used for configuration and future provider logic. | `config/azure.js` |
-| `AZURE_STORAGE_CONTAINER_NAME` | Target container name for uploaded blobs. | `AzureBlobProvider` |
-| `AZURE_STORAGE_ENDPOINT` | Optional endpoint placeholder for future configuration expansion. | `config/azure.js` |
-| `MAX_FILE_SIZE` | Generic upload size configuration placeholder. | `config/azure.js` |
-| `ALLOWED_FILE_TYPES` | Generic MIME type configuration placeholder. | `config/azure.js` |
-| `UPLOAD_TEMP_DIR` | Temporary upload path placeholder for future workflows. | `.env` / `.env.example` |
-| `UPLOAD_ALLOWED_EXTENSIONS` | Allowed file extension placeholder for future workflows. | `.env` / `.env.example` |
+#### Parameters
+- None.
+
+#### Response
+HTTP `200 OK`
+
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    {
+      "blobName": "stored-1710000000000-acde1234-acde-1234abcd5678.txt",
+      "size": 30,
+      "contentType": "text/plain",
+      "lastModified": "2026-07-08T15:37:13.114Z",
+      "etag": "\"0x8DC123456789ABC\""
+    }
+  ]
+}
+```
+
+#### Status Codes
+| Status | Meaning |
+|---|---|
+| 200 | List retrieved successfully. |
+| 500 | Unexpected controller, service, or provider error. |
+
+#### Example Request
+```bash
+curl http://localhost:5000/api/v1/storage/files
+```
+
+#### Example Response
+See the JSON example above.
+
+#### Possible Errors
+- Azure configuration errors when required connection values are absent.
+- Provider errors if blob enumeration fails.
+
+### 3. Download File
+
+#### Endpoint
+`GET /api/v1/storage/download/:blobName`
+
+#### Purpose
+Stream a stored blob directly to the client.
+
+#### Request
+- No body is required.
+
+#### Parameters
+| Name | Location | Required | Description |
+|---|---|---|---|
+| `blobName` | path | Yes | Name of the blob to stream. |
+
+#### Response
+HTTP `200 OK`
+
+The response body is the file stream itself, not JSON.
+
+Response headers:
+
+- `Content-Type`
+- `Content-Length`
+- `Content-Disposition`
+
+#### Status Codes
+| Status | Meaning |
+|---|---|
+| 200 | Stream opened successfully and the file is piped to the client. |
+| 400 | `blobName` was missing. |
+| 500 | Unexpected controller, service, or provider error. |
+
+#### Example Request
+```bash
+curl -OJ http://localhost:5000/api/v1/storage/download/stored-1710000000000-acde1234-acde-1234abcd5678.txt
+```
+
+#### Example Response
+```http
+HTTP/1.1 200 OK
+Content-Type: text/plain
+Content-Length: 30
+Content-Disposition: attachment; filename="stored-1710000000000-acde1234-acde-1234abcd5678.txt"
+
+<binary stream>
+```
+
+#### Possible Errors
+- `Blob name is required.` when the path parameter is missing.
+- Azure configuration errors when required connection values are absent.
+- Provider errors if the blob does not exist or cannot be streamed.
+
+### 4. Delete File
+
+#### Endpoint
+`DELETE /api/v1/storage/:blobName`
+
+#### Purpose
+Delete a stored blob by name.
+
+#### Request
+- No body is required.
+
+#### Parameters
+| Name | Location | Required | Description |
+|---|---|---|---|
+| `blobName` | path | Yes | Name of the blob to delete. |
+
+#### Response
+HTTP `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "File deleted successfully.",
+  "data": {
+    "blobName": "stored-1710000000000-acde1234-acde-1234abcd5678.txt",
+    "deleted": true,
+    "deletedAt": "2026-07-08T15:37:13.114Z"
+  }
+}
+```
+
+#### Status Codes
+| Status | Meaning |
+|---|---|
+| 200 | Delete succeeded. |
+| 400 | `blobName` was missing. |
+| 500 | Unexpected controller, service, or provider error. |
+
+#### Example Request
+```bash
+curl -X DELETE http://localhost:5000/api/v1/storage/stored-1710000000000-acde1234-acde-1234abcd5678.txt
+```
+
+#### Example Response
+See the JSON example above.
+
+#### Possible Errors
+- `Blob name is required.` when the path parameter is missing.
+- Azure configuration errors when required connection values are absent.
+- Provider errors if the blob does not exist or deletion fails.
 
 ## Error Handling
 
-### 400 No file uploaded
-Returned by `StorageController` when `req.file` is missing.
+### Missing File on Upload
+`StorageController.upload` returns HTTP `400` with `No file uploaded.` when the request does not include `req.file`.
 
-### 500 Internal Server Error
-Unexpected errors are passed to `next(error)` by `StorageController`. A centralized Express error handler should format the final response.
+### Missing Blob Name
+`StorageController.download` and `StorageController.delete` return HTTP `400` with `Blob name is required.` when `blobName` is missing.
 
 ### Azure Configuration Missing
-`AzureBlobProvider` throws explicit errors when required Azure environment variables are missing, including:
+`AzureBlobProvider` throws explicit errors when required Azure environment variables are missing:
 - `AZURE_STORAGE_CONNECTION_STRING`
 - `AZURE_STORAGE_CONTAINER_NAME`
 
-### Upload Failures
-If Azure upload or property retrieval fails, `AzureBlobProvider` throws a contextual error containing the blob name and underlying failure message.
+### Provider Failures
+Azure SDK failures are wrapped with contextual messages that include the operation name and blob name when available.
 
-## Integration Guide
-A consuming team can upload a file by sending a multipart/form-data request with a single `file` field.
+### Centralized Error Handler
+Unexpected errors are passed to the shared Express error handler, which returns the appropriate `500` response for this module when no more specific status is set.
 
-### Axios Example
-```javascript
-import axios from 'axios';
+## Azure Configuration
+The storage module uses the Azure configuration in `backend/src/config/azure.js` and the values consumed by `AzureBlobProvider`.
 
-const formData = new FormData();
-formData.append('file', selectedFile);
-
-const response = await axios.post('/api/storage/upload', formData, {
-  headers: {
-    'Content-Type': 'multipart/form-data'
-  }
-});
-
-console.log(response.data);
-```
-
-### Expected Response for Team 2
-Team 2 should expect:
-- HTTP `201` on success.
-- A response body with `success: true`.
-- A `message` field containing `File uploaded successfully.`
-- A `data` object containing the normalized upload metadata.
+| Variable | Purpose |
+|---|---|
+| `AZURE_STORAGE_CONNECTION_STRING` | Required connection string for `BlobServiceClient`. |
+| `AZURE_STORAGE_CONTAINER_NAME` | Required target container name. |
+| `AZURE_STORAGE_ACCOUNT_NAME` | Account name placeholder in the shared Azure config. |
+| `MAX_FILE_SIZE` | Shared configuration value present in `config/azure.js`. The upload middleware still enforces its own 10 MB limit. |
+| `ALLOWED_FILE_TYPES` | Shared configuration value present in `config/azure.js`. |
 
 ## Testing
-The storage module was validated using the following approaches.
+The storage module has been validated through standalone scripts and manual endpoint testing.
 
 | Test | Purpose |
 |---|---|
-| Standalone `StorageService` test | Verifies the service upload workflow and returned metadata. |
-| Standalone Express test server | Provides a simple local server for route-level integration testing. |
-| Postman upload test | Confirms the HTTP endpoint accepts multipart uploads. |
-| Azure Blob verification | Confirms the blob is created in the configured Azure container. |
+| Standalone Upload Test | Exercises `StorageService.uploadFile()` directly. |
+| Standalone Download Test | Exercises `StorageService.downloadFile()` directly. |
+| Standalone Delete Test | Exercises `StorageService.deleteFile()` directly. |
+| Standalone List Files Test | Exercises `StorageService.listFiles()` directly. |
+| Standalone Express Test Server | Provides a local server for route-level testing on `/api/storage`. |
+| Manual Postman Validation | Confirms the HTTP endpoints behave as expected. |
+| Azure Blob Verification | Confirms blobs are created, streamed, listed, and deleted in the configured Azure container. |
 
 ## Future Improvements
-Planned follow-up work may include:
+Current implementation is complete for upload, download, delete, and list operations. Genuine future work includes:
 
-- Delete endpoint
-- List endpoint
-- Download endpoint
-- Signed URLs
 - Authentication
 - Authorization
+- Database metadata persistence
+- Pagination
 - File validation
+- Signed URLs
 - Virus scanning
 - Image optimization
 
 ## Summary
-The storage module currently provides a production-style upload pipeline with a controller, service, provider abstraction, and in-memory Multer parsing. It is ready for integration with another team that needs a stable `/api/storage/upload` contract without reading the implementation source code.
+The storage module now provides a complete Azure-backed file storage flow with upload, streaming download, delete, and list capabilities. The route, controller, service, and provider layers are clearly separated, and the Azure SDK remains isolated inside `AzureBlobProvider`.
