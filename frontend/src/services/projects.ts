@@ -14,7 +14,7 @@ export const projectService = {
   updateProject: (
     id: string,
     data: Partial<Pick<Project, 'title' | 'description' | 'status'>>,
-  ) => api.patch<ApiResponse<Project>>(`/projects/${id}`, data),
+  ) => api.put<ApiResponse<Project>>(`/projects/${id}`, data),
   deleteProject: (id: string) =>
     api.delete<ApiResponse<null>>(`/projects/${id}`),
 };

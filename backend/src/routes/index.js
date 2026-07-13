@@ -27,6 +27,7 @@ router.use('/calendar', calendarRoutes);
 router.use('/announcements', announcementRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/institution', institutionRoutes);
+router.use('/community', require('./community'));
 
 // Health check - reflects real DB connectivity so a load balancer / orchestrator
 // only routes traffic to instances that can actually serve requests.

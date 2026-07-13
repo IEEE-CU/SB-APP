@@ -91,4 +91,42 @@ router.post('/:id/reset-password', adminOnly, authLimiter, async (req, res, next
     }
 });
 
+/**
+ * @route   PATCH /api/users/:id
+ * @desc    Update user profile
+ * @access  Private (Admin or Self)
+ */
+router.patch('/:id', async (req, res, next) => {
+    try {
+        const { name, avatarUrl } = req.body;
+
+        if (req.user.role !== 'ADMIN' && req.user.id !== req.params.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to update this user'
+            });
+        }
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        if (name !== undefined) user.name = name;
+        if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+
+        await user.save();
+
+        res.json({
+            success: true,
+            data: user
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 module.exports = router;

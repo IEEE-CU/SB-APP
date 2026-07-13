@@ -117,7 +117,14 @@ function startServer() {
     app.use(errorHandler);
 
     // Start server
-    const server = app.listen(PORT, () => {
+    const http = require('http');
+    const server = http.createServer(app);
+    const { Server } = require('socket.io');
+    const io = new Server(server, { cors: { origin: '*' } });
+    app.set('io', io);
+    io.on('connection', (socket) => { console.log('Socket connected'); });
+
+    server.listen(PORT, () => {
         console.log(`
                                                         
    IEEE Finance Pro Backend                            

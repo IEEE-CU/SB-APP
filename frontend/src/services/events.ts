@@ -14,6 +14,6 @@ export const eventService = {
     data: Partial<
       Pick<Event, 'title' | 'description' | 'date' | 'location' | 'status'>
     >,
-  ) => api.patch<ApiResponse<Event>>(`/events/${id}`, data),
+  ) => api.put<ApiResponse<Event>>(`/events/${id}`, data),
   deleteEvent: (id: string) => api.delete<ApiResponse<null>>(`/events/${id}`),
 };

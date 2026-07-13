@@ -181,4 +181,59 @@ router.delete('/:id', officeBearerOrAdmin, async (req, res, next) => {
     }
 });
 
+/**
+ * @route   PATCH /api/announcements/:id
+ * @desc    Update announcement
+ * @access  Admin or own sender
+ */
+router.patch('/:id', officeBearerOrAdmin, async (req, res, next) => {
+    try {
+        const { title, message, targetAudience } = req.body;
+        const announcement = await Announcement.findById(req.params.id);
+
+        if (!announcement) {
+            return res.status(404).json({
+                success: false,
+                message: 'Announcement not found'
+            });
+        }
+
+        // Office bearers can only update their own announcements
+        if (req.user.role === 'OFFICE_BEARER') {
+            if (announcement.senderName !== req.user.name) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You can only update your own announcements'
+                });
+            }
+            if (targetAudience && targetAudience === 'ALL') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Only admins can send announcements to all members'
+                });
+            }
+        }
+
+        if (targetAudience && !['ALL', 'LEADERSHIP', 'SOCIETY'].includes(targetAudience)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid target audience'
+            });
+        }
+
+        if (title !== undefined) announcement.title = title;
+        if (message !== undefined) announcement.message = message;
+        if (targetAudience !== undefined) announcement.targetAudience = targetAudience;
+
+        await announcement.save();
+
+        res.json({
+            success: true,
+            data: announcement
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 module.exports = router;

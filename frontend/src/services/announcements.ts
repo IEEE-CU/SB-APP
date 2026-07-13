@@ -11,11 +11,11 @@ export const announcementService = {
     api.get<ApiResponse<Announcement>>(`/announcements/${id}`),
   createAnnouncement: (
     data: Pick<Announcement, 'title' | 'content' | 'priority'>,
-  ) => api.post<ApiResponse<Announcement>>('/announcements', data),
+  ) => api.post<ApiResponse<Announcement>>('/announcements', { ...data, message: data.content }),
   updateAnnouncement: (
     id: string,
     data: Partial<Pick<Announcement, 'title' | 'content' | 'priority'>>,
-  ) => api.patch<ApiResponse<Announcement>>(`/announcements/${id}`, data),
+  ) => api.patch<ApiResponse<Announcement>>(`/announcements/${id}`, { ...data, message: data.content }),
   deleteAnnouncement: (id: string) =>
     api.delete<ApiResponse<null>>(`/announcements/${id}`),
 };
