@@ -19,10 +19,36 @@ async function main() {
     require('../src/server.js');
 
     const User = require('../src/models/User');
+    const Role = require('../src/models/Role');
+    const Permission = require('../src/models/Permission');
+    const RolePermission = require('../src/models/RolePermission');
+    const UserRole = require('../src/models/UserRole');
 
-    await User.create([
+    const [adminUser, officeBearerUser] = await User.create([
         { email: TEST_USERS.admin.email, password: TEST_USERS.admin.password, role: TEST_USERS.admin.role, name: 'Test Admin' },
         { email: TEST_USERS.officeBearer.email, password: TEST_USERS.officeBearer.password, role: TEST_USERS.officeBearer.role, name: 'Test Office Bearer' },
+    ]);
+
+    const [adminRole, officeBearerRole] = await Role.create([
+        { name: 'admin', displayName: 'Admin', level: 'super_admin', scope: 'global', isSystemRole: true },
+        { name: 'office_bearer', displayName: 'Office Bearer', level: 'office_bearer', scope: 'global', isSystemRole: true },
+    ]);
+
+    const [announcementCreate, announcementDelete] = await Permission.create([
+        { module: 'announcements', action: 'create' },
+        { module: 'announcements', action: 'delete' },
+    ]);
+
+    await RolePermission.create([
+        { role: adminRole._id, permission: announcementCreate._id, accessLevel: 'full' },
+        { role: adminRole._id, permission: announcementDelete._id, accessLevel: 'full' },
+        { role: officeBearerRole._id, permission: announcementCreate._id, accessLevel: 'limited_own_scope' },
+        { role: officeBearerRole._id, permission: announcementDelete._id, accessLevel: 'limited_own_scope' },
+    ]);
+
+    await UserRole.create([
+        { user: adminUser._id, role: adminRole._id, assignedBy: adminUser._id },
+        { user: officeBearerUser._id, role: officeBearerRole._id, assignedBy: adminUser._id },
     ]);
 
     console.log(`Seeded test fixture users (${TEST_USERS.admin.email}, ${TEST_USERS.officeBearer.email}).`);
