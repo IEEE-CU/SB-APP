@@ -1,26 +1,18 @@
-import { useAuthStore } from '@/store/authStore';
-import type { AccessLevel } from '@/types/models';
+import { useAuthStore } from "@/store/authStore";
+import type { AccessLevel } from "@/types/models";
+import { ACCESS_LEVELS } from "@/lib/permissionLevels";
 
 export function usePermissions() {
   const { permissions, fetchPermissions } = useAuthStore();
 
   const getAccessLevel = (module: string): AccessLevel => {
     const perm = permissions.find((p) => p.module === module);
-    return perm?.accessLevel || 'none';
+    return perm?.accessLevel || "none";
   };
 
-  const hasAccess = (module: string, action: string = 'read'): boolean => {
-    const levels: Record<string, number> = {
-      none: 0,
-      read: 1,
-      write: 2,
-      create: 2,
-      delete: 3,
-      admin: 3,
-      superadmin: 4,
-    };
-    const userLevel = levels[getAccessLevel(module)] || 0;
-    const requiredLevel = levels[action] || 1;
+  const hasAccess = (module: string, action: string = "read"): boolean => {
+    const userLevel = ACCESS_LEVELS[getAccessLevel(module)] || 0;
+    const requiredLevel = ACCESS_LEVELS[action] || 1;
     return userLevel >= requiredLevel;
   };
 

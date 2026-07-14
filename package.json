@@ -1,14 +1,30 @@
 {
-  "name": "ieee-finance-pro",
+  "name": "ieee-finance-pro-db",
   "version": "1.0.0",
-  "description": "IEEE Finance Pro root package for Husky pre-commit hooks",
-  "private": true,
+  "description": "Database & Storage layer (Team 3) with pre-commit hooks",
+  "main": "server/app.js",
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "start": "node backend/src/server.js",
+    "seed": "node backend/src/scripts/seed.js",
+    "backup": "node backend/src/scripts/backup.js",
+    "restore": "node backend/src/scripts/restore.js",
+    "test:db": "node backend/src/scripts/testConnection.js",
+    "test:memory": "node backend/src/scripts/runWithMemoryDb.js test",
+    "seed:memory": "node backend/src/scripts/runWithMemoryDb.js seed"
+  },
+  "dependencies": {
+    "@azure/storage-blob": "^12.33.0",
+    "bcrypt": "^5.1.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^8.3.1",
+    "multer": "^2.2.0"
   },
   "devDependencies": {
     "husky": "^9.0.0",
-    "lint-staged": "^15.0.0"
+    "lint-staged": "^15.0.0",
+    "mongodb-memory-server": "^9.1.8"
   },
   "lint-staged": {
     "frontend/**/*.{js,jsx,ts,tsx}": [
@@ -17,11 +33,5 @@
     "backend/**/*.{js,ts}": [
       "npx prettier --write --ignore-unknown"
     ]
-  },
-  "dependencies": {
-    "@azure/storage-blob": "^12.33.0",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "multer": "^2.2.0"
   }
 }

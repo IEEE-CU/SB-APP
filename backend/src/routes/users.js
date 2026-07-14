@@ -1,7 +1,7 @@
-const express = require('express');
-const User = require('../models/User');
-const { authenticate, adminOnly } = require('../middleware/auth');
-const { authLimiter } = require('../middleware/rateLimiter');
+const express = require("express");
+const User = require("../models/User");
+const { authenticate, adminOnly } = require("../middleware/auth");
+const { authLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
@@ -13,20 +13,20 @@ router.use(authenticate);
  * @desc    Get all users
  * @access  Admin only
  */
-router.get('/', adminOnly, async (req, res, next) => {
-    try {
-        const users = await User.find()
-            .populate('societyId', 'name shortName')
-            .sort({ name: 1 });
+router.get("/", adminOnly, async (req, res, next) => {
+  try {
+    const users = await User.find()
+      .populate("societyId", "name shortName")
+      .sort({ name: 1 });
 
-        res.json({
-            success: true,
-            count: users.length,
-            data: users
-        });
-    } catch (error) {
-        next(error);
-    }
+    res.json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 /**
@@ -34,25 +34,27 @@ router.get('/', adminOnly, async (req, res, next) => {
  * @desc    Get user by ID
  * @access  Admin only
  */
-router.get('/:id', adminOnly, async (req, res, next) => {
-    try {
-        const user = await User.findById(req.params.id)
-            .populate('societyId', 'name shortName');
+router.get("/:id", adminOnly, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).populate(
+      "societyId",
+      "name shortName",
+    );
 
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            data: user
-        });
-    } catch (error) {
-        next(error);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
+
+    res.json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 /**
@@ -60,35 +62,87 @@ router.get('/:id', adminOnly, async (req, res, next) => {
  * @desc    Reset user's password (Admin only)
  * @access  Admin only
  */
-router.post('/:id/reset-password', adminOnly, authLimiter, async (req, res, next) => {
+router.post(
+  "/:id/reset-password",
+  adminOnly,
+  authLimiter,
+  async (req, res, next) => {
     try {
-        const { newPassword } = req.body;
+      const { newPassword } = req.body;
 
-        if (!newPassword || newPassword.length < 4) {
-            return res.status(400).json({
-                success: false,
-                message: 'Password must be at least 4 characters'
-            });
-        }
-
-        const user = await User.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        user.password = newPassword;
-        await user.save();
-
-        res.json({
-            success: true,
-            message: `Password reset for ${user.name}`
+      if (!newPassword || newPassword.length < 4) {
+        return res.status(400).json({
+          success: false,
+          message: "Password must be at least 4 characters",
         });
+      }
+
+      const user = await User.findById(req.params.id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      user.password = newPassword;
+      await user.save();
+
+      res.json({
+        success: true,
+        message: `Password reset for ${user.name}`,
+      });
     } catch (error) {
-        next(error);
+      next(error);
     }
+  },
+);
+
+/**
+ * @route   PATCH /api/users/:id
+ * @desc    Update user profile (self or Admin)
+ * @access  Self or Admin
+ */
+router.patch("/:id", async (req, res, next) => {
+  try {
+    if (
+      req.user.role !== "ADMIN" &&
+      req.user._id.toString() !== req.params.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: You can only update your own profile",
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const { name, avatarUrl } = req.body;
+    if (name !== undefined) user.name = name;
+    if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      data: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        societyId: user.societyId,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;

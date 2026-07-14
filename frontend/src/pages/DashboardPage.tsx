@@ -45,6 +45,8 @@ import {
 import PermissionGate from "@/components/PermissionGate";
 import { eventService } from "@/services/events";
 import { societyService } from "@/services/societies";
+import { projectService } from "@/services/projects";
+import { reportService } from "@/services/reports";
 import type { Event, Society } from "@/types/models";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -121,6 +123,43 @@ const STAT_CARDS = [
 
 function StatCards() {
   const navigate = useNavigate();
+  const [counts, setCounts] = useState<Record<string, number>>({
+    societies: 0,
+    events: 0,
+    projects: 0,
+    reports: 0,
+  });
+
+  useEffect(() => {
+    Promise.all([
+      societyService
+        .getSocieties(1, 1)
+        .catch(() => ({ data: { meta: { totalItems: 0 } } })),
+      eventService
+        .getEvents(1, 1)
+        .catch(() => ({ data: { meta: { totalItems: 0 } } })),
+      projectService
+        .getProjects(1, 1)
+        .catch(() => ({ data: { meta: { totalItems: 0 } } })),
+      reportService
+        .getReports(1, 1)
+        .catch(() => ({ data: { meta: { totalItems: 0 } } })),
+    ]).then(([socRes, evtRes, projRes, repRes]) => {
+      // Mock server fallback
+      const getCount = (res: any) =>
+        res.data?.meta?.totalItems ??
+        (Array.isArray(res.data)
+          ? res.data.length
+          : res.data?.data?.length || 0);
+
+      setCounts({
+        societies: getCount(socRes),
+        events: getCount(evtRes),
+        projects: getCount(projRes),
+        reports: getCount(repRes),
+      });
+    });
+  }, []);
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -147,15 +186,22 @@ function StatCards() {
             />
 
             <div className="relative p-4 sm:p-5">
-              {/* Icon badge */}
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center mb-4
-                           transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
-                style={{
-                  background: `rgba(${card.accentRgb}, 0.12)`,
-                }}
-              >
-                <card.icon size={20} style={{ color: card.accentHex }} />
+              <div className="flex items-start justify-between mb-4">
+                {/* Icon badge */}
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center
+                             transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+                  style={{
+                    background: `rgba(${card.accentRgb}, 0.12)`,
+                  }}
+                >
+                  <card.icon size={20} style={{ color: card.accentHex }} />
+                </div>
+
+                {/* Count */}
+                <span className="text-heading-3 font-bold text-ink">
+                  {counts[card.module] || 0}
+                </span>
               </div>
 
               {/* Module label — clear, legible */}

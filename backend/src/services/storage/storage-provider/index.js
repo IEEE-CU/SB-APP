@@ -1,5 +1,5 @@
-const AzureBlobProvider = require('./AzureBlobProvider');
-const StorageService = require('../StorageService');
+const AzureBlobProvider = require("./AzureBlobProvider");
+const StorageService = require("../StorageService");
 
 const storageService = new StorageService();
 

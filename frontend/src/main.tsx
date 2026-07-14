@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import ErrorBoundary from "@/components/ui/ErrorBoundary";
+import { ErrorBoundary } from "@/components/ui";
 import { router } from "./routes";
 import { useThemeStore } from "@/store/themeStore";
 import "./index.css";

@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+import { ACCESS_LEVELS } from "@/lib/permissionLevels";
 
 interface ProtectedRouteProps {
   requiredModule?: string;
@@ -16,22 +17,8 @@ export default function ProtectedRoute({
 
   if (requiredModule && requiredAction) {
     const perm = permissions.find((p) => p.module === requiredModule);
-    const levels: Record<string, number> = {
-      none: 0,
-      read: 1,
-      write: 2,
-      admin: 3,
-      superadmin: 4,
-    };
-    const required: Record<string, number> = {
-      read: 1,
-      write: 2,
-      create: 2,
-      delete: 3,
-      admin: 3,
-    };
-    const userLevel = levels[perm?.accessLevel || "none"] || 0;
-    const needLevel = levels[requiredAction] || required[requiredAction] || 1;
+    const userLevel = ACCESS_LEVELS[perm?.accessLevel || "none"] || 0;
+    const needLevel = ACCESS_LEVELS[requiredAction] || 1;
     if (userLevel < needLevel) return <Navigate to="/dashboard" replace />;
   }
 

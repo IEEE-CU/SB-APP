@@ -1,4 +1,4 @@
-const emailConfig = require('../../config/email');
+const emailConfig = require("../../config/email");
 
 // Placeholder: implement email transport selection and message dispatch here.
 class EmailService {
@@ -7,7 +7,7 @@ class EmailService {
   }
 
   async send() {
-    throw new Error('TODO: implement email delivery service');
+    throw new Error("TODO: implement email delivery service");
   }
 }
 
