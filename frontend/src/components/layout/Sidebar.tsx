@@ -40,6 +40,12 @@ const navItems = [
     label: "Community Hub",
     module: "community_hub",
   },
+  {
+    to: "/calendar",
+    icon: Calendar,
+    label: "Unified Calendar",
+    module: null,
+  },
 ];
 
 const adminItems = [

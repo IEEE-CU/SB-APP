@@ -1,5 +1,7 @@
 const express = require("express");
 const CalendarEvent = require("../models/CalendarEvent");
+const Message = require("../models/Message");
+const Event = require("../models/Event");
 const { authenticate, societyAccess } = require("../middleware/auth");
 const { requirePermission } = require("../middleware/rbac");
 const { parseLimit } = require("../utils/pagination");
@@ -8,6 +10,101 @@ const router = express.Router();
 
 // All routes require authentication
 router.use(authenticate);
+
+/**
+ * @route   GET /api/calendar/unified
+ * @desc    Aggregate CalendarEvent, Message (with calendarEvent populated), and Event collections for a given month range
+ * @access  All authenticated users
+ */
+router.get("/unified", async (req, res, next) => {
+  try {
+    const { start, end, societyId } = req.query;
+
+    if (!start || !end) {
+      return res.status(400).json({
+        success: false,
+        message: "Start and end dates are required (format: YYYY-MM-DD)",
+      });
+    }
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    // Ensure endDate includes the full end day
+    endDate.setHours(23, 59, 59, 999);
+
+    const dateFilter = { $gte: startDate, $lte: endDate };
+
+    // Build filters for each collection
+    const calFilter = { date: dateFilter };
+    const eventFilter = { date: dateFilter };
+    const messageFilter = { "calendarEvent.date": dateFilter };
+
+    if (societyId) {
+      calFilter.societyId = societyId;
+      eventFilter.societyId = societyId;
+      messageFilter.societyId = societyId;
+    }
+
+    // Fetch in parallel
+    const [calendarEvents, events, messages] = await Promise.all([
+      CalendarEvent.find(calFilter).populate("societyId", "name shortName"),
+      Event.find(eventFilter).populate("societyId", "name shortName"),
+      Message.find(messageFilter)
+        .populate("societyId", "name shortName")
+        .populate("authorId", "name email"),
+    ]);
+
+    // Format and unify results
+    const unified = [
+      ...calendarEvents.map((item) => ({
+        id: item._id || item.id,
+        source: "CalendarEvent",
+        title: item.title,
+        date: item.date,
+        time: item.time,
+        venue: item.venue,
+        description: item.description,
+        status: item.status,
+        society: item.societyId,
+      })),
+      ...events.map((item) => ({
+        id: item._id || item.id,
+        source: "Event",
+        title: item.title,
+        date: item.date,
+        time: item.time,
+        venue: item.venue,
+        description: item.description,
+        eventType: item.eventType,
+        society: item.societyId,
+      })),
+      ...messages.map((item) => ({
+        id: item._id || item.id,
+        source: "Message",
+        title: item.plainText || item.body,
+        date: item.calendarEvent.date,
+        time: item.calendarEvent.time,
+        venue: "Chat Channel / Conversation",
+        description: item.body,
+        channelId: item.channelId,
+        conversationId: item.conversationId,
+        author: item.authorId,
+        society: item.societyId,
+      })),
+    ];
+
+    // Sort chronologically by date
+    unified.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    res.json({
+      success: true,
+      count: unified.length,
+      data: unified,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * @route   GET /api/calendar

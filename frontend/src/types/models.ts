@@ -77,3 +77,65 @@ export interface Permission {
 }
 
 export type AccessLevel = "none" | "read" | "write" | "admin" | "superadmin";
+
+// Channels and Messaging types
+export interface Reaction {
+  emoji: string;
+  users: string[]; // User IDs who reacted
+}
+
+export interface Message {
+  id: string;
+  channelId?: string;
+  conversationId?: string;
+  sender: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+  content: string;
+  attachments?: string[];
+  parentId?: string; // For replies / thread support
+  replies?: Message[];
+  reactions: Reaction[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Channel {
+  id: string;
+  name: string;
+  description?: string;
+  societyId?: string; // Optional links to societies
+  isPrivate: boolean;
+  memberIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Conversation {
+  id: string;
+  participants: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: Message;
+}
+
+// Unified Calendar types
+export interface UnifiedCalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  date: string; // ISO string format
+  endDate?: string;
+  location?: string;
+  sourceType: "event" | "deadline" | "society" | "message_schedule";
+  referenceId?: string; // Link to the original entity (Event, Project, etc.)
+  status?: string;
+  metadata?: Record<string, any>;
+}
+

@@ -15,6 +15,10 @@ const RolePermission = require("./RolePermission");
 const File = require("./File");
 const CommunityMessage = require("./CommunityMessage");
 const UserRole = require("./UserRole");
+const Channel = require("./Channel");
+const Message = require("./Message");
+const Conversation = require("./Conversation");
+const Reaction = require("./Reaction");
 
 module.exports = {
   User,
@@ -34,4 +38,8 @@ module.exports = {
   File,
   CommunityMessage,
   UserRole,
+  Channel,
+  Message,
+  Conversation,
+  Reaction,
 };
