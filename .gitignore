@@ -26,9 +26,40 @@ yarn-error.log*
 Thumbs.db
 
 # Misc
+.agents
 .mimocode
 ideas.md
 vision.md
 frontend-design-general.md
 frontendAesthetics.md
 SKILL_Creator.md
+artifacts/report.md
+artifacts/test.md
+
+# Logs (additional)
+logs/
+
+# Environment files (additional)
+.env.*
+!.env.example
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Coverage
+coverage/
+
+# Uploads
+uploads/
+
+# IDE folders
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Misc
+pnpm-debug.log*

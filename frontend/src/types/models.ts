@@ -13,8 +13,8 @@ export interface User {
 export interface Society {
   id: string;
   name: string;
-  shortName?: string;   // e.g. "CS", "WIE" — used in society logo cards
-  logoSlug?: string;    // lowercase slug matching /public/logos/{slug}_logo.{ext}
+  shortName?: string; // e.g. "CS", "WIE" — used in society logo cards
+  logoSlug?: string; // lowercase slug matching /public/logos/{slug}_logo.{ext}
   description?: string;
   chairId?: string;
   memberIds: string[];
@@ -28,7 +28,7 @@ export interface Event {
   societyId?: string;
   date?: string;
   location?: string;
-  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  status: "upcoming" | "ongoing" | "completed" | "cancelled";
   createdAt: string;
 }
 
@@ -37,7 +37,7 @@ export interface Project {
   title: string;
   description?: string;
   societyId?: string;
-  status: 'planning' | 'active' | 'completed' | 'on_hold';
+  status: "planning" | "active" | "completed" | "on_hold";
   memberIds: string[];
   createdAt: string;
 }
@@ -48,7 +48,7 @@ export interface Report {
   content?: string;
   societyId?: string;
   authorId?: string;
-  type?: 'financial' | 'activity' | 'general';
+  type?: "financial" | "activity" | "general";
   createdAt: string;
 }
 
@@ -58,7 +58,7 @@ export interface Announcement {
   content: string;
   societyId?: string;
   authorId?: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
   createdAt: string;
 }
 
@@ -76,4 +76,4 @@ export interface Permission {
   accessLevel: AccessLevel;
 }
 
-export type AccessLevel = 'none' | 'read' | 'write' | 'admin' | 'superadmin';
+export type AccessLevel = "none" | "read" | "write" | "admin" | "superadmin";

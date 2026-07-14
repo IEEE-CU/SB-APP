@@ -76,7 +76,10 @@ router.post('/login', authLimiter, async (req, res, next) => {
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide email and password'
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Please provide email and password'
+                }
             });
         }
 
@@ -88,7 +91,10 @@ router.post('/login', authLimiter, async (req, res, next) => {
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid email address'
+                error: {
+                    code: 'UNAUTHENTICATED',
+                    message: 'Invalid email address'
+                }
             });
         }
 
@@ -97,7 +103,10 @@ router.post('/login', authLimiter, async (req, res, next) => {
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
-                message: 'Incorrect password'
+                error: {
+                    code: 'UNAUTHENTICATED',
+                    message: 'Incorrect password'
+                }
             });
         }
 
@@ -110,13 +119,15 @@ router.post('/login', authLimiter, async (req, res, next) => {
 
         res.json({
             success: true,
-            token,
-            user: {
-                id: user._id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-                societyId: user.societyId ? user.societyId._id || user.societyId : undefined
+            data: {
+                token,
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role,
+                    societyId: user.societyId ? user.societyId._id || user.societyId : undefined
+                }
             }
         });
     } catch (error) {

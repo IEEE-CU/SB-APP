@@ -13,9 +13,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('token');
       window.location.href = '/login';
+    } else if (err.response?.status === 403) {
+      console.warn('Permission Denied (403)');
+      // If desired, dispatch an event or use a toast here. For now, we reject gracefully.
     }
     return Promise.reject(err);
   },

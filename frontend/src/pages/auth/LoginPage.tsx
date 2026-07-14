@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/store/authStore";
+import toast from "react-hot-toast";
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -32,9 +32,8 @@ export default function LoginPage() {
       await login(data.email, data.password);
       toast.success('Welcome back!');
       navigate('/dashboard');
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Login failed';
+    } catch (err: any) {
+      const message = err.response?.data?.error?.message || err.message || 'Login failed';
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -51,7 +50,7 @@ export default function LoginPage() {
           </label>
           <input
             type="email"
-            {...register('email')}
+            {...register("email")}
             className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             placeholder="you@example.com"
           />
@@ -67,7 +66,7 @@ export default function LoginPage() {
           </label>
           <input
             type="password"
-            {...register('password')}
+            {...register("password")}
             className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             placeholder="Min 8 characters"
           />
@@ -82,11 +81,11 @@ export default function LoginPage() {
           disabled={isLoading}
           className="w-full py-2.5 bg-primary text-on-primary text-button font-medium rounded-full hover:bg-primary-active transition-colors disabled:opacity-50"
         >
-          {isLoading ? 'Signing in...' : 'Sign in'}
+          {isLoading ? "Signing in..." : "Sign in"}
         </button>
       </form>
       <p className="text-body-sm text-ink-muted text-center mt-6">
-        Don't have an account?{' '}
+        Don't have an account?{" "}
         <Link to="/register" className="text-primary hover:underline">
           Sign up
         </Link>

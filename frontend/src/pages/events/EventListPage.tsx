@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { eventService } from "@/services/events";
 import {
   DataTable,
@@ -69,9 +70,11 @@ export default function EventListPage() {
         setAllData(res.data.data);
         setMeta(res.data.meta);
       })
-      .catch(() => {})
+      .catch((err) =>
+        toast.error(err.response?.data?.message || "Failed to load events"),
+      )
       .finally(() => setLoading(false));
-  }, [page, limit]);
+  }, [page, limit, sortKey, sortDirection]);
 
   useEffect(() => {
     setData((prev) => sortData(prev, sortKey, sortDirection));
