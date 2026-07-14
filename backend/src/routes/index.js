@@ -19,6 +19,7 @@ const storageRoutes = require("./storage");
 // Mount routes
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
+router.use("/user", require("./user"));
 router.use("/societies", societyRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/events", eventRoutes);

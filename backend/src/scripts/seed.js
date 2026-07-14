@@ -76,11 +76,18 @@ const IEEE_COUNCILS = [
 
 // Admin users
 const ADMIN_USERS = [
-    { email: 'admin@ieee.org', password: 'admin', role: 'ADMIN', name: 'CHRIST SBC' },
-    { email: 'dean@ieee.org', password: 'admin', role: 'ADMIN', name: 'Dean of Engineering' },
-    { email: 'director@ieee.org', password: 'admin', role: 'ADMIN', name: 'Director' },
-    { email: 'associate.dean@ieee.org', password: 'admin', role: 'ADMIN', name: 'Associate Dean' },
-    { email: 'associate.director@ieee.org', password: 'admin', role: 'ADMIN', name: 'Associate Director' }
+    { email: 'admin@ieee.org', password: 'password123', role: 'ADMIN', name: 'CHRIST SBC' },
+    { email: 'dean@ieee.org', password: 'password123', role: 'ADMIN', name: 'Dean of Engineering' },
+    { email: 'director@ieee.org', password: 'password123', role: 'ADMIN', name: 'Director' },
+    { email: 'associate.dean@ieee.org', password: 'password123', role: 'ADMIN', name: 'Associate Dean' },
+    { email: 'associate.director@ieee.org', password: 'password123', role: 'ADMIN', name: 'Associate Director' }
+];
+
+// Additional test users
+const ADDITIONAL_USERS = [
+    { email: 'teacher@ieee.org', password: 'password123', role: 'FACULTY', name: 'Faculty Advisor' },
+    { email: 'member@ieee.org', password: 'password123', role: 'STUDENT_MEMBER', name: 'Student Member' },
+    { email: 'student@ieee.org', password: 'password123', role: 'STUDENT', name: 'Guest Student' }
 ];
 
 // Helper to generate email from short name
@@ -138,7 +145,7 @@ async function seed() {
 
             await User.create({
                 email,
-                password: 'office',
+                password: 'password123',
                 role: 'OFFICE_BEARER',
                 name: `${society.shortName} Chair`,
                 societyId: society._id
@@ -149,6 +156,12 @@ async function seed() {
             obCount++;
         }
         console.log(`   ✅ Created ${obCount} office bearer users`);
+
+        console.log('👤 Creating additional test users...');
+        for (const user of ADDITIONAL_USERS) {
+            await User.create(user);
+        }
+        console.log(`   ✅ Created ${ADDITIONAL_USERS.length} additional test users`);
 
         // Create sample projects
         console.log('📁 Creating sample projects...');
@@ -227,6 +240,24 @@ async function seed() {
                 venue: 'Seminar Hall',
                 status: 'CONFIRMED',
                 description: 'Panel discussion with industry leaders from top tech companies.'
+            },
+            {
+                societyId: societyMap['IEEE CS'],
+                title: 'Intro to Web Dev Workshop',
+                date: new Date(now.getFullYear(), now.getMonth(), 28),
+                time: '16:00',
+                venue: 'Block 2, Room 412',
+                status: 'PROPOSED',
+                description: 'A beginner-friendly workshop on React and Vite.'
+            },
+            {
+                societyId: societyMap['IEEE SB'],
+                title: 'Annual General Meeting 2024',
+                date: new Date(now.getFullYear(), now.getMonth() + 2, 10),
+                time: '11:00',
+                venue: 'Main Auditorium',
+                status: 'CONFIRMED',
+                description: 'The main gathering for all IEEE members.'
             }
         ];
         await CalendarEvent.insertMany(sampleCalendarEvents);
@@ -255,15 +286,27 @@ async function seed() {
 
         console.log('\n✨ Database seeding completed successfully!\n');
         console.log('📋 Login Credentials:');
-        console.log('   Admin:          admin@ieee.org / admin');
-        console.log('   Office Bearer:  cs@ieee.org / office');
-        console.log('   (Any society:   <shortname>@ieee.org / office)\n');
+        console.log('   Admin:          admin@ieee.org / password123');
+        console.log('   Office Bearer:  cs@ieee.org / password123');
+        console.log('   Faculty:        teacher@ieee.org / password123');
+        console.log('   Member:         member@ieee.org / password123');
+        console.log('   Student:        student@ieee.org / password123');
+        console.log('   (Any society:   <shortname>@ieee.org / password123)\n');
 
-        process.exit(0);
+        if (require.main === module) {
+            process.exit(0);
+        }
     } catch (error) {
         console.error('❌ Seeding error:', error);
-        process.exit(1);
+        if (require.main === module) {
+            process.exit(1);
+        }
+        throw error;
     }
 }
 
-seed();
+if (require.main === module) {
+    seed();
+}
+
+module.exports = seed;

@@ -99,6 +99,27 @@ function startServer() {
         });
     }
 
+    // Serve static logos (matching mock server behavior)
+    const path = require('path');
+    app.use('/logos', express.static(path.join(__dirname, '../../frontend/public/logos')));
+
+    // Inject missing 'meta' in list responses to satisfy frontend pagination expectations
+    app.use((req, res, next) => {
+        const originalJson = res.json.bind(res);
+        res.json = (body) => {
+            if (body && typeof body === 'object' && body.success && Array.isArray(body.data) && !body.meta) {
+                body.meta = {
+                    page: 1,
+                    limit: body.data.length || 100,
+                    totalItems: body.count || body.data.length,
+                    totalPages: 1
+                };
+            }
+            return originalJson(body);
+        };
+        next();
+    });
+
     // API Routes
     app.use('/api/v1', routes);
 

@@ -71,14 +71,18 @@ const LOGO_EXT_MAP: Record<string, string> = {
   aps: "png",
   cis: "png",
   grss: "png",
+  ieeecs: "png",
   mtts: "webp",
+  pels: "png",
+  pes: "webp",
   sight: "webp",
   wie: "webp",
 };
 
-function getLogoSrc(slug: string): string {
-  const ext = LOGO_EXT_MAP[slug.toLowerCase()] ?? "png";
-  return `/logos/${slug.toLowerCase()}_logo.${ext}`;
+function getLogoSrc(rawSlug: string): string {
+  const slug = rawSlug.toLowerCase() === 'ieeecs' ? 'cs' : rawSlug.toLowerCase();
+  const ext = LOGO_EXT_MAP[slug] ?? "png";
+  return `/logos/${slug}_logo.${ext}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -620,8 +624,8 @@ interface SocietyLogoCardProps {
 function SocietyLogoCard({ society, onClick }: SocietyLogoCardProps) {
   const [imgError, setImgError] = useState(false);
 
-  // logoSlug from mock/real API — lowercase slug e.g. "cs", "wie", "ras"
-  const slug = society.logoSlug ?? "";
+  // logoSlug from mock/real API — fallback to sanitized shortName if missing
+  const slug = society.logoSlug ?? (society.shortName ? society.shortName.toLowerCase().replace(/[^a-z0-9]+/g, "") : "");
 
   // shortName from API or auto-derived from initials
   const shortName =
@@ -659,7 +663,6 @@ function SocietyLogoCard({ society, onClick }: SocietyLogoCardProps) {
           <img
             src={getLogoSrc(slug)}
             alt={`${shortName} logo`}
-            loading="lazy"
             className="max-h-full max-w-full object-contain
                        transition-transform duration-200 group-hover:scale-105"
             onError={() => setImgError(true)}
