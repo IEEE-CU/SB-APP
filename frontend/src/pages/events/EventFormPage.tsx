@@ -28,8 +28,7 @@ export default function EventFormPage() {
   const { hasAccess } = usePermissions();
   const canCreate = hasAccess("events", "create");
   const canEdit = hasAccess("events", "write");
-  if (!isEdit && !canCreate) return <Navigate to="/events" replace />;
-  if (isEdit && !canEdit) return <Navigate to="/events" replace />;
+  const isAuthorized = isEdit ? canEdit : canCreate;
 
   const {
     register,
@@ -42,7 +41,10 @@ export default function EventFormPage() {
   });
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !canEdit) {
+      setLoading(false);
+      return;
+    }
     eventService
       .getEvent(id)
       .then((res) => {
@@ -57,7 +59,9 @@ export default function EventFormPage() {
       })
       .catch(() => toast.error("Failed to load event"))
       .finally(() => setLoading(false));
-  }, [id, reset]);
+  }, [id, canEdit, reset]);
+
+  if (!isAuthorized) return <Navigate to="/events" replace />;
 
   const onSubmit = async (data: EventForm) => {
     setSubmitting(true);

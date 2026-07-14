@@ -26,8 +26,7 @@ export default function AnnouncementFormPage() {
   const { hasAccess } = usePermissions();
   const canCreate = hasAccess("announcements", "create");
   const canEdit = hasAccess("announcements", "write");
-  if (!isEdit && !canCreate) return <Navigate to="/announcements" replace />;
-  if (isEdit && !canEdit) return <Navigate to="/announcements" replace />;
+  const isAuthorized = isEdit ? canEdit : canCreate;
   const {
     register,
     handleSubmit,
@@ -39,7 +38,10 @@ export default function AnnouncementFormPage() {
   });
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !canEdit) {
+      setLoading(false);
+      return;
+    }
     announcementService
       .getAnnouncement(id)
       .then((res) => {
@@ -52,7 +54,9 @@ export default function AnnouncementFormPage() {
       })
       .catch(() => toast.error("Failed to load"))
       .finally(() => setLoading(false));
-  }, [id, reset]);
+  }, [id, canEdit, reset]);
+
+  if (!isAuthorized) return <Navigate to="/announcements" replace />;
 
   const onSubmit = async (data: Form) => {
     setSubmitting(true);
