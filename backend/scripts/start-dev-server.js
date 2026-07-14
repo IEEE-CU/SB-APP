@@ -31,7 +31,17 @@ async function main() {
   };
 
   // Load and run seed script
-  require("../src/scripts/seed.js");
+  const seed = require("../src/scripts/seed.js");
+  seed()
+    .then(() => {
+      process.exit = originalExit; // Restore original exit
+      console.log("✅ Seeding completed. Booting Express server...");
+      bootServer();
+    })
+    .catch((err) => {
+      console.error("❌ Seeding failed:", err);
+      originalExit(1);
+    });
 }
 
 function bootServer() {

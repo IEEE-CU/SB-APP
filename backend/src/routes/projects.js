@@ -1,6 +1,7 @@
 const express = require("express");
 const Project = require("../models/Project");
 const { authenticate, societyAccess } = require("../middleware/auth");
+const { requirePermission } = require("../middleware/rbac");
 const { parseLimit } = require("../utils/pagination");
 
 const router = express.Router();
@@ -70,209 +71,229 @@ router.get("/:id", async (req, res, next) => {
  * @desc    Create new project
  * @access  Admin or Own Office Bearer
  */
-router.post("/", societyAccess, async (req, res, next) => {
-  try {
-    const {
-      societyId,
-      title,
-      category,
-      sanctioningBody,
-      amountSanctioned,
-      startDate,
-      status,
-      description,
-    } = req.body;
+router.post(
+  "/",
+  requirePermission("projects", "create"),
+  societyAccess,
+  async (req, res, next) => {
+    try {
+      const {
+        societyId,
+        title,
+        category,
+        sanctioningBody,
+        amountSanctioned,
+        startDate,
+        status,
+        description,
+      } = req.body;
 
-    // For office bearers, use their society if not specified
-    const targetSocietyId =
-      societyId || req.user.societyId?._id || req.user.societyId;
+      // For office bearers, use their society if not specified
+      const targetSocietyId =
+        societyId || req.user.societyId?._id || req.user.societyId;
 
-    if (!targetSocietyId) {
-      return res.status(400).json({
-        success: false,
-        message: "Society ID is required",
+      if (!targetSocietyId) {
+        return res.status(400).json({
+          success: false,
+          message: "Society ID is required",
+        });
+      }
+
+      const project = await Project.create({
+        societyId: targetSocietyId,
+        title,
+        category,
+        sanctioningBody,
+        amountSanctioned,
+        startDate,
+        status: status || "PROPOSED",
+        description,
       });
+
+      const populated = await Project.findById(project._id).populate(
+        "societyId",
+        "name shortName",
+      );
+
+      res.status(201).json({
+        success: true,
+        data: populated,
+      });
+    } catch (error) {
+      next(error);
     }
-
-    const project = await Project.create({
-      societyId: targetSocietyId,
-      title,
-      category,
-      sanctioningBody,
-      amountSanctioned,
-      startDate,
-      status: status || "PROPOSED",
-      description,
-    });
-
-    const populated = await Project.findById(project._id).populate(
-      "societyId",
-      "name shortName",
-    );
-
-    res.status(201).json({
-      success: true,
-      data: populated,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 /**
  * @route   PUT /api/projects/:id
  * @desc    Update project
  * @access  Admin or Own Office Bearer
  */
-router.put("/:id", societyAccess, async (req, res, next) => {
-  try {
-    const project = await Project.findById(req.params.id);
+router.put(
+  "/:id",
+  requirePermission("projects", "edit"),
+  societyAccess,
+  async (req, res, next) => {
+    try {
+      const project = await Project.findById(req.params.id);
 
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
-    }
-
-    // Check society access for office bearers
-    if (req.user.role === "OFFICE_BEARER") {
-      const userSocietyId =
-        req.user.societyId?._id?.toString() || req.user.societyId?.toString();
-      if (project.societyId.toString() !== userSocietyId) {
-        return res.status(403).json({
+      if (!project) {
+        return res.status(404).json({
           success: false,
-          message: "Access restricted to your own society",
+          message: "Project not found",
         });
       }
-    }
 
-    // Update fields
-    const updateFields = [
-      "title",
-      "category",
-      "sanctioningBody",
-      "amountSanctioned",
-      "startDate",
-      "status",
-      "description",
-    ];
-
-    updateFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        project[field] = req.body[field];
+      // Check society access for office bearers
+      if (req.user.role === "OFFICE_BEARER") {
+        const userSocietyId =
+          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
+        if (project.societyId.toString() !== userSocietyId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
       }
-    });
 
-    await project.save();
+      // Update fields
+      const updateFields = [
+        "title",
+        "category",
+        "sanctioningBody",
+        "amountSanctioned",
+        "startDate",
+        "status",
+        "description",
+      ];
 
-    const populated = await Project.findById(project._id).populate(
-      "societyId",
-      "name shortName",
-    );
-
-    res.json({
-      success: true,
-      data: populated,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.patch("/:id", societyAccess, async (req, res, next) => {
-  try {
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
+      updateFields.forEach((field) => {
+        if (req.body[field] !== undefined) {
+          project[field] = req.body[field];
+        }
       });
-    }
 
-    // Check society access for office bearers
-    if (req.user.role === "OFFICE_BEARER") {
-      const userSocietyId =
-        req.user.societyId?._id?.toString() || req.user.societyId?.toString();
-      if (project.societyId.toString() !== userSocietyId) {
-        return res.status(403).json({
+      await project.save();
+
+      const populated = await Project.findById(project._id).populate(
+        "societyId",
+        "name shortName",
+      );
+
+      res.json({
+        success: true,
+        data: populated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.patch(
+  "/:id",
+  requirePermission("projects", "edit"),
+  societyAccess,
+  async (req, res, next) => {
+    try {
+      const project = await Project.findById(req.params.id);
+
+      if (!project) {
+        return res.status(404).json({
           success: false,
-          message: "Access restricted to your own society",
+          message: "Project not found",
         });
       }
-    }
 
-    // Update fields
-    const updateFields = [
-      "title",
-      "category",
-      "sanctioningBody",
-      "amountSanctioned",
-      "startDate",
-      "status",
-      "description",
-    ];
-
-    updateFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        project[field] = req.body[field];
+      // Check society access for office bearers
+      if (req.user.role === "OFFICE_BEARER") {
+        const userSocietyId =
+          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
+        if (project.societyId.toString() !== userSocietyId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
       }
-    });
 
-    await project.save();
+      // Update fields
+      const updateFields = [
+        "title",
+        "category",
+        "sanctioningBody",
+        "amountSanctioned",
+        "startDate",
+        "status",
+        "description",
+      ];
 
-    const populated = await Project.findById(project._id).populate(
-      "societyId",
-      "name shortName",
-    );
+      updateFields.forEach((field) => {
+        if (req.body[field] !== undefined) {
+          project[field] = req.body[field];
+        }
+      });
 
-    res.json({
-      success: true,
-      data: populated,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+      await project.save();
+
+      const populated = await Project.findById(project._id).populate(
+        "societyId",
+        "name shortName",
+      );
+
+      res.json({
+        success: true,
+        data: populated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 /**
  * @route   DELETE /api/projects/:id
  * @desc    Delete project
  * @access  Admin or Own Office Bearer
  */
-router.delete("/:id", societyAccess, async (req, res, next) => {
-  try {
-    const project = await Project.findById(req.params.id);
+router.delete(
+  "/:id",
+  requirePermission("projects", "delete"),
+  societyAccess,
+  async (req, res, next) => {
+    try {
+      const project = await Project.findById(req.params.id);
 
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
-    }
-
-    // Check society access for office bearers
-    if (req.user.role === "OFFICE_BEARER") {
-      const userSocietyId =
-        req.user.societyId?._id?.toString() || req.user.societyId?.toString();
-      if (project.societyId.toString() !== userSocietyId) {
-        return res.status(403).json({
+      if (!project) {
+        return res.status(404).json({
           success: false,
-          message: "Access restricted to your own society",
+          message: "Project not found",
         });
       }
+
+      // Check society access for office bearers
+      if (req.user.role === "OFFICE_BEARER") {
+        const userSocietyId =
+          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
+        if (project.societyId.toString() !== userSocietyId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
+      }
+
+      await Project.findByIdAndDelete(req.params.id);
+
+      res.json({
+        success: true,
+        message: "Project deleted",
+      });
+    } catch (error) {
+      next(error);
     }
-
-    await Project.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "Project deleted",
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 module.exports = router;

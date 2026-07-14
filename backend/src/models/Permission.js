@@ -1,31 +1,59 @@
 const mongoose = require("mongoose");
-const toJson = require("./plugins/toJson");
 
-const permissionSchema = new mongoose.Schema(
-  {
-    module: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    action: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      default: "",
-    },
+const PermissionSchema = new mongoose.Schema({
+  module: {
+    type: String,
+    enum: [
+      "finance",
+      "events",
+      "projects",
+      "reports",
+      "community_hub",
+      "members",
+      "announcements",
+      "dashboard",
+      "settings",
+      "roles_access",
+    ],
+    required: true,
   },
-  {
-    timestamps: true,
+  action: {
+    type: String,
+    enum: [
+      "view",
+      "create",
+      "edit",
+      "delete",
+      "approve",
+      "export",
+      "manage_settings",
+    ],
+    required: true,
   },
-);
+  key: {
+    type: String,
+    unique: true,
+  },
+  description: {
+    type: String,
+    trim: true,
+  },
+});
 
-// Compound unique index to prevent duplicate permissions
-permissionSchema.index({ module: 1, action: 1 }, { unique: true });
-permissionSchema.plugin(toJson);
+// Automatically derive the unique key before saving
+PermissionSchema.pre("save", function (next) {
+  this.key = `${this.module}:${this.action}`;
+  next();
+});
 
-const Permission = mongoose.model("Permission", permissionSchema);
-module.exports = Permission;
+// Serialize _id to id and remove __v in API responses
+PermissionSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  },
+});
+
+module.exports = mongoose.model("Permission", PermissionSchema);

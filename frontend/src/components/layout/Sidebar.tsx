@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { ACCESS_LEVELS } from "@/lib/permissionLevels";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", module: null },
@@ -17,7 +18,7 @@ const navItems = [
     to: "/societies",
     icon: Building2,
     label: "Societies",
-    module: "societies",
+    module: null,
   },
   { to: "/events", icon: Calendar, label: "Events", module: "events" },
   {
@@ -37,21 +38,13 @@ const navItems = [
     to: "/community",
     icon: MessageCircle,
     label: "Community Hub",
-    module: "community",
+    module: "community_hub",
   },
 ];
 
 const adminItems = [
   { to: "/admin/users", icon: Users, label: "Users", module: "users" },
 ];
-
-const levels: Record<string, number> = {
-  none: 0,
-  read: 1,
-  write: 2,
-  admin: 3,
-  superadmin: 4,
-};
 
 export default function Sidebar({
   isOpen = false,
@@ -60,12 +53,12 @@ export default function Sidebar({
   isOpen?: boolean;
   onClose?: () => void;
 }) {
-  const { user, permissions } = useAuthStore();
+  const { user, permissions, userRole } = useAuthStore();
 
   const canAccess = (module: string | null) => {
     if (!module) return true;
     const perm = permissions.find((p) => p.module === module);
-    return (levels[perm?.accessLevel || "none"] || 0) >= 1;
+    return (ACCESS_LEVELS[perm?.accessLevel || "none"] || 0) >= 1;
   };
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -152,7 +145,7 @@ export default function Sidebar({
               {user?.name || "User"}
             </p>
             <p className="text-[11px] text-ink-muted truncate capitalize">
-              {user?.roleId || "Member"}
+              {userRole ? userRole.replace(/_/g, " ") : "Member"}
             </p>
           </div>
         </div>

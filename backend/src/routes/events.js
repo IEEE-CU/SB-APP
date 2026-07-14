@@ -1,6 +1,7 @@
 const express = require("express");
 const Event = require("../models/Event");
 const { authenticate, societyAccess } = require("../middleware/auth");
+const { requirePermission } = require("../middleware/rbac");
 const { parseLimit } = require("../utils/pagination");
 
 const router = express.Router();
@@ -74,299 +75,324 @@ router.get("/:id", async (req, res, next) => {
  * @desc    Create new event
  * @access  Admin or Own Office Bearer
  */
-router.post("/", societyAccess, async (req, res, next) => {
-  try {
-    const {
-      societyId,
-      title,
-      date,
-      time,
-      venue,
-      eventType,
-      participants,
-      description,
-      outcome,
-      participantType,
-      highlights,
-      takeaways,
-      followUpPlan,
-      organizerName,
-      organizerDesignation,
-      collaboration,
-      images,
-      speakers,
-    } = req.body;
+router.post(
+  "/",
+  requirePermission("events", "create"),
+  societyAccess,
+  async (req, res, next) => {
+    try {
+      const {
+        societyId,
+        title,
+        date,
+        time,
+        venue,
+        eventType,
+        participants,
+        description,
+        outcome,
+        participantType,
+        highlights,
+        takeaways,
+        followUpPlan,
+        organizerName,
+        organizerDesignation,
+        collaboration,
+        images,
+        speakers,
+      } = req.body;
 
-    // For office bearers, use their society if not specified
-    const targetSocietyId =
-      societyId || req.user.societyId?._id || req.user.societyId;
+      // For office bearers, use their society if not specified
+      const targetSocietyId =
+        societyId || req.user.societyId?._id || req.user.societyId;
 
-    if (!targetSocietyId) {
-      return res.status(400).json({
-        success: false,
-        message: "Society ID is required",
+      if (!targetSocietyId) {
+        return res.status(400).json({
+          success: false,
+          message: "Society ID is required",
+        });
+      }
+
+      const event = await Event.create({
+        societyId: targetSocietyId,
+        title,
+        date,
+        time,
+        venue,
+        eventType: eventType || req.body.type,
+        participants,
+        description,
+        outcome,
+        participantType,
+        highlights,
+        takeaways,
+        followUpPlan,
+        organizerName,
+        organizerDesignation,
+        collaboration,
+        images: images || [],
+        speakers: speakers || [],
       });
+
+      const populated = await Event.findById(event._id).populate(
+        "societyId",
+        "name shortName",
+      );
+
+      res.status(201).json({
+        success: true,
+        data: populated,
+      });
+    } catch (error) {
+      next(error);
     }
-
-    const event = await Event.create({
-      societyId: targetSocietyId,
-      title,
-      date,
-      time,
-      venue,
-      eventType: eventType || req.body.type,
-      participants,
-      description,
-      outcome,
-      participantType,
-      highlights,
-      takeaways,
-      followUpPlan,
-      organizerName,
-      organizerDesignation,
-      collaboration,
-      images: images || [],
-      speakers: speakers || [],
-    });
-
-    const populated = await Event.findById(event._id).populate(
-      "societyId",
-      "name shortName",
-    );
-
-    res.status(201).json({
-      success: true,
-      data: populated,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 /**
  * @route   PUT /api/events/:id
  * @desc    Update event
  * @access  Admin or Own Office Bearer
  */
-router.put("/:id", societyAccess, async (req, res, next) => {
-  try {
-    const event = await Event.findById(req.params.id);
+router.put(
+  "/:id",
+  requirePermission("events", "edit"),
+  societyAccess,
+  async (req, res, next) => {
+    try {
+      const event = await Event.findById(req.params.id);
 
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: "Event not found",
-      });
-    }
-
-    // Check society access for office bearers
-    if (req.user.role === "OFFICE_BEARER") {
-      const userSocietyId =
-        req.user.societyId?._id?.toString() || req.user.societyId?.toString();
-      if (event.societyId.toString() !== userSocietyId) {
-        return res.status(403).json({
+      if (!event) {
+        return res.status(404).json({
           success: false,
-          message: "Access restricted to your own society",
+          message: "Event not found",
         });
       }
-    }
 
-    // Update fields
-    const updateFields = [
-      "title",
-      "date",
-      "time",
-      "venue",
-      "eventType",
-      "participants",
-      "description",
-      "outcome",
-      "participantType",
-      "highlights",
-      "takeaways",
-      "followUpPlan",
-      "organizerName",
-      "organizerDesignation",
-      "collaboration",
-      "images",
-      "speakers",
-    ];
-
-    updateFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        event[field] = req.body[field];
+      // Check society access for office bearers
+      if (req.user.role === "OFFICE_BEARER") {
+        const userSocietyId =
+          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
+        if (event.societyId.toString() !== userSocietyId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
       }
-    });
 
-    // Map 'type' to 'eventType' if present
-    if (req.body.type) {
-      event.eventType = req.body.type;
-    }
+      // Update fields
+      const updateFields = [
+        "title",
+        "date",
+        "time",
+        "venue",
+        "eventType",
+        "participants",
+        "description",
+        "outcome",
+        "participantType",
+        "highlights",
+        "takeaways",
+        "followUpPlan",
+        "organizerName",
+        "organizerDesignation",
+        "collaboration",
+        "images",
+        "speakers",
+      ];
 
-    await event.save();
-
-    const populated = await Event.findById(event._id).populate(
-      "societyId",
-      "name shortName",
-    );
-
-    res.json({
-      success: true,
-      data: populated,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.patch("/:id", societyAccess, async (req, res, next) => {
-  try {
-    const event = await Event.findById(req.params.id);
-
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: "Event not found",
+      updateFields.forEach((field) => {
+        if (req.body[field] !== undefined) {
+          event[field] = req.body[field];
+        }
       });
-    }
 
-    // Check society access for office bearers
-    if (req.user.role === "OFFICE_BEARER") {
-      const userSocietyId =
-        req.user.societyId?._id?.toString() || req.user.societyId?.toString();
-      if (event.societyId.toString() !== userSocietyId) {
-        return res.status(403).json({
+      // Map 'type' to 'eventType' if present
+      if (req.body.type) {
+        event.eventType = req.body.type;
+      }
+
+      await event.save();
+
+      const populated = await Event.findById(event._id).populate(
+        "societyId",
+        "name shortName",
+      );
+
+      res.json({
+        success: true,
+        data: populated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.patch(
+  "/:id",
+  requirePermission("events", "edit"),
+  societyAccess,
+  async (req, res, next) => {
+    try {
+      const event = await Event.findById(req.params.id);
+
+      if (!event) {
+        return res.status(404).json({
           success: false,
-          message: "Access restricted to your own society",
+          message: "Event not found",
         });
       }
-    }
 
-    // Update fields
-    const updateFields = [
-      "title",
-      "date",
-      "time",
-      "venue",
-      "eventType",
-      "participants",
-      "description",
-      "outcome",
-      "participantType",
-      "highlights",
-      "takeaways",
-      "followUpPlan",
-      "organizerName",
-      "organizerDesignation",
-      "collaboration",
-      "images",
-      "speakers",
-    ];
-
-    updateFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        event[field] = req.body[field];
+      // Check society access for office bearers
+      if (req.user.role === "OFFICE_BEARER") {
+        const userSocietyId =
+          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
+        if (event.societyId.toString() !== userSocietyId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
       }
-    });
 
-    // Map 'type' to 'eventType' if present
-    if (req.body.type) {
-      event.eventType = req.body.type;
+      // Update fields
+      const updateFields = [
+        "title",
+        "date",
+        "time",
+        "venue",
+        "eventType",
+        "participants",
+        "description",
+        "outcome",
+        "participantType",
+        "highlights",
+        "takeaways",
+        "followUpPlan",
+        "organizerName",
+        "organizerDesignation",
+        "collaboration",
+        "images",
+        "speakers",
+      ];
+
+      updateFields.forEach((field) => {
+        if (req.body[field] !== undefined) {
+          event[field] = req.body[field];
+        }
+      });
+
+      // Map 'type' to 'eventType' if present
+      if (req.body.type) {
+        event.eventType = req.body.type;
+      }
+
+      await event.save();
+
+      const populated = await Event.findById(event._id).populate(
+        "societyId",
+        "name shortName",
+      );
+
+      res.json({
+        success: true,
+        data: populated,
+      });
+    } catch (error) {
+      next(error);
     }
-
-    await event.save();
-
-    const populated = await Event.findById(event._id).populate(
-      "societyId",
-      "name shortName",
-    );
-
-    res.json({
-      success: true,
-      data: populated,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 /**
  * @route   DELETE /api/events/:id
  * @desc    Delete event
  * @access  Admin or Own Office Bearer
  */
-router.delete("/:id", societyAccess, async (req, res, next) => {
-  try {
-    const event = await Event.findById(req.params.id);
+router.delete(
+  "/:id",
+  requirePermission("events", "delete"),
+  societyAccess,
+  async (req, res, next) => {
+    try {
+      const event = await Event.findById(req.params.id);
 
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: "Event not found",
-      });
-    }
-
-    // Check society access for office bearers
-    if (req.user.role === "OFFICE_BEARER") {
-      const userSocietyId =
-        req.user.societyId?._id?.toString() || req.user.societyId?.toString();
-      if (event.societyId.toString() !== userSocietyId) {
-        return res.status(403).json({
+      if (!event) {
+        return res.status(404).json({
           success: false,
-          message: "Access restricted to your own society",
+          message: "Event not found",
         });
       }
+
+      // Check society access for office bearers
+      if (req.user.role === "OFFICE_BEARER") {
+        const userSocietyId =
+          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
+        if (event.societyId.toString() !== userSocietyId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
+      }
+
+      await Event.findByIdAndDelete(req.params.id);
+
+      res.json({
+        success: true,
+        message: "Event deleted",
+      });
+    } catch (error) {
+      next(error);
     }
-
-    await Event.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "Event deleted",
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 /**
  * @route   POST /api/events/:id/speakers
  * @desc    Add speaker to event
  * @access  Admin or Own Office Bearer
  */
-router.post("/:id/speakers", societyAccess, async (req, res, next) => {
-  try {
-    const event = await Event.findById(req.params.id);
+router.post(
+  "/:id/speakers",
+  requirePermission("events", "edit"),
+  societyAccess,
+  async (req, res, next) => {
+    try {
+      const event = await Event.findById(req.params.id);
 
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: "Event not found",
-      });
-    }
-
-    // Check society access for office bearers
-    if (req.user.role === "OFFICE_BEARER") {
-      const userSocietyId =
-        req.user.societyId?._id?.toString() || req.user.societyId?.toString();
-      if (event.societyId.toString() !== userSocietyId) {
-        return res.status(403).json({
+      if (!event) {
+        return res.status(404).json({
           success: false,
-          message: "Access restricted to your own society",
+          message: "Event not found",
         });
       }
+
+      // Check society access for office bearers
+      if (req.user.role === "OFFICE_BEARER") {
+        const userSocietyId =
+          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
+        if (event.societyId.toString() !== userSocietyId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
+      }
+
+      event.speakers.push(req.body);
+      await event.save();
+
+      res.status(201).json({
+        success: true,
+        data: event.speakers,
+      });
+    } catch (error) {
+      next(error);
     }
-
-    event.speakers.push(req.body);
-    await event.save();
-
-    res.status(201).json({
-      success: true,
-      data: event.speakers,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 module.exports = router;

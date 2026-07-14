@@ -14,6 +14,7 @@ const Role = require("./Role");
 const RolePermission = require("./RolePermission");
 const File = require("./File");
 const CommunityMessage = require("./CommunityMessage");
+const UserRole = require("./UserRole");
 
 module.exports = {
   User,
@@ -32,4 +33,5 @@ module.exports = {
   RolePermission,
   File,
   CommunityMessage,
+  UserRole,
 };

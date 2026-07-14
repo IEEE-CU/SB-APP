@@ -16,10 +16,12 @@ const projectReportRoutes = require("./projectReports");
 const institutionRoutes = require("./institution");
 const storageRoutes = require("./storage");
 const communityRoutes = require("./community");
+const rbacRoutes = require("./rbac");
 
 // Mount routes
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
+router.use("/", rbacRoutes);
 router.use("/societies", societyRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/events", eventRoutes);

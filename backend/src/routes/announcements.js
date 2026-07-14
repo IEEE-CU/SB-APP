@@ -1,6 +1,7 @@
 const express = require("express");
 const Announcement = require("../models/Announcement");
 const { authenticate, officeBearerOrAdmin } = require("../middleware/auth");
+const { requirePermission } = require("../middleware/rbac");
 const { parseLimit } = require("../utils/pagination");
 
 const router = express.Router();
@@ -86,168 +87,182 @@ router.get("/:id", async (req, res, next) => {
  * @desc    Create new announcement
  * @access  Admin or Office Bearer
  */
-router.post("/", officeBearerOrAdmin, async (req, res, next) => {
-  try {
-    const { title, date, senderName, targetAudience, societyId } = req.body;
-    const message = req.body.message || req.body.content;
+router.post(
+  "/",
+  requirePermission("announcements", "create"),
+  async (req, res, next) => {
+    try {
+      const { title, date, senderName, targetAudience, societyId } = req.body;
+      const message = req.body.message || req.body.content;
 
-    // Validate target audience
-    if (!["ALL", "LEADERSHIP", "SOCIETY"].includes(targetAudience)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid target audience",
-      });
-    }
-
-    // For SOCIETY-specific announcements, require societyId
-    if (targetAudience === "SOCIETY" && !societyId) {
-      return res.status(400).json({
-        success: false,
-        message: "Society ID is required for society-specific announcements",
-      });
-    }
-
-    // Office bearers can only send to their own society or leadership
-    if (req.user.role === "OFFICE_BEARER") {
-      if (targetAudience === "ALL") {
-        return res.status(403).json({
-          success: false,
-          message: "Only admins can send announcements to all members",
-        });
-      }
-      if (targetAudience === "SOCIETY") {
-        const userSocietyId =
-          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
-        if (societyId !== userSocietyId) {
-          return res.status(403).json({
-            success: false,
-            message: "You can only send announcements to your own society",
-          });
-        }
-      }
-    }
-
-    const announcement = await Announcement.create({
-      title,
-      message,
-      date: date || Date.now(),
-      senderName: senderName || req.user.name,
-      targetAudience,
-      societyId: targetAudience === "SOCIETY" ? societyId : null,
-    });
-
-    const populated = await Announcement.findById(announcement._id).populate(
-      "societyId",
-      "name shortName",
-    );
-
-    res.status(201).json({
-      success: true,
-      data: populated,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * @route   DELETE /api/announcements/:id
- * @desc    Delete announcement
- * @access  Admin or own sender
- */
-router.delete("/:id", officeBearerOrAdmin, async (req, res, next) => {
-  try {
-    const announcement = await Announcement.findById(req.params.id);
-
-    if (!announcement) {
-      return res.status(404).json({
-        success: false,
-        message: "Announcement not found",
-      });
-    }
-
-    // Office bearers can only delete their own announcements
-    if (req.user.role === "OFFICE_BEARER") {
-      if (announcement.senderName !== req.user.name) {
-        return res.status(403).json({
-          success: false,
-          message: "You can only delete your own announcements",
-        });
-      }
-    }
-
-    await Announcement.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "Announcement deleted",
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * @route   PATCH /api/announcements/:id
- * @desc    Update announcement
- * @access  Admin or own sender
- */
-router.patch("/:id", officeBearerOrAdmin, async (req, res, next) => {
-  try {
-    const { title, date, senderName, targetAudience, societyId } = req.body;
-    const message = req.body.message || req.body.content;
-
-    const announcement = await Announcement.findById(req.params.id);
-
-    if (!announcement) {
-      return res.status(404).json({
-        success: false,
-        message: "Announcement not found",
-      });
-    }
-
-    // Office bearers can only update their own announcements
-    if (req.user.role === "OFFICE_BEARER") {
-      if (announcement.senderName !== req.user.name) {
-        return res.status(403).json({
-          success: false,
-          message: "You can only update your own announcements",
-        });
-      }
-    }
-
-    // Update fields if provided
-    if (title !== undefined) announcement.title = title;
-    if (message !== undefined) announcement.message = message;
-    if (date !== undefined) announcement.date = date;
-    if (senderName !== undefined) announcement.senderName = senderName;
-    if (targetAudience !== undefined) {
+      // Validate target audience
       if (!["ALL", "LEADERSHIP", "SOCIETY"].includes(targetAudience)) {
         return res.status(400).json({
           success: false,
           message: "Invalid target audience",
         });
       }
-      announcement.targetAudience = targetAudience;
+
+      // For SOCIETY-specific announcements, require societyId
+      if (targetAudience === "SOCIETY" && !societyId) {
+        return res.status(400).json({
+          success: false,
+          message: "Society ID is required for society-specific announcements",
+        });
+      }
+
+      // Office bearers can only send to their own society or leadership
+      if (req.user.role === "OFFICE_BEARER") {
+        if (targetAudience === "ALL") {
+          return res.status(403).json({
+            success: false,
+            message: "Only admins can send announcements to all members",
+          });
+        }
+        if (targetAudience === "SOCIETY") {
+          const userSocietyId =
+            req.user.societyId?._id?.toString() ||
+            req.user.societyId?.toString();
+          if (societyId !== userSocietyId) {
+            return res.status(403).json({
+              success: false,
+              message: "You can only send announcements to your own society",
+            });
+          }
+        }
+      }
+
+      const announcement = await Announcement.create({
+        title,
+        message,
+        date: date || Date.now(),
+        senderName: senderName || req.user.name,
+        targetAudience,
+        societyId: targetAudience === "SOCIETY" ? societyId : null,
+      });
+
+      const populated = await Announcement.findById(announcement._id).populate(
+        "societyId",
+        "name shortName",
+      );
+
+      res.status(201).json({
+        success: true,
+        data: populated,
+      });
+    } catch (error) {
+      next(error);
     }
-    if (societyId !== undefined) {
-      announcement.societyId = targetAudience === "SOCIETY" ? societyId : null;
+  },
+);
+
+/**
+ * @route   DELETE /api/announcements/:id
+ * @desc    Delete announcement
+ * @access  Admin or own sender
+ */
+router.delete(
+  "/:id",
+  requirePermission("announcements", "delete"),
+  async (req, res, next) => {
+    try {
+      const announcement = await Announcement.findById(req.params.id);
+
+      if (!announcement) {
+        return res.status(404).json({
+          success: false,
+          message: "Announcement not found",
+        });
+      }
+
+      // Office bearers can only delete their own announcements
+      if (req.user.role === "OFFICE_BEARER") {
+        if (announcement.senderName !== req.user.name) {
+          return res.status(403).json({
+            success: false,
+            message: "You can only delete your own announcements",
+          });
+        }
+      }
+
+      await Announcement.findByIdAndDelete(req.params.id);
+
+      res.json({
+        success: true,
+        message: "Announcement deleted",
+      });
+    } catch (error) {
+      next(error);
     }
+  },
+);
 
-    await announcement.save();
+/**
+ * @route   PATCH /api/announcements/:id
+ * @desc    Update announcement
+ * @access  Admin or own sender
+ */
+router.patch(
+  "/:id",
+  requirePermission("announcements", "edit"),
+  async (req, res, next) => {
+    try {
+      const { title, date, senderName, targetAudience, societyId } = req.body;
+      const message = req.body.message || req.body.content;
 
-    const populated = await Announcement.findById(announcement._id).populate(
-      "societyId",
-      "name shortName",
-    );
+      const announcement = await Announcement.findById(req.params.id);
 
-    res.json({
-      success: true,
-      data: populated,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+      if (!announcement) {
+        return res.status(404).json({
+          success: false,
+          message: "Announcement not found",
+        });
+      }
+
+      // Office bearers can only update their own announcements
+      if (req.user.role === "OFFICE_BEARER") {
+        if (announcement.senderName !== req.user.name) {
+          return res.status(403).json({
+            success: false,
+            message: "You can only update your own announcements",
+          });
+        }
+      }
+
+      // Update fields if provided
+      if (title !== undefined) announcement.title = title;
+      if (message !== undefined) announcement.message = message;
+      if (date !== undefined) announcement.date = date;
+      if (senderName !== undefined) announcement.senderName = senderName;
+      if (targetAudience !== undefined) {
+        if (!["ALL", "LEADERSHIP", "SOCIETY"].includes(targetAudience)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid target audience",
+          });
+        }
+        announcement.targetAudience = targetAudience;
+      }
+      if (societyId !== undefined) {
+        announcement.societyId =
+          targetAudience === "SOCIETY" ? societyId : null;
+      }
+
+      await announcement.save();
+
+      const populated = await Announcement.findById(announcement._id).populate(
+        "societyId",
+        "name shortName",
+      );
+
+      res.json({
+        success: true,
+        data: populated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 module.exports = router;
