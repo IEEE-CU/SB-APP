@@ -30,10 +30,10 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(data.email, data.password);
-      toast.success("Welcome back!");
-      navigate("/dashboard");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Login failed";
+      toast.success('Welcome back!');
+      navigate('/dashboard');
+    } catch (err: any) {
+      const message = err.response?.data?.error?.message || err.message || 'Login failed';
       toast.error(message);
     } finally {
       setIsLoading(false);

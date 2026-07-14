@@ -34,7 +34,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     try {
       const res = await authService.login(email, password);
-      const { token, user } = res.data.data;
+      const payload = res.data.data || res.data;
+      const { token, user } = payload;
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
       set({ token, user: user as User, isAuthenticated: true });
@@ -48,7 +49,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (name, email, password) => {
     try {
       const res = await authService.register(name, email, password);
-      const { token, user } = res.data.data;
+      const payload = res.data.data || res.data;
+      const { token, user } = payload;
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
       set({ token, user: user as User, isAuthenticated: true });
@@ -69,7 +71,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   fetchPermissions: async () => {
     try {
       const res = await api.get("/user/permissions");
-      const permissions = res.data.data.permissions || [];
+      const payload = res.data.data || res.data;
+      const permissions = payload.permissions || [];
       localStorage.setItem("permissions", JSON.stringify(permissions));
       set({ permissions });
     } catch {
