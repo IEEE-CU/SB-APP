@@ -21,11 +21,12 @@ export const channelsService = {
   getChannelMessages: (channelId: string) =>
     api.get<ApiResponse<Message[]>>(`/channels/${channelId}/messages`),
 
-  sendChannelMessage: (channelId: string, content: string, parentId?: string, attachments?: string[]) =>
+  sendChannelMessage: (channelId: string, content: string, parentId?: string, attachments?: string[], poll?: any) =>
     api.post<ApiResponse<Message>>(`/channels/${channelId}/messages`, {
       content,
       parentId,
       attachments,
+      poll,
     }),
 
   addReaction: (messageId: string, emoji: string) =>
@@ -39,4 +40,7 @@ export const channelsService = {
 
   removeMember: (channelId: string, userId: string) =>
     api.delete<ApiResponse<Channel>>(`/channels/${channelId}/members`, { data: { userId } }),
+
+  castVote: (messageId: string, optionIndex: number) =>
+    api.post<ApiResponse<Message>>(`/channels/messages/${messageId}/poll/vote`, { optionIndex }),
 };

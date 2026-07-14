@@ -62,6 +62,15 @@ const messageSchema = new mongoose.Schema(
       date: { type: Date },
       time: { type: String },
     },
+    poll: {
+      question: { type: String, default: null },
+      options: [
+        {
+          text: { type: String, required: true },
+          votes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+        },
+      ],
+    },
   },
   {
     timestamps: true,

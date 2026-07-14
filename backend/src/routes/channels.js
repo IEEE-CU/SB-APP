@@ -51,7 +51,7 @@ router.get("/:id", async (req, res, next) => {
  */
 router.post("/", async (req, res, next) => {
   try {
-    const { name, societyId, icon, type } = req.body;
+    const { name, societyId, icon, type, categoryName } = req.body;
     const targetSocietyId = societyId || req.user.societyId?._id || req.user.societyId;
 
     if (!name) {
@@ -65,6 +65,7 @@ router.post("/", async (req, res, next) => {
       name,
       societyId: targetSocietyId,
       icon,
+      categoryName: categoryName || "text channels",
       type: type || "chat",
     });
 
@@ -81,7 +82,7 @@ router.post("/", async (req, res, next) => {
  */
 router.put("/:id", async (req, res, next) => {
   try {
-    const { name, icon, type } = req.body;
+    const { name, icon, type, categoryName } = req.body;
     const channel = await Channel.findById(req.params.id);
     if (!channel) {
       return res.status(404).json({ success: false, message: "Channel not found" });
@@ -89,6 +90,7 @@ router.put("/:id", async (req, res, next) => {
 
     if (name !== undefined) channel.name = name;
     if (icon !== undefined) channel.icon = icon;
+    if (categoryName !== undefined) channel.categoryName = categoryName;
     if (type !== undefined) channel.type = type;
 
     await channel.save();
@@ -157,24 +159,27 @@ router.get("/:id/messages", async (req, res, next) => {
  */
 router.post("/:id/messages", async (req, res, next) => {
   try {
-    const { body, plainText, imageUrl, calendarEvent } = req.body;
+    const { body, content, plainText, imageUrl, attachments, calendarEvent, poll, parentId, parentMessageId } = req.body;
     const channel = await Channel.findById(req.params.id);
     if (!channel) {
       return res.status(404).json({ success: false, message: "Channel not found" });
     }
 
-    if (!body) {
-      return res.status(400).json({ success: false, message: "Message body is required" });
+    const messageContent = body || content;
+    if (!messageContent) {
+      return res.status(400).json({ success: false, message: "Message content is required" });
     }
 
     const message = await Message.create({
-      body,
-      plainText: plainText || body,
-      imageUrl,
+      body: messageContent,
+      plainText: plainText || messageContent,
+      imageUrl: imageUrl || (attachments && attachments[0]) || null,
       authorId: req.user._id,
       societyId: channel.societyId,
       channelId: channel._id,
       calendarEvent,
+      poll,
+      parentMessageId: parentMessageId || parentId || null,
     });
 
     const populated = await Message.findById(message._id).populate("authorId", "name email");
@@ -323,6 +328,61 @@ router.post("/messages/:messageId/reactions", async (req, res, next) => {
     }
 
     res.json({ success: true, data: allReactions });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   POST /api/channels/messages/:messageId/poll/vote
+ * @desc    Toggle user vote on a poll option
+ * @access  Private
+ */
+router.post("/messages/:messageId/poll/vote", async (req, res, next) => {
+  try {
+    const { optionIndex } = req.body;
+    const message = await Message.findById(req.params.messageId);
+    if (!message || !message.poll || !message.poll.question) {
+      return res.status(404).json({ success: false, message: "Poll message not found" });
+    }
+
+    if (optionIndex === undefined || optionIndex < 0 || optionIndex >= message.poll.options.length) {
+      return res.status(400).json({ success: false, message: "Invalid option index" });
+    }
+
+    const userId = req.user._id;
+    const option = message.poll.options[optionIndex];
+
+    const userVoteIdx = option.votes.findIndex((v) => v.toString() === userId.toString());
+    if (userVoteIdx > -1) {
+      // User already voted for this option, remove vote
+      option.votes.splice(userVoteIdx, 1);
+    } else {
+      // Add vote (and optionally remove their vote from other options if single-choice style)
+      // Here we allow multi-option selection like standard Discord polls. To make it single-choice:
+      message.poll.options.forEach((opt) => {
+        const idx = opt.votes.findIndex((v) => v.toString() === userId.toString());
+        if (idx > -1) opt.votes.splice(idx, 1);
+      });
+      option.votes.push(userId);
+    }
+
+    await message.save();
+
+    const populated = await Message.findById(message._id).populate("authorId", "name email");
+    const reactions = await Reaction.find({ messageId: message._id }).populate("userId", "name email");
+    const updatedMessage = {
+      ...populated.toJSON(),
+      reactions,
+    };
+
+    const io = req.app.get("io");
+    if (io) {
+      const room = message.channelId ? `channel_${message.channelId}` : `conversation_${message.conversationId}`;
+      io.to(room).emit("message:poll:update", updatedMessage);
+    }
+
+    res.json({ success: true, data: updatedMessage });
   } catch (error) {
     next(error);
   }

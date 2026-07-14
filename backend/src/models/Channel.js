@@ -20,6 +20,12 @@ const channelSchema = new mongoose.Schema(
       type: String,
       default: "💬",
     },
+    categoryName: {
+      type: String,
+      default: "text channels",
+      trim: true,
+      lowercase: true,
+    },
     type: {
       type: String,
       enum: ["chat", "board"],

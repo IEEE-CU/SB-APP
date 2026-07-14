@@ -39,8 +39,14 @@ export default function CommunityPage() {
   const [newChannelName, setNewChannelName] = useState('');
   const [newChannelDesc, setNewChannelDesc] = useState('');
   const [newChannelPrivate, setNewChannelPrivate] = useState(false);
+  const [newChannelCategory, setNewChannelCategory] = useState('');
 
   const [showCreateDm, setShowCreateDm] = useState(false);
+
+  // Poll creation states
+  const [showCreatePoll, setShowCreatePoll] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState(['', '']);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -138,9 +144,16 @@ export default function CommunityPage() {
       });
     };
 
+    const handlePollUpdate = (updatedMsg: Message) => {
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === updatedMsg.id ? updatedMsg : msg))
+      );
+    };
+
     socket.on('message:new', handleNewMessage);
     socket.on('message:reply', handleNewMessage);
     socket.on('message:reactions', handleReactionUpdate);
+    socket.on('message:poll:update', handlePollUpdate);
     socket.on('typing-start', handleTypingStart);
     socket.on('typing-stop', handleTypingStop);
 
@@ -154,6 +167,7 @@ export default function CommunityPage() {
       socket.off('message:new', handleNewMessage);
       socket.off('message:reply', handleNewMessage);
       socket.off('message:reactions', handleReactionUpdate);
+      socket.off('message:poll:update', handlePollUpdate);
       socket.off('typing-start', handleTypingStart);
       socket.off('typing-stop', handleTypingStop);
     };
@@ -275,17 +289,68 @@ export default function CommunityPage() {
         name: newChannelName.trim().toLowerCase().replace(/\s+/g, '-'),
         description: newChannelDesc.trim(),
         isPrivate: newChannelPrivate,
-      });
+        societyId: user?.societyId || undefined,
+        categoryName: newChannelCategory.trim() || undefined,
+      } as any);
       setChannels((prev) => [...prev, res.data.data]);
       setSelectedChannel(res.data.data);
       setSelectedConversation(null);
       setShowCreateChannel(false);
       setNewChannelName('');
       setNewChannelDesc('');
+      setNewChannelCategory('');
       setNewChannelPrivate(false);
       toast.success('Channel created!');
     } catch {
       toast.error('Failed to create channel');
+    }
+  };
+
+  const handleCastVote = async (messageId: string, optionIndex: number) => {
+    try {
+      const res = await channelsService.castVote(messageId, optionIndex);
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? res.data.data : msg))
+      );
+    } catch {
+      toast.error('Failed to cast vote');
+    }
+  };
+
+  const handleCreatePoll = async () => {
+    if (!pollQuestion.trim() || pollOptions.filter((o) => o.trim()).length < 2) {
+      toast.error('Question and at least 2 options are required');
+      return;
+    }
+    setSending(true);
+    try {
+      const pollData = {
+        question: pollQuestion.trim(),
+        options: pollOptions.filter((o) => o.trim()).map((text) => ({ text, votes: [] })),
+      };
+
+      let res;
+      if (selectedChannel) {
+        res = await channelsService.sendChannelMessage(
+          selectedChannel.id,
+          `📊 Poll: ${pollQuestion}`,
+          undefined,
+          undefined,
+          pollData
+        );
+      }
+
+      if (res?.data.data) {
+        setMessages((prev) => [...prev, res.data.data]);
+      }
+      setShowCreatePoll(false);
+      setPollQuestion('');
+      setPollOptions(['', '']);
+      toast.success('Poll created!');
+    } catch {
+      toast.error('Failed to create poll');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -343,23 +408,39 @@ export default function CommunityPage() {
                   <Plus size={16} />
                 </button>
               </div>
-              <div className="space-y-0.5">
-                {channels.map((chan) => (
-                  <button
-                    key={chan.id}
-                    onClick={() => {
-                      setSelectedChannel(chan);
-                      setSelectedConversation(null);
-                    }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-body-sm transition-all duration-200 ${
-                      selectedChannel?.id === chan.id
-                        ? 'bg-primary/10 text-primary font-semibold'
-                        : 'text-ink-secondary hover:bg-canvas-soft hover:text-ink'
-                    }`}
-                  >
-                    {chan.isPrivate ? <Lock size={15} /> : <Hash size={15} />}
-                    <span className="truncate">{chan.name}</span>
-                  </button>
+              <div className="space-y-4">
+                {Object.entries(
+                  channels.reduce((acc, chan) => {
+                    const cat = (chan as any).categoryName || 'text channels';
+                    if (!acc[cat]) acc[cat] = [];
+                    acc[cat].push(chan);
+                    return acc;
+                  }, {} as Record<string, Channel[]>)
+                ).map(([category, chans]) => (
+                  <div key={category} className="space-y-1">
+                    <p className="text-[10px] font-bold text-ink-muted uppercase tracking-wider px-2 mb-1">
+                      {category}
+                    </p>
+                    <div className="space-y-0.5">
+                      {chans.map((chan) => (
+                        <button
+                          key={chan.id}
+                          onClick={() => {
+                            setSelectedChannel(chan);
+                            setSelectedConversation(null);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-body-sm transition-all duration-150 ${
+                            selectedChannel?.id === chan.id
+                              ? 'bg-primary/10 text-primary font-semibold'
+                              : 'text-ink-secondary hover:bg-canvas-soft hover:text-ink'
+                          }`}
+                        >
+                          {chan.isPrivate ? <Lock size={14} /> : <Hash size={14} />}
+                          <span className="truncate">{chan.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -468,6 +549,38 @@ export default function CommunityPage() {
                         isMe ? 'bg-primary text-on-primary rounded-tr-none' : 'bg-canvas-soft text-ink rounded-tl-none'
                       }`}>
                         <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.content) }} />
+                        
+                        {/* Interactive Poll Display */}
+                        {(msg as any).poll && (msg as any).poll.question && (
+                          <div className="mt-3 p-3 bg-surface text-ink rounded-xl border border-hairline/60 space-y-2">
+                            <p className="font-semibold text-body-sm">📊 {(msg as any).poll.question}</p>
+                            <div className="space-y-1.5">
+                              {(msg as any).poll.options.map((opt: any, optIdx: number) => {
+                                const totalVotes = (msg as any).poll.options.reduce((sum: number, o: any) => sum + o.votes.length, 0);
+                                const percent = totalVotes > 0 ? Math.round((opt.votes.length / totalVotes) * 100) : 0;
+                                const hasVoted = opt.votes.includes(user?.id || '');
+                                return (
+                                  <button
+                                    key={optIdx}
+                                    onClick={() => handleCastVote(msg.id, optIdx)}
+                                    className={`w-full relative overflow-hidden text-left p-2 rounded-lg border transition-all text-caption flex items-center justify-between ${
+                                      hasVoted ? 'border-primary/50 text-primary font-semibold' : 'border-hairline hover:bg-canvas-soft text-ink-secondary'
+                                    }`}
+                                  >
+                                    <div
+                                      className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ${
+                                        hasVoted ? 'bg-primary/15' : 'bg-canvas-soft'
+                                      }`}
+                                      style={{ width: `${percent}%`, zIndex: 0 }}
+                                    />
+                                    <span className="relative z-10">{opt.text}</span>
+                                    <span className="relative z-10 text-[11px]">{percent}% ({opt.votes.length})</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Hover action toolbar */}
@@ -539,7 +652,16 @@ export default function CommunityPage() {
 
             {/* Input Footer */}
             <div className="p-4 border-t border-hairline/60 bg-surface">
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                {selectedChannel && (
+                  <button
+                    onClick={() => setShowCreatePoll(true)}
+                    className="p-3 bg-canvas-soft hover:bg-canvas rounded-xl text-ink-secondary hover:text-primary transition-all text-body-lg"
+                    title="Create Poll"
+                  >
+                    📊
+                  </button>
+                )}
                 <input
                   type="text"
                   value={newMessage}
@@ -584,6 +706,16 @@ export default function CommunityPage() {
                 />
               </div>
               <div>
+                <label className="text-caption font-semibold text-ink-secondary block mb-1">Category (e.g. text channels, projects)</label>
+                <input
+                  type="text"
+                  value={newChannelCategory}
+                  onChange={(e) => setNewChannelCategory(e.target.value)}
+                  placeholder="e.g. text channels"
+                  className="w-full px-3 py-2 bg-surface border border-hairline rounded-lg text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+              <div>
                 <label className="text-caption font-semibold text-ink-secondary block mb-1">Description</label>
                 <textarea
                   value={newChannelDesc}
@@ -607,6 +739,55 @@ export default function CommunityPage() {
             <div className="flex gap-2 justify-end">
               <Button variant="secondary" onClick={() => setShowCreateChannel(false)}>Cancel</Button>
               <Button onClick={handleCreateChannel} disabled={!newChannelName.trim()}>Create</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE POLL MODAL */}
+      {showCreatePoll && (
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface rounded-2xl border border-hairline shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-body-lg font-bold text-ink">Create a Poll</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-caption font-semibold text-ink-secondary block mb-1">Poll Question</label>
+                <input
+                  type="text"
+                  value={pollQuestion}
+                  onChange={(e) => setPollQuestion(e.target.value)}
+                  placeholder="What is your question?"
+                  className="w-full px-3 py-2 bg-surface border border-hairline rounded-lg text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-caption font-semibold text-ink-secondary block">Poll Options</label>
+                {pollOptions.map((opt, idx) => (
+                  <input
+                    key={idx}
+                    type="text"
+                    value={opt}
+                    onChange={(e) => {
+                      const nextOpts = [...pollOptions];
+                      nextOpts[idx] = e.target.value;
+                      setPollOptions(nextOpts);
+                    }}
+                    placeholder={`Option ${idx + 1}`}
+                    className="w-full px-3 py-2 bg-surface border border-hairline rounded-lg text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPollOptions([...pollOptions, ''])}
+                  className="text-caption text-primary font-semibold hover:underline"
+                >
+                  + Add Option
+                </button>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" onClick={() => setShowCreatePoll(false)}>Cancel</Button>
+              <Button onClick={handleCreatePoll} disabled={!pollQuestion.trim() || pollOptions.filter(o => o.trim()).length < 2}>Create Poll</Button>
             </div>
           </div>
         </div>
