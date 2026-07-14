@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useThemeStore } from "@/store/themeStore";
 import { Sun, Moon } from "lucide-react";
@@ -28,10 +29,43 @@ export default function AuthLayout() {
             Financial management for IEEE societies
           </p>
         </div>
-        <div className="bg-surface/80 backdrop-blur-xl border border-hairline/50 rounded-2xl shadow-soft-2 p-8">
+        <TiltCard>
           <Outlet />
-        </div>
+        </TiltCard>
       </div>
+    </div>
+  );
+}
+
+function TiltCard({ children }: { children: React.ReactNode }) {
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget;
+    const box = card.getBoundingClientRect();
+    const x = e.clientX - box.left - box.width / 2;
+    const y = e.clientY - box.top - box.height / 2;
+    const rotateX = -(y / (box.height / 2)) * 10;
+    const rotateY = (x / (box.width / 2)) * 10;
+    setTilt({ x: rotateX, y: rotateY });
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+  };
+
+  return (
+    <div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="bg-surface/80 backdrop-blur-xl border border-hairline/50 rounded-2xl shadow-soft-2 p-8"
+      style={{
+        transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+        transition: "transform 0.1s ease-out",
+        transformStyle: "preserve-3d",
+      }}
+    >
+      <div style={{ transform: "translateZ(20px)" }}>{children}</div>
     </div>
   );
 }

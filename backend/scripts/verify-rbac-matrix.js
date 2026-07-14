@@ -38,7 +38,7 @@ async function login(email, password) {
         throw new Error(`Login failed for ${email}: ${res.status}`);
     }
     const body = await res.json();
-    return body.token;
+    return body.data?.token;
 }
 
 async function request(method, path, token) {

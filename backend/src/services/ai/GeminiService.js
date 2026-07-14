@@ -1,4 +1,4 @@
-const geminiConfig = require('../../config/gemini');
+const geminiConfig = require("../../config/gemini");
 
 // Placeholder: implement Gemini request orchestration here.
 class GeminiService {
@@ -7,11 +7,11 @@ class GeminiService {
   }
 
   async analyze() {
-    throw new Error('TODO: implement Gemini analysis service');
+    throw new Error("TODO: implement Gemini analysis service");
   }
 
   async summarize() {
-    throw new Error('TODO: implement Gemini summarization service');
+    throw new Error("TODO: implement Gemini summarization service");
   }
 }
 

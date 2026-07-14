@@ -15,22 +15,27 @@ const dashboardRoutes = require("./dashboard");
 const projectReportRoutes = require("./projectReports");
 const institutionRoutes = require("./institution");
 const storageRoutes = require("./storage");
+const communityRoutes = require("./community");
+const rbacRoutes = require("./rbac");
 
 // Mount routes
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/user", require("./user"));
+router.use("/", rbacRoutes);
 router.use("/societies", societyRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/events", eventRoutes);
 router.use("/projects", projectRoutes);
 router.use("/project-reports", projectReportRoutes);
+router.use("/reports", projectReportRoutes);
 router.use("/calendar", calendarRoutes);
 router.use("/announcements", announcementRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/institution", institutionRoutes);
 router.use('/community', require('./community'));
 router.use("/storage", storageRoutes);
+router.use("/community", communityRoutes);
 
 // Health check - reflects real DB connectivity so a load balancer / orchestrator
 // only routes traffic to instances that can actually serve requests.

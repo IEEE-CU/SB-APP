@@ -1,7 +1,7 @@
 echo "Running Husky pre-commit checks..."
 
 # 1. Basic Local Secret Check
-STAGED_SECRETS=$(git diff --cached --name-only | grep -E '\.env(\..+)?$|\.pem$|\.key$|\.p12$|\.pfx$|id_rsa$' || true)
+STAGED_SECRETS=$(git diff --cached --name-only | grep -E '\.env(\..+)?$|\.pem$|\.key$|\.p12$|\.pfx$|id_rsa$' | grep -v '\.env\.example' || true)
 if [ -n "$STAGED_SECRETS" ]; then
   echo "❌ ERROR: You are trying to commit potential secrets!"
   echo "The following files must be in .gitignore and never committed:"

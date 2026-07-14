@@ -7,6 +7,8 @@ interface AuthState {
   token: string | null;
   user: User | null;
   permissions: Permission[];
+  userRole: string;
+  userScope: { type: string; societyId: string | null } | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
@@ -29,6 +31,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   token: localStorage.getItem("token"),
   user: safeParseJSON<User | null>("user", null),
   permissions: safeParseJSON<Permission[]>("permissions", []),
+  userRole: localStorage.getItem("userRole") || "",
+  userScope: safeParseJSON<{ type: string; societyId: string | null } | null>(
+    "userScope",
+    null,
+  ),
   isAuthenticated: !!localStorage.getItem("token"),
 
   login: async (email, password) => {
@@ -65,16 +72,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("permissions");
-    set({ token: null, user: null, permissions: [], isAuthenticated: false });
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userScope");
+    set({
+      token: null,
+      user: null,
+      permissions: [],
+      userRole: "",
+      userScope: null,
+      isAuthenticated: false,
+    });
   },
 
   fetchPermissions: async () => {
     try {
       const res = await api.get("/user/permissions");
       const payload = res.data.data || res.data;
-      const permissions = payload.permissions || [];
-      localStorage.setItem("permissions", JSON.stringify(permissions));
-      set({ permissions });
+      const {
+        permissions: perms = [],
+        role = "",
+        scope = null,
+      } = payload;
+      localStorage.setItem("permissions", JSON.stringify(perms));
+      localStorage.setItem("userRole", role);
+      localStorage.setItem("userScope", JSON.stringify(scope));
+      set({ permissions: perms, userRole: role, userScope: scope });
     } catch {
       // Keep existing permissions if fetch fails (e.g. offline) unless unauthenticated
     }
