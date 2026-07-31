@@ -131,11 +131,13 @@ export interface UnifiedCalendarEvent {
   title: string;
   description?: string;
   date: string; // ISO string format
-  endDate?: string;
-  location?: string;
-  sourceType: "event" | "deadline" | "society" | "message_schedule";
-  referenceId?: string; // Link to the original entity (Event, Project, etc.)
+  time?: string;
+  venue?: string;
+  source?: "CalendarEvent" | "Event" | "Message" | "BoardCard";
+  sourceType?: string;
   status?: string;
+  priority?: string;
+  society?: { id: string; name: string; shortName?: string };
   metadata?: Record<string, any>;
 }
 

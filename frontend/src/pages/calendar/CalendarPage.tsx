@@ -19,10 +19,10 @@ export default function CalendarPage() {
   ]);
 
   const sourceMetadata: Record<string, { label: string; color: string; bgColor: string }> = {
-    event: { label: 'Event', color: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40' },
-    deadline: { label: 'Deadline', color: 'text-rose-700 dark:text-rose-400', bgColor: 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40' },
-    society: { label: 'Society', color: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40' },
-    message_schedule: { label: 'Scheduled', color: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/40' },
+    CalendarEvent: { label: 'Event', color: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40' },
+    BoardCard: { label: 'Kanban Card', color: 'text-purple-700 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/40' },
+    Event: { label: 'Society', color: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40' },
+    Message: { label: 'Chat Schedule', color: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/40' },
   };
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function CalendarPage() {
         const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
         const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
         
-        const res = await calendarService.getUnifiedEvents(startOfMonth, endOfMonth, selectedSources);
+        const res = await calendarService.getUnifiedEvents(startOfMonth, endOfMonth);
         setEvents(res.data.data || []);
       } catch (err) {
         toast.error('Failed to load unified calendar events');
@@ -41,7 +41,7 @@ export default function CalendarPage() {
       }
     };
     fetchEvents();
-  }, [currentDate, selectedSources]);
+  }, [currentDate]);
 
   // Calendar Math Helpers
   const year = currentDate.getFullYear();
@@ -209,19 +209,26 @@ export default function CalendarPage() {
 
                   {/* Cell Events list */}
                   <div className="flex-1 space-y-1 overflow-y-auto">
-                    {cellEvents.map((ev) => {
-                      const meta = sourceMetadata[ev.sourceType] || { label: 'Event', color: 'text-ink', bgColor: 'bg-canvas' };
+                    {cellEvents.map((evt) => {
+                      const sourceKey = evt.source || "CalendarEvent";
+                      const meta = sourceMetadata[sourceKey] || sourceMetadata.CalendarEvent;
                       return (
                         <div
-                          key={ev.id}
-                          className={`text-[10px] p-1.5 rounded border leading-tight ${meta.bgColor} ${meta.color} font-medium flex flex-col gap-0.5 cursor-pointer hover:shadow-soft-1 transition-shadow`}
-                          title={ev.description}
+                          key={evt.id}
+                          className={`p-2 rounded-lg border text-left text-caption space-y-1 ${meta.bgColor}`}
                         >
-                          <span className="font-bold truncate">{ev.title}</span>
-                          {ev.location && (
-                            <span className="text-[9px] opacity-80 flex items-center gap-0.5">
-                              <MapPin size={8} /> {ev.location}
-                            </span>
+                          <div className="flex items-center justify-between font-semibold">
+                            <span className={`truncate ${meta.color}`}>{evt.title}</span>
+                            <span className="text-[10px] text-ink-muted">{evt.time || 'All Day'}</span>
+                          </div>
+                          {evt.description && (
+                            <p className="text-[11px] text-ink-secondary line-clamp-2">{evt.description}</p>
+                          )}
+                          {evt.venue && (
+                            <div className="flex items-center gap-1 text-[10px] text-ink-muted">
+                              <MapPin size={10} />
+                              <span className="truncate">{evt.venue}</span>
+                            </div>
                           )}
                         </div>
                       );

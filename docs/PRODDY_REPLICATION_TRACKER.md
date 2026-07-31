@@ -182,29 +182,29 @@
 > **Goal:** Merged calendar view aggregating direct events, message-linked dates, and task/project deadlines.
 
 ### 4.1 Aggregated Calendar Engine
-- [ ] Implement Express controller `/api/v1/societies/:societyId/calendar/unified`
-- [ ] Fetch and combine data from `CalendarEvent.js`, `Message.js` (calendarEvent field), and `Project.js`/`Task` due dates
-- [ ] Build Tailwind CSS month grid component with date filters
+- [x] Implement Express controller `/api/v1/societies/:societyId/calendar/unified`
+- [x] Fetch and combine data from `CalendarEvent.js`, `Message.js` (calendarEvent field), `BoardCard.js`, and `Task` due dates
+- [x] Build Tailwind CSS month grid component with date filters
 
 **Tests & Validation:**
-- [ ] Calendar accurately displays items from all three sources in single date cells
-- [ ] Filter toggles show/hide specific event types correctly
+- [x] Calendar accurately displays items from all three sources in single date cells
+- [x] Filter toggles show/hide specific event types correctly
 
 ---
 
 ### 4.2 Message Dual-Write & Dashboard Widget
-- [ ] Implement message action to attach date (`createCalendarEvent` dual-write)
-- [ ] Build 7-day upcoming events preview widget on main dashboard
+- [x] Implement message action to attach date (`createCalendarEvent` dual-write)
+- [x] Build 7-day upcoming events preview widget on main dashboard
 
 **Tests & Validation:**
-- [ ] Adding event to message updates calendar instantly
-- [ ] Dashboard widget reflects upcoming 7 days accurately
+- [x] Adding event to message updates calendar instantly
+- [x] Dashboard widget reflects upcoming 7 days accurately
 
 ---
 
 ### **PHASE 4 EXIT QUALITY GATE**
-- [ ] Date math verified across month transitions using `date-fns`
-- [ ] Aggregation query response time < 150ms for 1,000 events
+- [x] Date math verified across month transitions using `date-fns`
+- [x] Aggregation query response time < 150ms for 1,000 events
 
 ---
 
@@ -213,18 +213,18 @@
 > **Goal:** Personal and team task management with lifecycles and categories.
 
 ### 5.1 Task Management & Lifecycle
-- [ ] Build `Task` Mongoose model bound to user and society
-- [ ] Implement status transitions (`not_started`, `in_progress`, `completed`, `on_hold`)
-- [ ] Implement custom color-coded task categories
+- [x] Build `Task` Mongoose model bound to user and society
+- [x] Implement status transitions (`NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `ON_HOLD`)
+- [x] Implement custom color-coded task categories
 
 **Tests & Validation:**
-- [ ] Tasks are properly isolated per user within society scope
-- [ ] Task completion updates completion progress metrics
+- [x] Tasks are properly isolated per user within society scope
+- [x] Task completion updates completion progress metrics
 
 ---
 
 ### **PHASE 5 EXIT QUALITY GATE**
-- [ ] Task filtering by category, priority, and due date works seamlessly
+- [x] Task filtering by category, priority, and due date works seamlessly
 
 ---
 

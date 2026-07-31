@@ -45,13 +45,24 @@ router.get("/unified", async (req, res, next) => {
       messageFilter.societyId = societyId;
     }
 
-    // Fetch in parallel
-    const [calendarEvents, events, messages] = await Promise.all([
+    const BoardCard = require("../models/BoardCard");
+    const Task = require("../models/Task");
+    const boardCardFilter = { dueDate: dateFilter };
+    const taskFilter = { dueDate: dateFilter, userId: req.user._id };
+    if (societyId) {
+      boardCardFilter.societyId = societyId;
+      taskFilter.societyId = societyId;
+    }
+
+    // Fetch in parallel across all sources
+    const [calendarEvents, events, messages, boardCards, userTasks] = await Promise.all([
       CalendarEvent.find(calFilter).populate("societyId", "name shortName"),
       Event.find(eventFilter).populate("societyId", "name shortName"),
       Message.find(messageFilter)
         .populate("societyId", "name shortName")
         .populate("authorId", "name email"),
+      BoardCard.find(boardCardFilter).populate("assignees", "name email"),
+      Task.find(taskFilter),
     ]);
 
     // Format and unify results
@@ -90,6 +101,29 @@ router.get("/unified", async (req, res, next) => {
         conversationId: item.conversationId,
         author: item.authorId,
         society: item.societyId,
+      })),
+      ...boardCards.map((item) => ({
+        id: item._id || item.id,
+        source: "BoardCard",
+        title: item.title,
+        date: item.dueDate,
+        time: "End of day",
+        venue: `Kanban Board Card (${item.status})`,
+        description: item.description,
+        priority: item.priority,
+        status: item.status,
+        channelId: item.channelId,
+      })),
+      ...userTasks.map((item) => ({
+        id: item._id || item.id,
+        source: "Task",
+        title: item.title,
+        date: item.dueDate,
+        time: "Task Due",
+        venue: `Personal Task (${item.categoryName})`,
+        description: item.description,
+        priority: item.priority,
+        status: item.status,
       })),
     ];
 

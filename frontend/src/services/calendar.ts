@@ -3,12 +3,12 @@ import type { ApiResponse } from '@/types/api';
 import type { UnifiedCalendarEvent } from '@/types/models';
 
 export const calendarService = {
-  getUnifiedEvents: (startDate?: string, endDate?: string, sourceTypes?: string[]) =>
+  getUnifiedEvents: (start?: string, end?: string, societyId?: string) =>
     api.get<ApiResponse<UnifiedCalendarEvent[]>>('/calendar/unified', {
       params: {
-        startDate,
-        endDate,
-        sourceTypes: sourceTypes?.join(','),
+        start,
+        end,
+        societyId,
       },
     }),
   
