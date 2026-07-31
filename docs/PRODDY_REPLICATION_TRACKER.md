@@ -64,29 +64,29 @@
 
 ### 1.2 Society Navigation & Shell Layout
 - [x] Render society switcher in `src/components/layout/`
-- [x] Render collapsible channels menu for active society
+- [ ] Render collapsible channels menu for active society
 - [x] Implement theme switcher utilizing existing `themeStore.ts` (Dark/Light mode)
 
 **Tests & Validation:**
 - [x] Switching active society updates visible channels and permissions immediately
-- [x] Navigation shell responds dynamically to mobile and desktop screens
+- [ ] Navigation shell responds dynamically to mobile and desktop screens
 
 ---
 
 ### 1.3 Role-Based Access Control (RBAC) Gating
-- [x] Bind backend `UserRole.js` and `RolePermission.js` to frontend permission gates
-- [x] Wrap sensitive UI elements (create channel, delete project) in `PermissionGate` component
+- [ ] Bind backend `UserRole.js` and `RolePermission.js` to frontend permission gates
+- [ ] Wrap sensitive UI elements (create channel, delete project) in `PermissionGate` component
 
 **Tests & Validation:**
-- [x] Unauthorized roles are hidden from administrative buttons
-- [x] Direct URL navigation to admin pages blocks non-authorized users
+- [ ] Unauthorized roles are hidden from administrative buttons
+- [ ] Direct URL navigation to admin pages blocks non-authorized users
 
 ---
 
 ### **PHASE 1 EXIT QUALITY GATE**
-- [x] Clean install & dev boot passes (`npm run dev`)
-- [x] All Phase 1 auth & RBAC integration tests pass
-- [x] Zero circular dependencies or broken imports
+- [ ] Clean install & dev boot passes (`npm run dev`)
+- [ ] All Phase 1 auth & RBAC integration tests pass
+- [ ] Zero circular dependencies or broken imports
 
 ---
 
