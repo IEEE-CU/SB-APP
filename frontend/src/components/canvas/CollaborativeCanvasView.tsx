@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { getSocket } from "@/lib/socket";
 import {
   Pencil,
-  Eraser,
   Square,
   Circle,
   ArrowRight,
