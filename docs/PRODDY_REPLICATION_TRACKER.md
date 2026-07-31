@@ -33,8 +33,8 @@
 
 | Phase | Feature Module | Target Scope | Tests | Quality Gate | Status |
 |:---:|:---|:---|:---:|:---:|:---:|
-| **Phase 1** | **Platform Foundation & Society RBAC** | Auth, Society setup, Mongoose schemas, Layout shell | 3 / 5 | Pending | `[~]` |
-| **Phase 2** | **Channels & Real-Time Messaging** | Channels, Messages, Threads, Socket.io rooms, DMs | 0 / 8 | Pending | `[ ]` |
+| **Phase 1** | **Platform Foundation & Society RBAC** | Auth, Society setup, Mongoose schemas, Layout shell | 5 / 5 | Passed | `[x]` |
+| **Phase 2** | **Channels & Real-Time Messaging** | Channels, Messages, Threads, Socket.io rooms, DMs | 8 / 8 | Passed | `[x]` |
 | **Phase 3** | **Board / Kanban & Projects** | Dual System (Lists+Cards & Statuses+Issues), Drag & Drop | 0 / 7 | Pending | `[ ]` |
 | **Phase 4** | **3-Source Unified Calendar** | Aggregated query merging Events, Messages, Tasks/Cards | 0 / 6 | Pending | `[ ]` |
 | **Phase 5** | **Tasks & Categories** | Scoped user tasks, Categories, Priority lifecycles | 0 / 5 | Pending | `[ ]` |
@@ -116,21 +116,32 @@
 
 ---
 
-### 2.3 Direct Messages & Emoji Reactions
-- [ ] Implement idempotent DM creation route `/api/v1/conversations/get-or-create`
-- [ ] Add emoji reaction toggle matching `Reaction.js` schema
-- [ ] Parse `@mentions` and poll options embedded in `Message.js`
+### 2.3 Direct Messaging & Emoji Reactions
+- [x] Implement pairwise DM creation and conversation lookup
+- [x] Add emoji reaction toggle matching `Reaction.js` model
+- [x] Parse `@mentions` and poll options embedded in `Message.js`
 
 **Tests & Validation:**
-- [ ] DM conversation is unique per pair of users within a society
-- [ ] Emoji reactions update live across connected sockets
+- [x] DM conversation is unique per pair of users within a society
+- [x] Emoji reactions update live across connected sockets
+
+---
+
+### 2.4 Typing & Presence Indicators
+- [x] Broadcast ephemeral `typing:start` and `typing:stop` events over Socket.io
+- [x] Render animated `TypingIndicator` component above chat input
+- [x] Derive user presence states (`online`, `idle`, `dnd`, `offline`) via `UserPresenceBadge`
+
+**Tests & Validation:**
+- [x] Typing indicator disappears automatically after inactivity
+- [x] User presence badge reflects active socket connections correctly
 
 ---
 
 ### **PHASE 2 EXIT QUALITY GATE**
-- [ ] Socket reconnection test passes (disconnecting and reconnecting restores state)
-- [ ] Paginated infinite scroll handles 500+ messages smoothly
-- [ ] Code review completed for all messaging controllers & hooks
+- [x] Socket reconnection test passes (disconnecting and reconnecting restores state)
+- [x] Paginated infinite scroll handles 500+ messages smoothly
+- [x] Code review completed for all messaging controllers & hooks
 
 ---
 

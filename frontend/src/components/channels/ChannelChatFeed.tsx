@@ -3,6 +3,8 @@ import { Message } from "@/types/models";
 import { getSocket } from "@/lib/socket";
 import { channelsService } from "@/services/channels";
 import { Send, CornerDownRight, MessageSquare } from "lucide-react";
+import EmojiReactionPicker from "@/components/messaging/EmojiReactionPicker";
+import TypingIndicator from "@/components/messaging/TypingIndicator";
 
 interface ChannelChatFeedProps {
   channelId: string;
@@ -113,6 +115,9 @@ export default function ChannelChatFeed({ channelId, channelName }: ChannelChatF
                   </div>
                   <p className="text-body-sm text-ink mt-0.5 whitespace-pre-wrap">{msg.content}</p>
 
+                  {/* Reaction Badges */}
+                  <EmojiReactionPicker messageId={msg.id} reactions={msg.reactions} />
+
                   {/* Thread reply counter button */}
                   <div className="mt-1 flex items-center gap-3">
                     <button
@@ -142,21 +147,28 @@ export default function ChannelChatFeed({ channelId, channelName }: ChannelChatF
       )}
 
       {/* Chat Input */}
-      <form onSubmit={handleSend} className="p-4 border-t border-hairline/60 bg-canvas-soft/40 flex items-center gap-3">
-        <input
-          type="text"
-          placeholder={`Message #${channelName}...`}
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 px-4 py-2.5 rounded-lg bg-surface border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
-        />
-        <button
-          type="submit"
-          disabled={!inputText.trim()}
-          className="p-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
-        >
-          <Send size={16} />
-        </button>
+      <form onSubmit={handleSend} className="p-4 border-t border-hairline/60 bg-canvas-soft/40 flex flex-col gap-1">
+        <TypingIndicator channelId={channelId} />
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder={`Message #${channelName}...`}
+            value={inputText}
+            onChange={(e) => {
+              setInputText(e.target.value);
+              const socket = getSocket();
+              socket.emit("typing:start", { channelId });
+            }}
+            className="flex-1 px-4 py-2.5 rounded-lg bg-surface border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
+          />
+          <button
+            type="submit"
+            disabled={!inputText.trim()}
+            className="p-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            <Send size={16} />
+          </button>
+        </div>
       </form>
     </div>
   );
