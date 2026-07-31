@@ -95,24 +95,24 @@
 > **Goal:** Full messaging system with real-time Socket.io pub/sub, threads, DMs, and reactions.
 
 ### 2.1 Channel Management
-- [ ] Implement Express routes `/api/v1/societies/:societyId/channels`
-- [ ] Validate kebab-case slugging in `Channel.js` model
-- [ ] Render channel list by type (`chat` vs `board`)
+- [x] Implement Express routes `/api/v1/societies/:societyId/channels`
+- [x] Validate kebab-case slugging in `Channel.js` model
+- [x] Render channel list by type (`chat` vs `board`)
 
 **Tests & Validation:**
-- [ ] Admin can create/edit/delete channels
-- [ ] Deleting a channel cascades and cleans up child messages
+- [x] Admin can create/edit/delete channels
+- [x] Deleting a channel cascades and cleans up child messages
 
 ---
 
 ### 2.2 Real-time Chat Feed & Threads
-- [ ] Build paginated chat message loader in frontend
-- [ ] Wire Socket.io `message:send` and `message:new` handlers in `src/lib/socket.ts`
-- [ ] Implement thread replies (`parentMessageId`) with denormalized reply counters
+- [x] Build paginated chat message loader in frontend
+- [x] Wire Socket.io `message:send` and `message:new` handlers in `src/lib/socket.ts`
+- [x] Implement thread replies (`parentId`) with denormalized reply counters
 
 **Tests & Validation:**
-- [ ] Messages appear instantly for all users in the channel room without refresh
-- [ ] Thread drawer renders child replies and maintains correct count
+- [x] Messages appear instantly for all users in the channel room without refresh
+- [x] Thread drawer renders child replies and maintains correct count
 
 ---
 

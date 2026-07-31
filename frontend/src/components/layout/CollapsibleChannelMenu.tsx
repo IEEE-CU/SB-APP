@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { ChevronDown, LayoutGrid, MessageSquare } from "lucide-react";
+import { ChevronDown, LayoutGrid, MessageSquare, Plus } from "lucide-react";
 import { useSocietyStore } from "@/store/societyStore";
 import api from "@/lib/api";
+import CreateChannelModal from "@/components/channels/CreateChannelModal";
 
 export interface ChannelItem {
   id: string;
@@ -18,6 +19,7 @@ export default function CollapsibleChannelMenu() {
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [isBoardOpen, setIsBoardOpen] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchChannels = async () => {
@@ -57,16 +59,23 @@ export default function CollapsibleChannelMenu() {
     <div className="flex flex-col gap-3 py-2">
       {/* Chat Channels Group */}
       <div>
-        <button
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          className="w-full flex items-center justify-between px-3 py-1 text-[11px] font-bold tracking-wider text-ink-faint uppercase hover:text-ink-secondary transition-colors"
-        >
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between px-3 py-1">
+          <button
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-ink-faint uppercase hover:text-ink-secondary transition-colors"
+          >
             <MessageSquare size={13} />
             <span>Chat Channels</span>
-          </div>
-          <ChevronDown size={12} className={`transition-transform ${isChatOpen ? "" : "-rotate-90"}`} />
-        </button>
+            <ChevronDown size={12} className={`transition-transform ${isChatOpen ? "" : "-rotate-90"}`} />
+          </button>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="p-1 rounded hover:bg-canvas-soft text-ink-muted hover:text-ink transition-colors"
+            title="Create Channel"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
 
         {isChatOpen && (
           <div className="mt-1 flex flex-col gap-0.5 pl-2">
@@ -118,6 +127,15 @@ export default function CollapsibleChannelMenu() {
           </div>
         )}
       </div>
+
+      <CreateChannelModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          // Re-trigger channel list fetch by toggling society state or refetching
+          window.dispatchEvent(new Event("channel-created"));
+        }}
+      />
     </div>
   );
 }
