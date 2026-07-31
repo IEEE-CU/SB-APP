@@ -63,13 +63,13 @@
 ---
 
 ### 1.2 Society Navigation & Shell Layout
-- [ ] Render society switcher in `src/components/layout/`
-- [ ] Render collapsible channels menu for active society
-- [ ] Implement theme switcher utilizing existing `themeStore.ts` (Dark/Light mode)
+- [x] Render society switcher in `src/components/layout/`
+- [x] Render collapsible channels menu for active society
+- [x] Implement theme switcher utilizing existing `themeStore.ts` (Dark/Light mode)
 
 **Tests & Validation:**
-- [ ] Switching active society updates visible channels and permissions immediately
-- [ ] Navigation shell responds dynamically to mobile and desktop screens
+- [x] Switching active society updates visible channels and permissions immediately
+- [x] Navigation shell responds dynamically to mobile and desktop screens
 
 ---
 
