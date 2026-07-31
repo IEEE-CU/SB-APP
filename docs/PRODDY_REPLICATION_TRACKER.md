@@ -150,30 +150,30 @@
 > **Goal:** Dual-system board (`Lists`+`Cards` & `Statuses`+`Issues`) with drag-and-drop and issue dependencies.
 
 ### 3.1 Dual-Card System & Columns
-- [ ] Connect `Project.js` models to board channels
-- [ ] Build Kanban board with custom status columns (`lists` / `statuses`)
-- [ ] Implement card edit drawer and detail modals
+- [x] Connect `Project.js` models to board channels
+- [x] Build Kanban board with custom status columns (`lists` / `statuses`)
+- [x] Implement card edit drawer and detail modals
 
 **Tests & Validation:**
-- [ ] Cards render accurately in correct status columns
-- [ ] Sub-card hierarchy renders parent-child links correctly
+- [x] Cards render accurately in correct status columns
+- [x] Sub-card hierarchy renders parent-child links correctly
 
 ---
 
 ### 3.2 Drag-and-Drop & Dependencies
-- [ ] Build drag-and-drop column/card reordering with batch order API updates
-- [ ] Implement blocked/blocking card dependencies (`issueBlocking`)
-- [ ] Post status update announcements automatically to connected chat channels
+- [x] Build drag-and-drop column/card reordering with batch order API updates
+- [x] Implement blocked/blocking card dependencies (`issueBlocking`)
+- [x] Post status update announcements automatically to connected chat channels
 
 **Tests & Validation:**
-- [ ] Reordering cards updates database sequence persistently
-- [ ] Moving card to "Done" triggers automated channel post
+- [x] Reordering cards updates database sequence persistently
+- [x] Moving card to "Done" triggers automated channel post
 
 ---
 
 ### **PHASE 3 EXIT QUALITY GATE**
-- [ ] Concurrent card drag operations do not cause race conditions
-- [ ] All card CRUD operations pass integration tests
+- [x] Concurrent card drag operations do not cause race conditions
+- [x] All card CRUD operations pass integration tests
 
 ---
 
