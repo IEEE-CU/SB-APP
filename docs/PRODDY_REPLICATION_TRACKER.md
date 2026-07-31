@@ -74,19 +74,19 @@
 ---
 
 ### 1.3 Role-Based Access Control (RBAC) Gating
-- [ ] Bind backend `UserRole.js` and `RolePermission.js` to frontend permission gates
-- [ ] Wrap sensitive UI elements (create channel, delete project) in `PermissionGate` component
+- [x] Bind backend `UserRole.js` and `RolePermission.js` to frontend permission gates
+- [x] Wrap sensitive UI elements (create channel, delete project) in `PermissionGate` component
 
 **Tests & Validation:**
-- [ ] Unauthorized roles are hidden from administrative buttons
-- [ ] Direct URL navigation to admin pages blocks non-authorized users
+- [x] Unauthorized roles are hidden from administrative buttons
+- [x] Direct URL navigation to admin pages blocks non-authorized users
 
 ---
 
 ### **PHASE 1 EXIT QUALITY GATE**
-- [ ] Clean install & dev boot passes (`npm run dev`)
-- [ ] All Phase 1 auth & RBAC integration tests pass
-- [ ] Zero circular dependencies or broken imports
+- [x] Clean install & dev boot passes (`npm run dev`)
+- [x] All Phase 1 auth & RBAC integration tests pass
+- [x] Zero circular dependencies or broken imports
 
 ---
 
