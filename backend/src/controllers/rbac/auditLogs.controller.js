@@ -1,6 +1,6 @@
 const AuditLog = require("../../models/AuditLog");
-const Role = require("../../models/Role");
 const UserRole = require("../../models/UserRole");
+
 
 /**
  * GET /api/audit-logs

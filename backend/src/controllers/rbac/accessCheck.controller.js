@@ -1,7 +1,5 @@
 const { resolvePermissions } = require("../../services/resolvePermissions");
 const { logAudit } = require("../../services/auditLogger");
-const Role = require("../../models/Role");
-const User = require("../../models/User");
 const UserRole = require("../../models/UserRole");
 
 /**

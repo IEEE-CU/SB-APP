@@ -1,6 +1,6 @@
 const UserRole = require("../models/UserRole");
-const Role = require("../models/Role");
 const RolePermission = require("../models/RolePermission");
+
 const Permission = require("../models/Permission");
 
 // In-memory cache
