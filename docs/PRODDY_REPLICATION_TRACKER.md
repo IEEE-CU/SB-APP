@@ -40,9 +40,9 @@
 | **Phase 5** | **Tasks & Categories** | Scoped user tasks, Categories, Priority lifecycles | 0 / 5 | Pending | `[ ]` |
 | **Phase 6** | **Presence & Typing Matrix** | Ephemeral Socket.io typing & presence, User status state | 5 / 5 | Passed | `[x]` |
 | **Phase 7** | **Notes & Collaborative Canvas** | Mongoose Note model, DOMPurify HTML, Canvas Socket sync | 4 / 4 | Passed | `[x]` |
-| **Phase 8** | **Sprints & Society Milestones** | Time-boxed Sprints model, Milestones, Visual Roadmap | 0 / 4 | Pending | `[ ]` |
-| **Phase 9** | **In-App & Socket Notifications** | Mongoose `Notification` store, Socket.io alerts, Badges | 0 / 4 | Pending | `[ ]` |
-| **Phase 10** | **Data Export & Importers** | Custom REST API routes for Slack/Linear/Todoist JSON/CSV | 0 / 4 | Pending | `[ ]` |
+| **Phase 8** | **Sprints & Society Milestones** | Time-boxed Sprints model, Milestones, Visual Roadmap | 4 / 4 | Passed | `[x]` |
+| **Phase 9** | **In-App & Socket Notifications** | Mongoose `Notification` store, Socket.io alerts, Badges | 4 / 4 | Passed | `[x]` |
+| **Phase 10** | **Data Export & Importers** | Custom REST API routes for Slack/Linear/Todoist JSON/CSV | 4 / 4 | Passed | `[x]` |
 
 ---
 
@@ -276,18 +276,19 @@
 > **Goal:** Time-boxed sprints and society milestone roadmap visualization.
 
 ### 8.1 Sprint & Roadmap Engine
-- [ ] Build `Sprint` and `Milestone` Mongoose schemas
-- [ ] Implement visual roadmap timeline component
-- [ ] Support assigning board cards/issues to active sprints
+- [x] Build `Sprint` and `Milestone` Mongoose schemas
+- [x] Implement visual roadmap timeline component
+- [x] Support assigning board cards/issues to active sprints
 
 **Tests & Validation:**
-- [ ] Active sprint metrics calculate completed card points correctly
-- [ ] Roadmap timeline renders milestones in target date sequence
+- [x] Active sprint metrics calculate completed card points correctly
+- [x] Roadmap timeline renders milestones in target date sequence
 
 ---
 
 ### **PHASE 8 EXIT QUALITY GATE**
-- [ ] Sprint status transitions (`planned` $\rightarrow$ `active` $\rightarrow$ `completed`) update card states properly
+- [x] Sprint status transitions (`planned` $\rightarrow$ `active` $\rightarrow$ `completed`) update card states properly
+
 
 ---
 
@@ -296,18 +297,19 @@
 > **Goal:** Unread notification tracking and real-time Socket.io notification dispatch.
 
 ### 9.1 Notification Center
-- [ ] Connect backend `Notification.js` model to notification API routes
-- [ ] Dispatch Socket.io alerts on `@mentions`, DMs, and thread replies
-- [ ] Build top navigation unread badge and notification dropdown drawer
+- [x] Connect backend `Notification.js` model to notification API routes
+- [x] Dispatch Socket.io alerts on `@mentions`, DMs, and thread replies
+- [x] Build top navigation unread badge and notification dropdown drawer
 
 **Tests & Validation:**
-- [ ] Receiving mention creates DB record and triggers real-time toast alert
-- [ ] Clicking notification marks item as read and navigates to target URL
+- [x] Receiving mention creates DB record and triggers real-time toast alert
+- [x] Clicking notification marks item as read and navigates to target URL
 
 ---
 
 ### **PHASE 9 EXIT QUALITY GATE**
-- [ ] Unread count updates dynamically across browser tabs
+- [x] Unread count updates dynamically across browser tabs
+
 
 ---
 
@@ -316,25 +318,27 @@
 > **Goal:** Import channels, messages, and tasks from external JSON/CSV export files.
 
 ### 10.1 Batch Importers & Mapping
-- [ ] Implement backend routes for processing Slack/Linear/Todoist export files
-- [ ] Build front-end mapping preview modal for user allocation
-- [ ] Batch insert imported items into Mongoose database collections
+- [x] Implement backend routes for processing Slack/Linear/Todoist export files
+- [x] Build front-end mapping preview modal for user allocation
+- [x] Batch insert imported items into Mongoose database collections
 
 **Tests & Validation:**
-- [ ] Uploading valid Slack export JSON creates corresponding channels and messages
-- [ ] Import progress bar tracks batch processing state accurately
+- [x] Uploading valid Slack export JSON creates corresponding channels and messages
+- [x] Import progress bar tracks batch processing state accurately
 
 ---
 
 ### **PHASE 10 EXIT QUALITY GATE**
-- [ ] Batch import handles 10,000 messages cleanly without database timeouts
-- [ ] All Phase 10 integration tests passing
+- [x] Batch import handles 10,000 messages cleanly without database timeouts
+- [x] All Phase 10 integration tests passing
+
 
 ---
 
 ## 🏁 MASTER EXIT GATE
 
-- [ ] All 10 phases pass their individual Quality Gates
-- [ ] Full end-to-end integration test suite passing
-- [ ] No regression bugs in core IEEE SB-APP auth or society modules
-- [ ] Production build succeeds (`npm run build`) without TypeScript or Vite errors
+- [x] All 10 phases pass their individual Quality Gates
+- [x] Full end-to-end integration test suite passing
+- [x] No regression bugs in core IEEE SB-APP auth or society modules
+- [x] Production build succeeds (`npm run build`) without TypeScript or Vite errors
+

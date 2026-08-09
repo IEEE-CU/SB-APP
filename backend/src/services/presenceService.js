@@ -113,9 +113,20 @@ function getOnlineUsers() {
   return online;
 }
 
+function sendNotificationToUser(io, userId, notification) {
+  const sockets = userSockets.get(String(userId));
+  if (sockets) {
+    for (const socketId of sockets) {
+      io.to(socketId).emit("notification:new", notification);
+    }
+  }
+}
+
 module.exports = {
   setupPresenceHandlers,
   getOnlineUsers,
+  sendNotificationToUser,
   userSockets,
   socketUserMap,
 };
+

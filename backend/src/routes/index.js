@@ -22,6 +22,9 @@ const conversationRoutes = require("./conversations");
 const boardsRouter = require("./boards");
 const tasksRouter = require("./tasks");
 const notesRouter = require("./notes");
+const sprintsRouter = require("./sprints");
+const notificationsRouter = require("./notifications");
+const importerRouter = require("./importers");
 
 // Mount routes
 router.use("/auth", authRoutes);
@@ -29,6 +32,12 @@ router.use("/users", userRoutes);
 router.use("/", rbacRoutes);
 router.use("/societies", societyRoutes);
 router.use("/societies/:societyId/notes", notesRouter);
+router.use("/societies/:societyId/roadmap", sprintsRouter);
+router.use("/societies/:societyId/importer", importerRouter);
+router.use("/notifications", notificationsRouter);
+
+
+
 router.use("/transactions", transactionRoutes);
 
 router.use("/events", eventRoutes);
