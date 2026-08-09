@@ -19,6 +19,7 @@ const Channel = require("./Channel");
 const Message = require("./Message");
 const Conversation = require("./Conversation");
 const Reaction = require("./Reaction");
+const Note = require("./Note");
 
 module.exports = {
   User,
@@ -42,4 +43,6 @@ module.exports = {
   Message,
   Conversation,
   Reaction,
+  Note,
 };
+

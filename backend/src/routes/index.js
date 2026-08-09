@@ -21,13 +21,16 @@ const channelRoutes = require("./channels");
 const conversationRoutes = require("./conversations");
 const boardsRouter = require("./boards");
 const tasksRouter = require("./tasks");
+const notesRouter = require("./notes");
 
 // Mount routes
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/", rbacRoutes);
 router.use("/societies", societyRoutes);
+router.use("/societies/:societyId/notes", notesRouter);
 router.use("/transactions", transactionRoutes);
+
 router.use("/events", eventRoutes);
 router.use("/projects", projectRoutes);
 router.use("/project-reports", projectReportRoutes);

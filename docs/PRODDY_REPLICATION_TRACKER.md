@@ -38,8 +38,8 @@
 | **Phase 3** | **Board / Kanban & Projects** | Dual System (Lists+Cards & Statuses+Issues), Drag & Drop | 0 / 7 | Pending | `[ ]` |
 | **Phase 4** | **3-Source Unified Calendar** | Aggregated query merging Events, Messages, Tasks/Cards | 0 / 6 | Pending | `[ ]` |
 | **Phase 5** | **Tasks & Categories** | Scoped user tasks, Categories, Priority lifecycles | 0 / 5 | Pending | `[ ]` |
-| **Phase 6** | **Presence & Typing Matrix** | Ephemeral Socket.io typing & presence, User status state | 0 / 5 | Pending | `[ ]` |
-| **Phase 7** | **Notes & Collaborative Canvas** | Mongoose Note model, DOMPurify HTML, Canvas Socket sync | 0 / 4 | Pending | `[ ]` |
+| **Phase 6** | **Presence & Typing Matrix** | Ephemeral Socket.io typing & presence, User status state | 5 / 5 | Passed | `[x]` |
+| **Phase 7** | **Notes & Collaborative Canvas** | Mongoose Note model, DOMPurify HTML, Canvas Socket sync | 4 / 4 | Passed | `[x]` |
 | **Phase 8** | **Sprints & Society Milestones** | Time-boxed Sprints model, Milestones, Visual Roadmap | 0 / 4 | Pending | `[ ]` |
 | **Phase 9** | **In-App & Socket Notifications** | Mongoose `Notification` store, Socket.io alerts, Badges | 0 / 4 | Pending | `[ ]` |
 | **Phase 10** | **Data Export & Importers** | Custom REST API routes for Slack/Linear/Todoist JSON/CSV | 0 / 4 | Pending | `[ ]` |
@@ -233,18 +233,19 @@
 > **Goal:** Ephemeral Socket.io presence, typing indicators, and user status derivation.
 
 ### 6.1 Ephemeral Presence & Typing
-- [ ] Track active user socket connections in server memory
-- [ ] Broadcast `typing:start` and `typing:stop` over Socket.io room channels
-- [ ] Derive user states (`online`, `idle`, `dnd`, `offline`) with 15s heartbeat
+- [x] Track active user socket connections in server memory
+- [x] Broadcast `typing:start` and `typing:stop` over Socket.io room channels
+- [x] Derive user states (`online`, `idle`, `dnd`, `offline`) with 15s heartbeat
 
 **Tests & Validation:**
-- [ ] Typing indicator disappears after 3 seconds of inactivity
-- [ ] User status indicator updates across all client sidebars
+- [x] Typing indicator disappears after 3 seconds of inactivity
+- [x] User status indicator updates across all client sidebars
 
 ---
 
 ### **PHASE 6 EXIT QUALITY GATE**
-- [ ] Zero memory leaks in socket connection tracking Map after 1,000 connect/disconnect cycles
+- [x] Zero memory leaks in socket connection tracking Map after 1,000 connect/disconnect cycles
+
 
 ---
 
@@ -253,19 +254,20 @@
 > **Goal:** Collaborative channel document notes and HTML5 real-time whiteboard canvas.
 
 ### 7.1 Notes & Canvas Synchronization
-- [ ] Build `Note` Mongoose schema with `DOMPurify` HTML sanitization
-- [ ] Implement HTML5 Canvas drawing view
-- [ ] Stream vector draw strokes over Socket.io to active room members
+- [x] Build `Note` Mongoose schema with `DOMPurify` HTML sanitization
+- [x] Implement HTML5 Canvas drawing view
+- [x] Stream vector draw strokes over Socket.io to active room members
 
 **Tests & Validation:**
-- [ ] Rich text note content sanitizes raw HTML safely before rendering
-- [ ] Drawing on canvas replicates strokes live to other room participants
+- [x] Rich text note content sanitizes raw HTML safely before rendering
+- [x] Drawing on canvas replicates strokes live to other room participants
 
 ---
 
 ### **PHASE 7 EXIT QUALITY GATE**
-- [ ] XSS vectors blocked by `DOMPurify` sanitizer
-- [ ] Canvas rendering handles 60fps smooth stroke synchronization
+- [x] XSS vectors blocked by `DOMPurify` sanitizer
+- [x] Canvas rendering handles 60fps smooth stroke synchronization
+
 
 ---
 
