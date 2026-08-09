@@ -2,6 +2,7 @@ import { LogOut, User, Sun, Moon, Menu } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useNavigate } from "react-router-dom";
+import SocietySwitcher from "./SocietySwitcher";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -29,11 +30,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </button>
         {/* IEEE SB Brand Mark */}
         <div className="w-8 h-8 rounded-md bg-primary hidden sm:flex items-center justify-center text-white font-bold text-title shadow-soft-1">
-          F
+          IEEE
         </div>
-        <span className="text-title font-semibold text-ink tracking-tight">
-          IEEE Student Branch, ____
+        <span className="text-title font-semibold text-ink tracking-tight hidden md:inline">
+          IEEE Student Branch
         </span>
+        <div className="w-px h-5 bg-hairline hidden md:block"></div>
+        <SocietySwitcher />
       </div>
 
       <div className="flex items-center gap-4">

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { ACCESS_LEVELS } from "@/lib/permissionLevels";
+import CollapsibleChannelMenu from "./CollapsibleChannelMenu";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", module: null },
@@ -39,6 +40,12 @@ const navItems = [
     icon: MessageCircle,
     label: "Community Hub",
     module: "community_hub",
+  },
+  {
+    to: "/calendar",
+    icon: Calendar,
+    label: "Unified Calendar",
+    module: null,
   },
 ];
 
@@ -105,6 +112,15 @@ export default function Sidebar({
 
         {adminItems.some((item) => canAccess(item.module)) && (
           <div className="mt-6 pt-4 border-t border-hairline/60">
+            <p className="text-eyebrow font-bold tracking-wider text-ink-faint uppercase px-4 mb-2">
+              Society Workspace Channels
+            </p>
+            <CollapsibleChannelMenu />
+          </div>
+        )}
+
+        {adminItems.some((item) => canAccess(item.module)) && (
+          <div className="mt-4 pt-4 border-t border-hairline/60">
             <p className="text-eyebrow font-bold tracking-wider text-ink-faint uppercase px-4 mb-2">
               Admin
             </p>

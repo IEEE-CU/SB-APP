@@ -23,6 +23,7 @@ import AnnouncementListPage from "@/pages/announcements/AnnouncementListPage";
 import AnnouncementDetailPage from "@/pages/announcements/AnnouncementDetailPage";
 import AnnouncementFormPage from "@/pages/announcements/AnnouncementFormPage";
 import CommunityPage from "@/pages/community/CommunityPage";
+import CalendarPage from "@/pages/calendar/CalendarPage";
 import UserManagementPage from "@/pages/admin/UserManagementPage";
 import LandingPage from "@/pages/LandingPage";
 
@@ -71,6 +72,7 @@ export const router = createBrowserRouter([
             element: <AnnouncementFormPage />,
           },
           { path: "/community", element: <CommunityPage /> },
+          { path: "/calendar", element: <CalendarPage /> },
         ],
       },
       {

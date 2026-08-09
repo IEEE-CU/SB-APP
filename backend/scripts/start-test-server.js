@@ -24,10 +24,23 @@ async function main() {
     const RolePermission = require('../src/models/RolePermission');
     const UserRole = require('../src/models/UserRole');
 
-    const [adminUser, officeBearerUser] = await User.create([
-        { email: TEST_USERS.admin.email, password: TEST_USERS.admin.password, role: TEST_USERS.admin.role, name: 'Test Admin' },
-        { email: TEST_USERS.officeBearer.email, password: TEST_USERS.officeBearer.password, role: TEST_USERS.officeBearer.role, name: 'Test Office Bearer' },
-    ]);
+    const adminUser = new User({
+        email: TEST_USERS.admin.email,
+        password: TEST_USERS.admin.password,
+        role: TEST_USERS.admin.role,
+        name: 'Test Admin',
+    });
+    await adminUser.save();
+
+    const officeBearerUser = new User({
+        email: TEST_USERS.officeBearer.email,
+        password: TEST_USERS.officeBearer.password,
+        role: TEST_USERS.officeBearer.role,
+        name: 'Test Office Bearer',
+    });
+    await officeBearerUser.save();
+
+
 
     const [adminRole, officeBearerRole] = await Role.create([
         { name: 'admin', displayName: 'Admin', level: 'super_admin', scope: 'global', isSystemRole: true },

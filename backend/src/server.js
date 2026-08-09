@@ -180,11 +180,9 @@ function startServer() {
   // Make io accessible in express application
   app.set("io", io);
 
-  io.on("connection", (socket) => {
-    socket.on("disconnect", () => {
-      // Socket disconnected
-    });
-  });
+  const { setupPresenceHandlers } = require("./services/presenceService");
+  setupPresenceHandlers(io);
+
 
   // Graceful shutdown: stop accepting new connections, let in-flight
   // requests finish, close the DB connection, then exit. Without this,

@@ -1,6 +1,5 @@
 const { MongoMemoryServer } = require("mongodb-memory-server");
 const mongoose = require("mongoose");
-const path = require("path");
 
 async function main() {
   console.log("🚀 Starting MongoDB Memory Server...");

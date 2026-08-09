@@ -17,13 +17,29 @@ const institutionRoutes = require("./institution");
 const storageRoutes = require("./storage");
 const communityRoutes = require("./community");
 const rbacRoutes = require("./rbac");
+const channelRoutes = require("./channels");
+const conversationRoutes = require("./conversations");
+const boardsRouter = require("./boards");
+const tasksRouter = require("./tasks");
+const notesRouter = require("./notes");
+const sprintsRouter = require("./sprints");
+const notificationsRouter = require("./notifications");
+const importerRouter = require("./importers");
 
 // Mount routes
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/", rbacRoutes);
 router.use("/societies", societyRoutes);
+router.use("/societies/:societyId/notes", notesRouter);
+router.use("/societies/:societyId/roadmap", sprintsRouter);
+router.use("/societies/:societyId/importer", importerRouter);
+router.use("/notifications", notificationsRouter);
+
+
+
 router.use("/transactions", transactionRoutes);
+
 router.use("/events", eventRoutes);
 router.use("/projects", projectRoutes);
 router.use("/project-reports", projectReportRoutes);
@@ -34,6 +50,10 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/institution", institutionRoutes);
 router.use("/storage", storageRoutes);
 router.use("/community", communityRoutes);
+router.use("/channels", channelRoutes);
+router.use("/conversations", conversationRoutes);
+router.use("/boards", boardsRouter);
+router.use("/tasks", tasksRouter);
 
 // Health check - reflects real DB connectivity so a load balancer / orchestrator
 // only routes traffic to instances that can actually serve requests.

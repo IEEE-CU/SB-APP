@@ -1,6 +1,7 @@
 const express = require("express");
 const Announcement = require("../models/Announcement");
-const { authenticate, officeBearerOrAdmin } = require("../middleware/auth");
+const { authenticate } = require("../middleware/auth");
+
 const { requirePermission } = require("../middleware/rbac");
 const { parseLimit } = require("../utils/pagination");
 
