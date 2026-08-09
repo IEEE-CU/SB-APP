@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 const Notification = require('../models/Notification');
 
 // GET /api/v1/notifications
-router.get('/', authenticateToken, async (req, res, next) => {
+router.get('/', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.id || req.user._id;
     const notifications = await Notification.find({ userId })
@@ -28,7 +28,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
 });
 
 // PATCH /api/v1/notifications/:id/read
-router.patch('/:id/read', authenticateToken, async (req, res, next) => {
+router.patch('/:id/read', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.id || req.user._id;
     const notification = await Notification.findOneAndUpdate(
@@ -50,7 +50,7 @@ router.patch('/:id/read', authenticateToken, async (req, res, next) => {
 });
 
 // PATCH /api/v1/notifications/read-all
-router.patch('/read-all', authenticateToken, async (req, res, next) => {
+router.patch('/read-all', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.id || req.user._id;
     await Notification.updateMany({ userId, isRead: false }, { isRead: true });

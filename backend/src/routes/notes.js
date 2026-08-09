@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });
-const { authenticateToken } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 const Note = require('../models/Note');
 
 // GET /api/v1/societies/:societyId/notes
-router.get('/', authenticateToken, async (req, res, next) => {
+router.get('/', authenticate, async (req, res, next) => {
   try {
     const { societyId } = req.params;
     const { channelId } = req.query;
@@ -22,7 +22,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
 });
 
 // POST /api/v1/societies/:societyId/notes
-router.post('/', authenticateToken, async (req, res, next) => {
+router.post('/', authenticate, async (req, res, next) => {
   try {
     const { societyId } = req.params;
     const { title, content, channelId, isPublic } = req.body;
@@ -43,7 +43,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
 });
 
 // GET /api/v1/societies/:societyId/notes/:noteId
-router.get('/:noteId', authenticateToken, async (req, res, next) => {
+router.get('/:noteId', authenticate, async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.noteId).populate(
       'authorId',
@@ -59,7 +59,7 @@ router.get('/:noteId', authenticateToken, async (req, res, next) => {
 });
 
 // PUT /api/v1/societies/:societyId/notes/:noteId
-router.put('/:noteId', authenticateToken, async (req, res, next) => {
+router.put('/:noteId', authenticate, async (req, res, next) => {
   try {
     const { title, content, isPublic } = req.body;
     const note = await Note.findById(req.params.noteId);
@@ -79,7 +79,7 @@ router.put('/:noteId', authenticateToken, async (req, res, next) => {
 });
 
 // DELETE /api/v1/societies/:societyId/notes/:noteId
-router.delete('/:noteId', authenticateToken, async (req, res, next) => {
+router.delete('/:noteId', authenticate, async (req, res, next) => {
   try {
     const note = await Note.findByIdAndDelete(req.params.noteId);
     if (!note) {

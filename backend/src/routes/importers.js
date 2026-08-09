@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });
-const { authenticateToken } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 const Channel = require('../models/Channel');
 const Message = require('../models/Message');
 const Task = require('../models/Task');
 
 // POST /api/v1/societies/:societyId/importer/slack
-router.post('/slack', authenticateToken, async (req, res, next) => {
+router.post('/slack', authenticate, async (req, res, next) => {
   try {
     const { societyId } = req.params;
     const { channels = [], messages = [] } = req.body;
@@ -50,7 +50,7 @@ router.post('/slack', authenticateToken, async (req, res, next) => {
 });
 
 // POST /api/v1/societies/:societyId/importer/todoist
-router.post('/todoist', authenticateToken, async (req, res, next) => {
+router.post('/todoist', authenticate, async (req, res, next) => {
   try {
     const { societyId } = req.params;
     const { tasks = [] } = req.body;
