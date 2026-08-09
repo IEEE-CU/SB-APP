@@ -121,7 +121,7 @@ function startServer() {
   app.get("/", (req, res) => {
     res.json({
       success: true,
-      message: "IEEE Finance Pro Backend API",
+      message: "IEEE Campus Community Hub Backend API",
       version: "1.0.0",
       documentation: "/api/v1/health",
     });
@@ -135,7 +135,7 @@ function startServer() {
   const server = app.listen(PORT, () => {
     console.log(`
                                                         
-   IEEE Finance Pro Backend                            
+   IEEE Campus Community Hub                           
                                                           
    Server:  http://localhost:${PORT}
    API:     http://localhost:${PORT}/api/v1
@@ -147,6 +147,7 @@ function startServer() {
 
   `);
   });
+
 
   // Initialize Socket.io
   const { Server } = require("socket.io");

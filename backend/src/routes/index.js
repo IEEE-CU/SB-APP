@@ -63,7 +63,7 @@ router.get("/health", (req, res) => {
   res.status(dbConnected ? 200 : 503).json({
     success: dbConnected,
     message: dbConnected
-      ? "IEEE Finance Pro API is running"
+      ? "IEEE Campus Community Hub API is running"
       : "Database unavailable",
     db: dbConnected ? "connected" : "disconnected",
     pid: process.pid,

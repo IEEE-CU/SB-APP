@@ -1,7 +1,7 @@
 {
-  "name": "ieee-finance-backend",
+  "name": "ieee-campus-community-backend",
   "version": "1.0.0",
-  "description": "Backend API for IEEE Finance Pro with MongoDB",
+  "description": "Backend API for IEEE Campus Community Hub",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
