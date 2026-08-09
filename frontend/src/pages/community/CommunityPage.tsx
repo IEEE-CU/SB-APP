@@ -68,8 +68,9 @@ export default function CommunityPage() {
         if (firstChan) {
           setSelectedChannel(firstChan);
         }
-      } catch (err) {
-        toast.error('Failed to load community data');
+      } catch {
+        toast.error('Failed to load community chat');
+
       } finally {
         setLoading(false);
       }

@@ -15,8 +15,9 @@ export default function SocietySwitcher() {
         const res = await api.get("/societies");
         const list = res.data?.data || res.data || [];
         setSocieties(list);
-      } catch (err) {
+      } catch {
         // Fallback default list if API not connected yet
+
         setSocieties([
           { id: "cs", name: "Computer Society", shortName: "CS", type: "SOCIETY" },
           { id: "ras", name: "Robotics & Automation Society", shortName: "RAS", type: "SOCIETY" },

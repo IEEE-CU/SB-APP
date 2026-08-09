@@ -25,6 +25,21 @@ export const CollaborativeCanvas: React.FC<CollaborativeCanvasProps> = ({
   const [width, setWidth] = useState(3);
   const currentStroke = useRef<Point[]>([]);
 
+  const drawStroke = (ctx: CanvasRenderingContext2D, stroke: Stroke) => {
+    if (!stroke.points || stroke.points.length < 2) return;
+    ctx.strokeStyle = stroke.color;
+    ctx.lineWidth = stroke.width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+    for (let i = 1; i < stroke.points.length; i++) {
+      ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+    }
+    ctx.stroke();
+  };
+
   useEffect(() => {
     const socket = getSocket();
     socket.emit('room:join', { channelId });
@@ -46,20 +61,6 @@ export const CollaborativeCanvas: React.FC<CollaborativeCanvasProps> = ({
     };
   }, [channelId]);
 
-  const drawStroke = (ctx: CanvasRenderingContext2D, stroke: Stroke) => {
-    if (!stroke.points || stroke.points.length < 2) return;
-    ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.width;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    ctx.beginPath();
-    ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-    for (let i = 1; i < stroke.points.length; i++) {
-      ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
-    }
-    ctx.stroke();
-  };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

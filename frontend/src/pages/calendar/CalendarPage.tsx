@@ -34,7 +34,7 @@ export default function CalendarPage() {
         
         const res = await calendarService.getUnifiedEvents(startOfMonth, endOfMonth);
         setEvents(res.data.data || []);
-      } catch (err) {
+      } catch {
         toast.error('Failed to load unified calendar events');
       } finally {
         setLoading(false);

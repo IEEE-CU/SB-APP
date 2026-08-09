@@ -45,31 +45,6 @@ export default function CollaborativeCanvasView() {
   const textInputRef = useRef<HTMLInputElement | null>(null);
   const [editingText, setEditingText] = useState<{ id: string; x: number; y: number; text: string } | null>(null);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.width = canvas.parentElement?.clientWidth || 900;
-    canvas.height = 650;
-    redrawCanvas();
-
-    const socket = getSocket();
-    socket.emit("canvas:join", { channelId });
-
-    const handleCanvasUpdate = (data: { elements: CanvasElement[] }) => {
-      setElements(data.elements || []);
-    };
-
-    socket.on("canvas:update", handleCanvasUpdate);
-
-    return () => {
-      socket.off("canvas:update", handleCanvasUpdate);
-    };
-  }, [channelId]);
-
-  useEffect(() => {
-    redrawCanvas();
-  }, [elements, selectedId, color, strokeWidth]);
-
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -161,6 +136,32 @@ export default function CollaborativeCanvasView() {
       }
     });
   };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = canvas.parentElement?.clientWidth || 900;
+    canvas.height = 650;
+    redrawCanvas();
+
+    const socket = getSocket();
+    socket.emit("canvas:join", { channelId });
+
+    const handleCanvasUpdate = (data: { elements: CanvasElement[] }) => {
+      setElements(data.elements || []);
+    };
+
+    socket.on("canvas:update", handleCanvasUpdate);
+
+    return () => {
+      socket.off("canvas:update", handleCanvasUpdate);
+    };
+  }, [channelId, redrawCanvas]);
+
+  useEffect(() => {
+    redrawCanvas();
+  }, [elements, selectedId, color, strokeWidth, redrawCanvas]);
+
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

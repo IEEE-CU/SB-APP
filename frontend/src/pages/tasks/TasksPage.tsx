@@ -26,10 +26,6 @@ export default function TasksPage() {
   const [dueDate, setDueDate] = useState("");
   const [categoryName, setCategoryName] = useState("General");
 
-  useEffect(() => {
-    fetchTasks();
-  }, [activeSocietyId]);
-
   const fetchTasks = async () => {
     try {
       setLoading(true);
@@ -45,6 +41,11 @@ export default function TasksPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [activeSocietyId]);
+
 
   const toggleTaskCompleted = async (task: TaskItem) => {
     const newStatus = task.status === "COMPLETED" ? "IN_PROGRESS" : "COMPLETED";
