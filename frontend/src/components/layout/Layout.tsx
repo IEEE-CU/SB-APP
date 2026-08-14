@@ -1,16 +1,56 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import Lenis from "lenis";
+import { AnimatePresence } from "framer-motion";
+import { PageTransition } from "@/components/ui/WatermelonMotion";
 
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
 
-  // Close sidebar on route change for mobile
+  // Close sidebar on route change for mobile and reset scroll position
   useEffect(() => {
     setSidebarOpen(false);
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    } else if (mainRef.current) {
+      mainRef.current.scrollTop = 0;
+    }
   }, [location.pathname]);
+
+  // Initialize Lenis smooth scrolling on main content container
+  useEffect(() => {
+    if (!mainRef.current) return;
+
+    const lenis = new Lenis({
+      wrapper: mainRef.current,
+      content: (mainRef.current.firstElementChild as HTMLElement) || mainRef.current,
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      touchMultiplier: 1.5,
+    });
+
+    lenisRef.current = lenis;
+
+    let animationFrameId: number;
+    function raf(time: number) {
+      lenis.raf(time);
+      animationFrameId = requestAnimationFrame(raf);
+    }
+
+    animationFrameId = requestAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      lenis.destroy();
+      lenisRef.current = null;
+    };
+  }, []);
 
   return (
     <div className="h-screen flex flex-col relative overflow-hidden bg-canvas-soft text-ink font-sans transition-colors duration-200">
@@ -48,13 +88,12 @@ export default function Layout() {
 
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 relative">
-          <div
-            key={location.pathname}
-            className="animate-in fade-in duration-500 fill-mode-forwards h-full max-w-[100vw]"
-          >
-            <Outlet />
-          </div>
+        <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 relative">
+          <AnimatePresence mode="wait">
+            <PageTransition key={location.pathname} className="h-full max-w-[100vw]">
+              <Outlet />
+            </PageTransition>
+          </AnimatePresence>
         </main>
       </div>
     </div>
