@@ -33,7 +33,7 @@ export default function CalendarPage() {
         const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
         
         const res = await calendarService.getUnifiedEvents(startOfMonth, endOfMonth);
-        setEvents(res.data.data || []);
+        setEvents(Array.isArray(res.data.data) ? res.data.data : []);
       } catch {
         toast.error('Failed to load unified calendar events');
       } finally {

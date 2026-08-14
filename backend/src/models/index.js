@@ -22,6 +22,10 @@ const Reaction = require("./Reaction");
 const Note = require("./Note");
 const Sprint = require("./Sprint");
 const Milestone = require("./Milestone");
+const RoleAssignment = require("./RoleAssignment");
+const SocietyTerm = require("./SocietyTerm");
+const EventRegistration = require("./EventRegistration");
+const ReportSnapshot = require("./ReportSnapshot");
 
 module.exports = {
   User,
@@ -48,6 +52,10 @@ module.exports = {
   Note,
   Sprint,
   Milestone,
+  RoleAssignment,
+  SocietyTerm,
+  EventRegistration,
+  ReportSnapshot,
 };
 
 

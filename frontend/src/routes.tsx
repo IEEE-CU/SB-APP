@@ -19,6 +19,7 @@ import ProjectFormPage from "@/pages/projects/ProjectFormPage";
 import ReportListPage from "@/pages/reports/ReportListPage";
 import ReportDetailPage from "@/pages/reports/ReportDetailPage";
 import ReportFormPage from "@/pages/reports/ReportFormPage";
+import AiAuditPage from "@/pages/reports/AiAuditPage";
 import AnnouncementListPage from "@/pages/announcements/AnnouncementListPage";
 import AnnouncementDetailPage from "@/pages/announcements/AnnouncementDetailPage";
 import AnnouncementFormPage from "@/pages/announcements/AnnouncementFormPage";
@@ -50,25 +51,26 @@ export const router = createBrowserRouter([
           { path: "/change-password", element: <ChangePasswordPage /> },
           { path: "/societies", element: <SocietyListPage /> },
           { path: "/societies/new", element: <SocietyFormPage /> },
-          { path: "/societies/:id", element: <SocietyDetailPage /> },
-          { path: "/societies/:id/edit", element: <SocietyFormPage /> },
+          { path: "/societies/:slug", element: <SocietyDetailPage /> },
+          { path: "/societies/:slug/edit", element: <SocietyFormPage /> },
           { path: "/events", element: <EventListPage /> },
           { path: "/events/new", element: <EventFormPage /> },
-          { path: "/events/:id", element: <EventDetailPage /> },
-          { path: "/events/:id/edit", element: <EventFormPage /> },
+          { path: "/events/:slug", element: <EventDetailPage /> },
+          { path: "/events/:slug/edit", element: <EventFormPage /> },
           { path: "/projects", element: <ProjectListPage /> },
           { path: "/projects/new", element: <ProjectFormPage /> },
-          { path: "/projects/:id", element: <ProjectDetailPage /> },
-          { path: "/projects/:id/edit", element: <ProjectFormPage /> },
+          { path: "/projects/:slug", element: <ProjectDetailPage /> },
+          { path: "/projects/:slug/edit", element: <ProjectFormPage /> },
           { path: "/reports", element: <ReportListPage /> },
+          { path: "/reports/ai-audit", element: <AiAuditPage /> },
           { path: "/reports/new", element: <ReportFormPage /> },
-          { path: "/reports/:id", element: <ReportDetailPage /> },
-          { path: "/reports/:id/edit", element: <ReportFormPage /> },
+          { path: "/reports/:slug", element: <ReportDetailPage /> },
+          { path: "/reports/:slug/edit", element: <ReportFormPage /> },
           { path: "/announcements", element: <AnnouncementListPage /> },
           { path: "/announcements/new", element: <AnnouncementFormPage /> },
-          { path: "/announcements/:id", element: <AnnouncementDetailPage /> },
+          { path: "/announcements/:slug", element: <AnnouncementDetailPage /> },
           {
-            path: "/announcements/:id/edit",
+            path: "/announcements/:slug/edit",
             element: <AnnouncementFormPage />,
           },
           { path: "/community", element: <CommunityPage /> },
@@ -83,4 +85,8 @@ export const router = createBrowserRouter([
       },
     ],
   },
-]);
+], {
+  future: {
+    v7_relativeSplatPath: true,
+  },
+});

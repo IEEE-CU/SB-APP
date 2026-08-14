@@ -395,4 +395,61 @@ router.post(
   },
 );
 
+/**
+ * @route   POST /api/events/:id/register
+ * @desc    Register current user for an event
+ * @access  All authenticated users
+ */
+router.post("/:id/register", async (req, res, next) => {
+  try {
+    const EventRegistration = require("../models/EventRegistration");
+    const AuditLog = require("../models/AuditLog");
+
+    const registration = await EventRegistration.create({
+      event: req.params.id,
+      user: req.user._id,
+      status: "REGISTERED",
+    });
+
+    await AuditLog.create({
+      userId: req.user._id,
+      action: "EVENT_REGISTER",
+      module: "events",
+      details: { eventId: req.params.id, registrationId: registration._id },
+    });
+
+    res.status(201).json({
+      success: true,
+      data: registration,
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: "User already registered for this event" });
+    }
+    next(error);
+  }
+});
+
+/**
+ * @route   GET /api/events/:id/registrations
+ * @desc    Get all registered attendees for an event
+ * @access  All authenticated users
+ */
+router.get("/:id/registrations", async (req, res, next) => {
+  try {
+    const EventRegistration = require("../models/EventRegistration");
+    const registrations = await EventRegistration.find({ event: req.params.id })
+      .populate("user", "name email ieeeId")
+      .sort({ registeredAt: -1 });
+
+    res.json({
+      success: true,
+      count: registrations.length,
+      data: registrations,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

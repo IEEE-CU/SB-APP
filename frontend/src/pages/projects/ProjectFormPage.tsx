@@ -4,61 +4,190 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { projectService } from '@/services/projects';
+import { societyService } from '@/services/societies';
 import { Button, LoadingSpinner } from '@/components/ui';
+import type { Society } from '@/types/models';
+import { slugify } from '@/utils/slug';
 import toast from 'react-hot-toast';
 
 const projectSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
+  societyId: z.string().optional(),
   status: z.enum(['planning', 'active', 'completed', 'on_hold']),
+  techStackRaw: z.string().optional(),
+  githubUrl: z.string().optional(),
+  demoUrl: z.string().optional(),
 });
 
 type ProjectForm = z.infer<typeof projectSchema>;
 
 export default function ProjectFormPage() {
-  const { id } = useParams<{ id: string }>();
-  const isEdit = !!id;
+  const { slug, id } = useParams<{ slug?: string; id?: string }>();
+  const targetIdentifier = slug || id;
+  const isEdit = !!targetIdentifier;
+
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [societies, setSocieties] = useState<Society[]>([]);
   const navigate = useNavigate();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<ProjectForm>({ resolver: zodResolver(projectSchema), defaultValues: { status: 'planning' } });
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ProjectForm>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: { status: 'planning' },
+  });
 
   useEffect(() => {
-    if (!id) return;
-    projectService.getProject(id).then((res) => { const p = res.data.data; reset({ title: p.title, description: p.description || '', status: p.status }); }).catch(() => toast.error('Failed to load')).finally(() => setLoading(false));
-  }, [id, reset]);
+    societyService.getSocieties(1, 100).then((res) => setSocieties(res.data.data)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!targetIdentifier) return;
+    setLoading(true);
+    projectService
+      .getProjects(1, 100)
+      .then((res) => {
+        const found = res.data.data.find(
+          (p) => p.id === targetIdentifier || slugify(p.title) === targetIdentifier || p.slug === targetIdentifier,
+        );
+        const resolvedId = found ? found.id : targetIdentifier;
+        setProjectId(resolvedId);
+
+        return projectService.getProject(resolvedId).then((r) => {
+          const p = r.data.data;
+          reset({
+            title: p.title,
+            description: p.description || '',
+            societyId: p.societyId || '',
+            status: p.status,
+            techStackRaw: p.techStack ? p.techStack.join(', ') : '',
+            githubUrl: p.githubUrl || '',
+            demoUrl: p.demoUrl || '',
+          });
+        });
+      })
+      .catch(() => toast.error('Failed to load project'))
+      .finally(() => setLoading(false));
+  }, [targetIdentifier, reset]);
 
   const onSubmit = async (data: ProjectForm) => {
     setSubmitting(true);
+    const formattedData = {
+      title: data.title,
+      description: data.description,
+      societyId: data.societyId,
+      status: data.status,
+      techStack: data.techStackRaw ? data.techStackRaw.split(',').map((s) => s.trim()).filter(Boolean) : [],
+      githubUrl: data.githubUrl,
+      demoUrl: data.demoUrl,
+    };
+
     try {
-      if (isEdit && id) { await projectService.updateProject(id, data); toast.success('Updated'); } else { await projectService.createProject(data); toast.success('Created'); }
+      if (isEdit && projectId) {
+        await projectService.updateProject(projectId, formattedData as any);
+        toast.success('Project updated');
+      } else {
+        await projectService.createProject(formattedData as any);
+        toast.success('Project created');
+      }
       navigate('/projects');
-    } catch { toast.error('Failed to save'); } finally { setSubmitting(false); }
+    } catch {
+      toast.error('Failed to save project');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-lg">
-      <h1 className="text-heading-1 font-bold text-ink mb-6">{isEdit ? 'Edit Project' : 'New Project'}</h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-surface rounded-lg border border-hairline p-6 space-y-4">
+    <div className="max-w-xl">
+      <h1 className="text-heading-1 font-bold text-ink mb-6">
+        {isEdit ? 'Edit Project' : 'Create New Project'}
+      </h1>
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-surface rounded-xl border border-hairline p-6 space-y-4 shadow-sm">
         <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Title</label>
-          <input {...register('title')} className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Project Title *</label>
+          <input
+            {...register('title')}
+            placeholder="e.g. AI-Powered Smart Campus Portal"
+            className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
           {errors.title && <p className="text-caption text-red-500 mt-1">{errors.title.message}</p>}
         </div>
+
         <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Description</label>
-          <textarea {...register('description')} rows={3} className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-        </div>
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Status</label>
-          <select {...register('status')} className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
-            <option value="planning">Planning</option><option value="active">Active</option><option value="completed">Completed</option><option value="on_hold">On Hold</option>
+          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Society</label>
+          <select
+            {...register('societyId')}
+            className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <option value="">IEEE Student Branch (General)</option>
+            {societies.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.shortName || s.name.substring(0, 4)})
+              </option>
+            ))}
           </select>
         </div>
+
+        <div>
+          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Description</label>
+          <textarea
+            {...register('description')}
+            rows={4}
+            placeholder="Overview of project goals, features, and target outcomes..."
+            className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Status</label>
+            <select
+              {...register('status')}
+              className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            >
+              <option value="planning">Planning</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="on_hold">On Hold</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Tech Stack (comma separated)</label>
+            <input
+              {...register('techStackRaw')}
+              placeholder="e.g. React, TypeScript, Python"
+              className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">GitHub Repository URL</label>
+            <input
+              {...register('githubUrl')}
+              placeholder="https://github.com/ieee/..."
+              className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Live Demo URL</label>
+            <input
+              {...register('demoUrl')}
+              placeholder="https://..."
+              className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+          </div>
+        </div>
+
         <div className="flex gap-3 pt-2">
-          <Button type="submit" loading={submitting}>{isEdit ? 'Update' : 'Create'}</Button>
+          <Button type="submit" loading={submitting}>{isEdit ? 'Update Project' : 'Save Project'}</Button>
           <Button type="button" variant="secondary" onClick={() => navigate('/projects')}>Cancel</Button>
         </div>
       </form>

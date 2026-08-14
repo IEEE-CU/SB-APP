@@ -10,6 +10,7 @@ import {
 } from "@/components/ui";
 import PermissionGate from "@/components/PermissionGate";
 import { usePagination } from "@/hooks/usePagination";
+import { slugify } from "@/utils/slug";
 import type { Society } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
 
@@ -172,7 +173,9 @@ export default function SocietyListPage() {
       <DataTable
         columns={columns}
         data={data}
-        onRowClick={(item) => navigate(`/societies/${item.id}`)}
+        onRowClick={(item) =>
+          navigate(`/societies/${slugify(item.shortName || item.name)}`)
+        }
         sortKey={sortKey}
         sortDirection={sortDirection}
         onSort={handleSort}

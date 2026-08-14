@@ -27,8 +27,8 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "finance" | "events" | "community" | "reports"
-  >("finance");
+    "events" | "projects" | "community" | "reports"
+  >("events");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const { darkMode, toggleDarkMode } = useThemeStore();
@@ -37,49 +37,49 @@ export default function LandingPage() {
     setOpenFaq(openFaq === index ? null : index);
   };
 
-  const mockLedger = [
+
+
+
+
+  const mockEvents = [
     {
       id: 1,
-      date: "2026-07-06",
-      desc: "Component procurement — Robotics Project",
-      category: "Project Fund",
-      amount: -250.0,
-      badgeColor:
-        "bg-accent-orange/10 dark:bg-accent-orange/20 text-accent-orange",
+      date: "2026-08-15",
+      title: "Annual Tech Summit 2026",
+      society: "IEEE SB",
+      status: "Upcoming",
+      badgeColor: "bg-accent-green/10 text-accent-green",
     },
     {
       id: 2,
-      date: "2026-07-04",
-      desc: "Sponsorship — Annual Tech Summit",
-      category: "Income",
-      amount: 1500.0,
-      badgeColor:
-        "bg-accent-green/10 dark:bg-accent-green/20 text-accent-green",
+      date: "2026-08-10",
+      title: "Autonomous Robotics Workshop",
+      society: "Robotics & Automation Society",
+      status: "Registration Open",
+      badgeColor: "bg-accent-sky/10 text-primary",
     },
     {
       id: 3,
-      date: "2026-07-02",
-      desc: "Catering — General Assembly 2026",
-      category: "Event Expense",
-      amount: -420.5,
-      badgeColor:
-        "bg-accent-purple/10 dark:bg-accent-purple/20 text-accent-purple dark:text-accent-purple",
+      date: "2026-08-02",
+      title: "Women in Tech Hackathon",
+      society: "Women in Engineering",
+      status: "Completed",
+      badgeColor: "bg-accent-purple/10 text-accent-purple-deep",
     },
     {
       id: 4,
-      date: "2026-06-28",
-      desc: "Vanguard Grant — Aero Design Project",
-      category: "Project Fund",
-      amount: -600.0,
-      badgeColor:
-        "bg-accent-orange/10 dark:bg-accent-orange/20 text-accent-orange",
+      date: "2026-07-28",
+      title: "Machine Learning Bootcamp",
+      society: "Computer Society",
+      status: "Completed",
+      badgeColor: "bg-accent-orange/10 text-accent-orange",
     },
   ];
 
   const faqs = [
     {
-      q: "What is IEEE Finance Pro?",
-      a: "IEEE Finance Pro is a unified web platform built for IEEE Student Branch, Christ University Kengeri Campus. It replaces scattered spreadsheets, WhatsApp groups, and Discord servers with a single system for finance, events, projects, reports, communities, and member management — all scoped to the real IEEE organizational hierarchy.",
+      q: "What is IEEE Campus Community Hub?",
+      a: "IEEE Campus Community Hub is a unified web platform built for IEEE Student Branch, Christ University Kengeri Campus. It replaces scattered spreadsheets, WhatsApp groups, and Discord servers with a single system for events, projects, reports, communities, and member management — all scoped to the real IEEE organizational hierarchy.",
     },
     {
       q: "Who can use this platform?",
@@ -106,11 +106,11 @@ export default function LandingPage() {
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* IEEE SB Brand Mark */}
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-white font-bold text-title shadow-soft-1">
-              F
+            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-white font-bold text-caption uppercase shadow-soft-1">
+              IEEE
             </div>
             <span className="text-title font-bold tracking-tight text-ink">
-              IEEE Finance Pro
+              IEEE Campus Community Hub
             </span>
           </div>
 
@@ -278,17 +278,17 @@ export default function LandingPage() {
       <section className="bg-canvas text-ink relative overflow-hidden py-20 lg:py-28 border-b border-hairline">
         {/* Minimal connecting constellation line art */}
         <div className="absolute inset-0 opacity-10 dark:opacity-20 pointer-events-none">
-          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="15%" cy="30%" r="2" fill="currentColor" />
-            <circle cx="35%" cy="75%" r="1.5" fill="currentColor" />
-            <circle cx="50%" cy="20%" r="2" fill="currentColor" />
-            <circle cx="70%" cy="65%" r="1.5" fill="currentColor" />
-            <circle cx="85%" cy="35%" r="2" fill="currentColor" />
+          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="15" cy="30" r="0.5" fill="currentColor" />
+            <circle cx="35" cy="75" r="0.5" fill="currentColor" />
+            <circle cx="50" cy="20" r="0.5" fill="currentColor" />
+            <circle cx="70" cy="65" r="0.5" fill="currentColor" />
+            <circle cx="85" cy="35" r="0.5" fill="currentColor" />
             <path
-              d="M 15% 30% L 50% 20% L 85% 35% M 35% 75% L 70% 65%"
+              d="M 15 30 L 50 20 L 85 35 M 35 75 L 70 65"
               stroke="currentColor"
-              strokeWidth="0.75"
-              strokeDasharray="4,4"
+              strokeWidth="0.25"
+              strokeDasharray="1,1"
               fill="none"
             />
           </svg>
@@ -311,7 +311,7 @@ export default function LandingPage() {
 
             {/* Subhead */}
             <p className="text-body-md text-ink-secondary mt-6 max-w-xl leading-relaxed">
-              IEEE Finance Pro replaces scattered spreadsheets, WhatsApp
+              IEEE Campus Community Hub replaces scattered spreadsheets, WhatsApp
               threads, and Discord servers with a single, role-aware workspace
               built for the real IEEE hierarchy — from general members to the SB
               Faculty Advisor.
@@ -410,24 +410,24 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Mock Ledger Container */}
+              {/* Mock Event Container */}
               <div className="flex-1 p-6 flex flex-col justify-between overflow-hidden">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="text-title font-bold text-ink">
-                        Society Finance Ledger
+                        Campus Events & Workshops
                       </h3>
                       <p className="text-caption text-ink-muted">
-                        IEEE Student Branch · All Societies
+                        IEEE Student Branch · Unified Activity Tracker
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <span className="px-2.5 py-1 text-caption font-medium rounded-md bg-canvas-soft border border-hairline text-ink-secondary">
-                        Filter
+                        Calendar
                       </span>
                       <span className="px-2.5 py-1 text-caption font-medium rounded-md bg-primary text-white">
-                        Export
+                        + Create Event
                       </span>
                     </div>
                   </div>
@@ -436,39 +436,39 @@ export default function LandingPage() {
                   <div className="grid grid-cols-3 gap-3">
                     <div className="border border-hairline p-3 rounded-lg bg-surface">
                       <div className="text-[10px] text-ink-faint font-semibold uppercase">
-                        Total Balance
+                        Total Events
                       </div>
                       <div className="text-heading-3 font-bold text-ink mt-0.5">
-                        ₹3,48,020
+                        24
                       </div>
                     </div>
                     <div className="border border-hairline p-3 rounded-lg bg-surface">
                       <div className="text-[10px] text-ink-faint font-semibold uppercase">
-                        Allocated
+                        Upcoming
                       </div>
                       <div className="text-heading-3 font-bold text-accent-teal mt-0.5">
-                        ₹1,85,000
+                        8
                       </div>
                     </div>
                     <div className="border border-hairline p-3 rounded-lg bg-surface">
                       <div className="text-[10px] text-ink-faint font-semibold uppercase">
-                        Pending
+                        Registrations
                       </div>
                       <div className="text-heading-3 font-bold text-accent-purple-deep mt-0.5">
-                        ₹42,050
+                        1,240
                       </div>
                     </div>
                   </div>
 
-                  {/* Ledger Rows */}
+                  {/* Event Rows */}
                   <div className="border border-hairline rounded-lg overflow-hidden bg-surface">
                     <div className="bg-canvas-soft border-b border-hairline px-3 py-1.5 grid grid-cols-12 text-[10px] font-semibold text-ink-muted uppercase">
                       <div className="col-span-3">Date</div>
-                      <div className="col-span-6">Description</div>
-                      <div className="col-span-3 text-right">Amount</div>
+                      <div className="col-span-6">Event Title</div>
+                      <div className="col-span-3 text-right">Status</div>
                     </div>
                     <div className="divide-y divide-hairline">
-                      {mockLedger.slice(0, 3).map((row) => (
+                      {mockEvents.slice(0, 3).map((row) => (
                         <div
                           key={row.id}
                           className="px-3 py-2 grid grid-cols-12 text-caption text-ink-secondary items-center hover:bg-canvas-soft/40 transition-colors"
@@ -477,14 +477,12 @@ export default function LandingPage() {
                             {row.date}
                           </div>
                           <div className="col-span-6 truncate font-medium text-ink">
-                            {row.desc}
+                            {row.title}
                           </div>
-                          <div
-                            className={`col-span-3 text-right font-mono font-semibold ${row.amount > 0 ? "text-accent-green" : "text-ink"}`}
-                          >
-                            {row.amount > 0
-                              ? `+₹${row.amount.toFixed(0)}`
-                              : `-₹${Math.abs(row.amount).toFixed(0)}`}
+                          <div className="col-span-3 text-right">
+                            <span className={`px-2 py-0.5 text-[10px] rounded-full font-semibold ${row.badgeColor}`}>
+                              {row.status}
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -493,9 +491,9 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex justify-between items-center text-[10px] text-ink-faint pt-2 border-t border-hairline">
-                  <span>Audit Trail Active</span>
+                  <span>Syncing across 49 Societies</span>
                   <span className="font-semibold text-primary">
-                    Role-Scoped · RBAC Enforced
+                    Unified Calendar Connected
                   </span>
                 </div>
               </div>
@@ -526,23 +524,22 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Feature Card 1 — Finance */}
+            {/* Feature Card 1 — Event & Activity Hub */}
             <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
               <div>
                 <div className="w-12 h-12 rounded-lg bg-accent-teal/10 text-accent-teal flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
-                  <Landmark size={24} />
+                  <Calendar size={24} />
                 </div>
                 <h3 className="text-heading-3 font-bold text-ink mb-2">
-                  Finance Management
+                  Unified Events & Workshops
                 </h3>
                 <p className="text-body-sm text-ink-muted">
-                  Income and expense tracking, budgeting, approval workflows,
-                  real-time analytics, and PDF report exports — scoped per
-                  society.
+                  Schedule flagship tech summits, hands-on workshops, venue bookings,
+                  and speaker sessions across 49 engineering chapters seamlessly.
                 </p>
               </div>
               <div className="mt-6 flex items-center gap-1 text-body-sm font-semibold text-accent-teal">
-                <span>Society-scoped ledgers</span>
+                <span>Unified Calendar Sync</span>
               </div>
             </div>
 
@@ -622,29 +619,53 @@ export default function LandingPage() {
                   society scope without any manual configuration.
                 </p>
 
-                {/* Navigation tabs */}
+                {/* Navigation tabs with cursor hover interaction */}
                 <div className="flex flex-wrap gap-2 pt-2">
                   <button
-                    onClick={() => setActiveTab("finance")}
-                    className={`px-3 py-1.5 text-caption font-semibold rounded-md transition-all ${activeTab === "finance" ? "bg-ink text-white" : "bg-canvas-soft text-ink-secondary border border-hairline hover:bg-hairline"}`}
+                    onClick={() => setActiveTab("events")}
+                    onMouseEnter={() => setActiveTab("events")}
+                    onFocus={() => setActiveTab("events")}
+                    className={`px-3.5 py-2 text-caption font-semibold rounded-lg transition-all duration-150 ${
+                      activeTab === "events"
+                        ? "bg-primary text-white shadow-soft-1 scale-105"
+                        : "bg-canvas-soft text-ink-secondary border border-hairline hover:bg-hairline hover:text-ink"
+                    }`}
                   >
-                    Finance View
+                    Events Queue
                   </button>
                   <button
-                    onClick={() => setActiveTab("events")}
-                    className={`px-3 py-1.5 text-caption font-semibold rounded-md transition-all ${activeTab === "events" ? "bg-ink text-white" : "bg-canvas-soft text-ink-secondary border border-hairline hover:bg-hairline"}`}
+                    onClick={() => setActiveTab("projects")}
+                    onMouseEnter={() => setActiveTab("projects")}
+                    onFocus={() => setActiveTab("projects")}
+                    className={`px-3.5 py-2 text-caption font-semibold rounded-lg transition-all duration-150 ${
+                      activeTab === "projects"
+                        ? "bg-primary text-white shadow-soft-1 scale-105"
+                        : "bg-canvas-soft text-ink-secondary border border-hairline hover:bg-hairline hover:text-ink"
+                    }`}
                   >
-                    Report Clearance
+                    Project Grants
                   </button>
                   <button
                     onClick={() => setActiveTab("community")}
-                    className={`px-3 py-1.5 text-caption font-semibold rounded-md transition-all ${activeTab === "community" ? "bg-ink text-white" : "bg-canvas-soft text-ink-secondary border border-hairline hover:bg-hairline"}`}
+                    onMouseEnter={() => setActiveTab("community")}
+                    onFocus={() => setActiveTab("community")}
+                    className={`px-3.5 py-2 text-caption font-semibold rounded-lg transition-all duration-150 ${
+                      activeTab === "community"
+                        ? "bg-primary text-white shadow-soft-1 scale-105"
+                        : "bg-canvas-soft text-ink-secondary border border-hairline hover:bg-hairline hover:text-ink"
+                    }`}
                   >
                     Community Hub
                   </button>
                   <button
                     onClick={() => setActiveTab("reports")}
-                    className={`px-3 py-1.5 text-caption font-semibold rounded-md transition-all ${activeTab === "reports" ? "bg-ink text-white" : "bg-canvas-soft text-ink-secondary border border-hairline hover:bg-hairline"}`}
+                    onMouseEnter={() => setActiveTab("reports")}
+                    onFocus={() => setActiveTab("reports")}
+                    className={`px-3.5 py-2 text-caption font-semibold rounded-lg transition-all duration-150 ${
+                      activeTab === "reports"
+                        ? "bg-primary text-white shadow-soft-1 scale-105"
+                        : "bg-canvas-soft text-ink-secondary border border-hairline hover:bg-hairline hover:text-ink"
+                    }`}
                   >
                     Analytics
                   </button>
@@ -676,14 +697,14 @@ export default function LandingPage() {
 
               {/* Showcase Frame Content */}
               <div className="flex-1 w-full bg-canvas-soft border border-hairline rounded-lg p-6 font-sans">
-                {activeTab === "finance" && (
+                {activeTab === "projects" && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between pb-3 border-b border-hairline">
                       <span className="text-body-sm font-bold text-ink">
-                        Society Finance Overview
+                        Student Projects & Grants
                       </span>
                       <span className="text-caption text-ink-muted">
-                        4 Active Societies
+                        3 Active Projects
                       </span>
                     </div>
                     <div className="space-y-2">
@@ -692,15 +713,15 @@ export default function LandingPage() {
                           <div className="w-2.5 h-2.5 rounded-full bg-accent-teal"></div>
                           <div>
                             <div className="text-caption font-bold text-ink">
-                              IEEE Computer Society
+                              Autonomous Rover Navigation
                             </div>
                             <div className="text-[11px] text-ink-muted">
-                              34 Members · Scoped
+                              Robotics & Automation · Milestone 3/5
                             </div>
                           </div>
                         </div>
-                        <div className="text-caption font-mono font-bold">
-                          ₹1,24,050
+                        <div className="text-caption font-semibold text-accent-green">
+                          In Progress
                         </div>
                       </div>
                       <div className="bg-surface border border-hairline p-3 rounded flex items-center justify-between hover:shadow-soft-1 transition-shadow">
@@ -708,31 +729,31 @@ export default function LandingPage() {
                           <div className="w-2.5 h-2.5 rounded-full bg-accent-purple"></div>
                           <div>
                             <div className="text-caption font-bold text-ink">
-                              Robotics & Automation Society
+                              IoT Smart Campus Microgrid
                             </div>
                             <div className="text-[11px] text-ink-muted">
-                              18 Members · Scoped
+                              Power & Energy · Milestone 2/4
                             </div>
                           </div>
                         </div>
-                        <div className="text-caption font-mono font-bold">
-                          ₹84,000
+                        <div className="text-caption font-semibold text-accent-sky">
+                          Review Needed
                         </div>
                       </div>
                       <div className="bg-surface border border-hairline p-3 rounded flex items-center justify-between hover:shadow-soft-1 transition-shadow">
                         <div className="flex items-center gap-3">
-                          <div className="w-2.5 h-2.5 rounded-full bg-accent-pink"></div>
+                          <div className="w-2.5 h-2.5 rounded-full bg-accent-orange"></div>
                           <div>
                             <div className="text-caption font-bold text-ink">
-                              Women in Engineering (WIE)
+                              AI Medical Imaging Assistant
                             </div>
                             <div className="text-[11px] text-ink-muted">
-                              22 Members · Scoped
+                              Computer Society · Milestone 4/4
                             </div>
                           </div>
                         </div>
-                        <div className="text-caption font-mono font-bold">
-                          ₹60,000
+                        <div className="text-caption font-semibold text-accent-orange">
+                          Completed
                         </div>
                       </div>
                     </div>
@@ -1265,7 +1286,7 @@ export default function LandingPage() {
                   size="lg"
                   className="bg-primary text-white hover:bg-primary-active px-8 py-3 text-button font-medium shadow-elevated"
                 >
-                  Get started with IEEE Finance Pro
+                  Get started with IEEE Campus Community Hub
                 </Button>
               </Link>
             )}
@@ -1278,16 +1299,16 @@ export default function LandingPage() {
         <div className="max-w-[1200px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded bg-primary flex items-center justify-center text-white font-bold text-caption">
-                F
+              <div className="w-6 h-6 rounded bg-primary flex items-center justify-center text-white font-bold text-[10px] uppercase">
+                IEEE
               </div>
               <span className="text-body-sm font-bold text-ink">
-                IEEE Finance Pro
+                IEEE Campus Community Hub
               </span>
             </div>
             <p className="text-ink-muted">
               The unified platform for IEEE Student Branch, Christ University
-              Kengeri Campus — finance, events, projects, reports, and community
+              Kengeri Campus — events, projects, reports, and community
               in one place.
             </p>
             <p className="text-ink-faint text-[12px]">

@@ -737,13 +737,13 @@ export default function DashboardPage() {
       {/* Page heading */}
       <div className="relative">
         <h1 className="dash-fade-up text-heading-1 font-bold text-ink">
-          IEEE Student Branch, ____
+          IEEE Student Branch Community
         </h1>
         <p
           className="dash-fade-up text-body-sm text-ink-muted mt-1"
           style={{ animationDelay: "60ms" }}
         >
-          IEEE Student Branch, ____ — your unified workspace
+          Your unified workspace for student branches, technical chapters, and collaborative projects
         </p>
       </div>
 

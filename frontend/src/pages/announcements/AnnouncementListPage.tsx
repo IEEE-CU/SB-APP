@@ -5,6 +5,7 @@ import { announcementService } from "@/services/announcements";
 import { Pagination, Button, LoadingSpinner } from "@/components/ui";
 import PermissionGate from "@/components/PermissionGate";
 import { usePagination } from "@/hooks/usePagination";
+import { slugify } from "@/utils/slug";
 import type { Announcement } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
 
@@ -54,7 +55,7 @@ export default function AnnouncementListPage() {
           <div
             key={a.id}
             className="bg-surface rounded-lg border border-hairline p-5 hover:shadow-soft-1 transition-shadow cursor-pointer"
-            onClick={() => navigate(`/announcements/${a.id}`)}
+            onClick={() => navigate(`/announcements/${slugify(a.title)}`)}
           >
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-title font-semibold text-ink">{a.title}</h3>

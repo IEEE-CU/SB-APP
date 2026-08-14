@@ -19,14 +19,14 @@ export default function AuthLayout() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8 flex flex-col items-center">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-heading-2 shadow-soft-2 mb-4">
-            F
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-caption uppercase shadow-soft-2 mb-4">
+            IEEE
           </div>
           <h1 className="text-heading-1 font-bold text-ink">
-            IEEE Finance Pro
+            IEEE Campus Community Hub
           </h1>
           <p className="text-body-md text-ink-muted mt-2">
-            Financial management for IEEE societies
+            Empowering student branches & engineering societies
           </p>
         </div>
         <TiltCard>

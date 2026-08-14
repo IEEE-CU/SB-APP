@@ -5,28 +5,39 @@ import { announcementService } from "@/services/announcements";
 import { Button, LoadingSpinner } from "@/components/ui";
 import PermissionGate from "@/components/PermissionGate";
 import { ArrowLeft } from "lucide-react";
+import { slugify } from "@/utils/slug";
 import type { Announcement } from "@/types/models";
 import toast from "react-hot-toast";
 
 export default function AnnouncementDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!id) return;
+    if (!slug) return;
+    setLoading(true);
     announcementService
-      .getAnnouncement(id)
-      .then((res) => setAnnouncement(res.data.data))
+      .getAnnouncements(1, 100)
+      .then((res) => {
+        const found = res.data.data.find(
+          (a) => a.id === slug || slugify(a.title) === slug,
+        );
+        if (found) {
+          return announcementService.getAnnouncement(found.id).then((r) => setAnnouncement(r.data.data));
+        } else {
+          return announcementService.getAnnouncement(slug).then((r) => setAnnouncement(r.data.data));
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [slug]);
 
   const handleDelete = async () => {
-    if (!id) return;
+    if (!announcement) return;
     try {
-      await announcementService.deleteAnnouncement(id);
+      await announcementService.deleteAnnouncement(announcement.id);
       toast.success("Announcement deleted");
       navigate("/announcements");
     } catch {
@@ -69,7 +80,7 @@ export default function AnnouncementDetailPage() {
           <PermissionGate module="announcements" action="write">
             <Button
               variant="secondary"
-              onClick={() => navigate(`/announcements/${id}/edit`)}
+              onClick={() => navigate(`/announcements/${announcement.id}/edit`)}
             >
               Edit
             </Button>

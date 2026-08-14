@@ -10,6 +10,7 @@ import {
 } from "@/components/ui";
 import PermissionGate from "@/components/PermissionGate";
 import { usePagination } from "@/hooks/usePagination";
+import { slugify } from "@/utils/slug";
 import type { Report } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
 
@@ -112,18 +113,39 @@ export default function ReportListPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-heading-1 font-bold text-ink">Reports</h1>
+        <h1 className="text-heading-1 font-bold text-ink">Reports & Audit Log</h1>
         <PermissionGate module="reports" action="write">
           <Button onClick={() => navigate("/reports/new")}>New Report</Button>
         </PermissionGate>
       </div>
+
+      <div className="mb-6 p-6 rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-900 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-blue-300 text-xs font-bold uppercase tracking-wider mb-1">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+            Google Gemini AI Auditor Integrated
+          </div>
+          <h3 className="text-xl font-bold">IEEE Financial & Operational Auditor</h3>
+          <p className="text-body-sm text-blue-100 mt-1 max-w-xl">
+            Automated compliance checks, budget balance audits, and operational insights for Christ University IEEE Student Branch.
+          </p>
+        </div>
+        <Button 
+          variant="secondary"
+          onClick={() => navigate("/reports/ai-audit")}
+          className="bg-white text-blue-900 hover:bg-blue-50 border-none font-bold shadow-md whitespace-nowrap"
+        >
+          View AI Insights
+        </Button>
+      </div>
+
       <div className="mb-4 max-w-xs">
         <SearchInput onSearch={handleSearch} placeholder="Search reports..." />
       </div>
       <DataTable
         columns={columns}
         data={data}
-        onRowClick={(item) => navigate(`/reports/${item.id}`)}
+        onRowClick={(item) => navigate(`/reports/${slugify(item.title)}`)}
         sortKey={sortKey}
         sortDirection={sortDirection}
         onSort={handleSort}
