@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
-import { useAuthStore } from "@/store/authStore";
-import { ACCESS_LEVELS } from "@/lib/permissionLevels";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface PermissionGateProps {
   module: string;
@@ -15,10 +14,9 @@ export default function PermissionGate({
   children,
   fallback = null,
 }: PermissionGateProps) {
-  const { permissions } = useAuthStore();
-  const perm = permissions.find((p) => p.module === module);
-  const userLevel = ACCESS_LEVELS[perm?.accessLevel || "none"] || 0;
-  const requiredLevel = ACCESS_LEVELS[action] || 1;
+  const { hasAccess } = usePermissions();
+  const allowed = hasAccess(module, action);
 
-  return userLevel >= requiredLevel ? <>{children}</> : <>{fallback}</>;
+  return allowed ? <>{children}</> : <>{fallback}</>;
 }
+

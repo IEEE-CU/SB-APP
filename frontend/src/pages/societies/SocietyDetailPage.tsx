@@ -90,7 +90,7 @@ export default function SocietyDetailPage() {
 
           <div className="flex items-center gap-3">
             <PermissionGate module="societies" action="write">
-              <Button variant="secondary" onClick={() => navigate(`/societies/${slugify(shortName)}/edit`)}>
+              <Button variant="secondary" onClick={() => navigate(`/societies/${society.id}/edit`)}>
                 Edit Society
               </Button>
             </PermissionGate>

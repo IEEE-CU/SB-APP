@@ -12,11 +12,25 @@ export const ACCESS_LEVELS: Record<string, number> = {
   superadmin: 4,
 };
 
+export const ADMIN_ROLES = [
+  "admin",
+  "superadmin",
+  "chair",
+  "vice_chair",
+  "president",
+  "board_member",
+];
+
 export function meetsRequiredLevel(
   userAccessLevel: string,
   requiredAction: string,
+  userRole?: string
 ): boolean {
+  if (userRole && ADMIN_ROLES.includes(userRole.toLowerCase())) {
+    return true;
+  }
   const userLevel = ACCESS_LEVELS[userAccessLevel] || 0;
   const requiredLevel = ACCESS_LEVELS[requiredAction] || 1;
   return userLevel >= requiredLevel;
 }
+
