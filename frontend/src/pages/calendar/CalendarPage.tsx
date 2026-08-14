@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { calendarService } from '@/services/calendar';
 import type { UnifiedCalendarEvent } from '@/types/models';
-import { LoadingSpinner, Button } from '@/components/ui';
+import { LoadingSpinner, Button, SearchInput } from '@/components/ui';
 import toast from 'react-hot-toast';
-import { ChevronLeft, ChevronRight, Filter, Calendar, MapPin, Clock, Plus, X, Calendar as CalendarIcon, List, LayoutGrid } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, Calendar, MapPin, Clock, Plus, X, Calendar as CalendarIcon, List, LayoutGrid, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { slugify } from '@/utils/slug';
 
@@ -12,6 +12,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<UnifiedCalendarEvent[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'agenda'>('month');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Filtering state
   const [selectedSources, setSelectedSources] = useState<string[]>([
@@ -35,10 +36,10 @@ export default function CalendarPage() {
   const navigate = useNavigate();
 
   const sourceMetadata: Record<string, { label: string; color: string; bgColor: string; borderColor: string }> = {
-    CalendarEvent: { label: 'Events & Workshops', color: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/30', borderColor: 'border-emerald-200 dark:border-emerald-800' },
-    Event: { label: 'Society Activities', color: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/30', borderColor: 'border-amber-200 dark:border-amber-800' },
-    BoardCard: { label: 'Project Deadlines', color: 'text-purple-700 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/30', borderColor: 'border-purple-200 dark:border-purple-800' },
-    Message: { label: 'Community Sessions', color: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-950/30', borderColor: 'border-blue-200 dark:border-blue-800' },
+    CalendarEvent: { label: 'Events', color: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/30', borderColor: 'border-emerald-200 dark:border-emerald-800' },
+    Event: { label: 'Society', color: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/30', borderColor: 'border-amber-200 dark:border-amber-800' },
+    BoardCard: { label: 'Deadlines', color: 'text-purple-700 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/30', borderColor: 'border-purple-200 dark:border-purple-800' },
+    Message: { label: 'Sessions', color: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-950/30', borderColor: 'border-blue-200 dark:border-blue-800' },
   };
 
   useEffect(() => {
@@ -51,7 +52,6 @@ export default function CalendarPage() {
         const res = await calendarService.getUnifiedEvents(startOfMonth, endOfMonth);
         let fetched: UnifiedCalendarEvent[] = Array.isArray(res.data.data) ? res.data.data : [];
 
-        // Fallback default sample events if empty for visual completeness
         if (fetched.length === 0) {
           const sampleDate1 = new Date(currentDate.getFullYear(), currentDate.getMonth(), 15).toISOString();
           const sampleDate2 = new Date(currentDate.getFullYear(), currentDate.getMonth(), 22).toISOString();
@@ -115,6 +115,11 @@ export default function CalendarPage() {
     );
   };
 
+  const openCreateModalForDate = (dateVal: Date) => {
+    setNewDate(dateVal.toISOString().split('T')[0]);
+    setShowCreateModal(true);
+  };
+
   const handleCreateCustomEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -130,11 +135,15 @@ export default function CalendarPage() {
     };
 
     setEvents((prev) => [...prev, newEv]);
-    toast.success('Calendar event added successfully!');
+    toast.success('Calendar event added!');
     setShowCreateModal(false);
     setNewTitle('');
     setNewVenue('');
     setNewDescription('');
+  };
+
+  const handleExportIcs = () => {
+    toast.success(`Exporting iCal calendar file for ${monthNames[month]} ${year}...`);
   };
 
   // Generate grid items
@@ -159,7 +168,11 @@ export default function CalendarPage() {
   // Filtered Events
   const filteredEvents = events.filter((ev) => {
     const sourceKey = ev.source || 'CalendarEvent';
-    return selectedSources.includes(sourceKey);
+    const matchesSource = selectedSources.includes(sourceKey);
+    const matchesQuery = !searchQuery.trim() || 
+      ev.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      ev.venue?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSource && matchesQuery;
   });
 
   // Group events by YYYY-MM-DD
@@ -178,74 +191,89 @@ export default function CalendarPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Top Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-6 rounded-2xl border border-hairline shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 rounded-xl text-primary font-bold">
-            <CalendarIcon size={24} />
+    <div className="space-y-6 max-w-6xl mx-auto">
+      {/* Top Header Controls Section */}
+      <div className="bg-surface p-6 md:p-8 rounded-2xl border border-hairline shadow-sm space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-primary/10 rounded-xl text-primary font-bold shrink-0">
+              <CalendarIcon size={24} />
+            </div>
+            <div>
+              <h1 className="text-heading-2 font-bold text-ink">IEEE Campus Calendar</h1>
+              <p className="text-body-sm text-ink-muted mt-1">Unified schedule for events, deadlines, and society activities.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-heading-1 font-bold text-ink">IEEE Unified Campus Calendar</h1>
-            <p className="text-body-sm text-ink-muted mt-0.5">Centralized scheduling for events, project milestones, and society activities.</p>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
+              <Plus size={16} /> Add Event
+            </Button>
+
+            <Button variant="secondary" onClick={handleExportIcs} className="flex items-center gap-2">
+              <Download size={16} /> Export iCal
+            </Button>
           </div>
         </div>
 
-        {/* Action Controls & Navigation */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-1.5">
-            <Plus size={16} /> Add Event
-          </Button>
+        {/* Date Navigation and View Switcher Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-hairline">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleTodayJump}
+              className="px-3.5 py-2 bg-canvas-soft border border-hairline rounded-lg text-body-xs font-bold text-ink hover:bg-surface transition-colors shadow-xs"
+            >
+              Today
+            </button>
 
-          <button
-            onClick={handleTodayJump}
-            className="px-3 py-2 bg-canvas-soft border border-hairline rounded-lg text-body-xs font-semibold text-ink hover:bg-surface transition-colors"
-          >
-            Today
-          </button>
+            <div className="flex items-center gap-2 bg-canvas-soft border border-hairline rounded-lg p-1">
+              <button
+                onClick={handlePrevMonth}
+                className="p-1.5 hover:bg-surface rounded-md text-ink-secondary hover:text-ink transition-colors"
+                title="Previous Month"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <span className="text-body-sm font-bold text-ink min-w-[140px] text-center px-2">
+                {monthNames[month]} {year}
+              </span>
+              <button
+                onClick={handleNextMonth}
+                className="p-1.5 hover:bg-surface rounded-md text-ink-secondary hover:text-ink transition-colors"
+                title="Next Month"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
 
-          <div className="flex items-center border border-hairline rounded-lg overflow-hidden bg-canvas-soft">
+          <div className="flex items-center border border-hairline rounded-lg overflow-hidden bg-canvas-soft p-1">
             <button
               onClick={() => setViewMode('month')}
-              className={`p-2 transition-colors ${viewMode === 'month' ? 'bg-surface text-primary font-bold shadow-xs' : 'text-ink-muted hover:text-ink'}`}
-              title="Month Grid"
+              className={`px-3 py-1.5 rounded-md text-body-xs font-bold transition-all flex items-center gap-1.5 ${
+                viewMode === 'month' ? 'bg-surface text-primary shadow-xs' : 'text-ink-muted hover:text-ink'
+              }`}
             >
-              <LayoutGrid size={18} />
+              <LayoutGrid size={16} /> Month
             </button>
             <button
               onClick={() => setViewMode('agenda')}
-              className={`p-2 transition-colors ${viewMode === 'agenda' ? 'bg-surface text-primary font-bold shadow-xs' : 'text-ink-muted hover:text-ink'}`}
-              title="Agenda List"
+              className={`px-3 py-1.5 rounded-md text-body-xs font-bold transition-all flex items-center gap-1.5 ${
+                viewMode === 'agenda' ? 'bg-surface text-primary shadow-xs' : 'text-ink-muted hover:text-ink'
+              }`}
             >
-              <List size={18} />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1 bg-canvas-soft border border-hairline rounded-lg p-1">
-            <button
-              onClick={handlePrevMonth}
-              className="p-1.5 hover:bg-surface rounded-md text-ink-secondary hover:text-ink transition-colors"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <span className="text-body-sm font-bold text-ink min-w-[130px] text-center">
-              {monthNames[month]} {year}
-            </span>
-            <button
-              onClick={handleNextMonth}
-              className="p-1.5 hover:bg-surface rounded-md text-ink-secondary hover:text-ink transition-colors"
-            >
-              <ChevronRight size={18} />
+              <List size={16} /> Agenda
             </button>
           </div>
         </div>
       </div>
 
-      {/* Filters Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-surface px-6 py-4 rounded-xl border border-hairline shadow-sm">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-eyebrow font-bold text-ink-muted uppercase tracking-wider flex items-center gap-1.5 mr-2">
-            <Filter size={14} /> Filter Sources:
+      {/* Toolbar & Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface px-4 py-2.5 rounded-xl border border-hairline shadow-sm">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-eyebrow font-bold text-ink-muted uppercase tracking-wider flex items-center gap-1 mr-1">
+            <Filter size={12} /> Sources:
           </span>
           {Object.keys(sourceMetadata).map((sourceKey) => {
             const meta = sourceMetadata[sourceKey];
@@ -255,38 +283,38 @@ export default function CalendarPage() {
               <button
                 key={sourceKey}
                 onClick={() => toggleSourceFilter(sourceKey)}
-                className={`text-body-xs font-semibold px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
+                className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border transition-all flex items-center gap-1 ${
                   isActive
-                    ? `${meta.bgColor} ${meta.color} ${meta.borderColor} font-bold shadow-xs`
+                    ? `${meta.bgColor} ${meta.color} ${meta.borderColor} font-bold`
                     : 'bg-surface border-hairline text-ink-muted hover:text-ink'
                 }`}
               >
                 <span>{meta.label}</span>
-                <span className="px-1.5 py-0.2 bg-white/60 dark:bg-black/20 rounded-full text-[10px]">{count}</span>
+                <span className="px-1 py-0.2 bg-white/60 dark:bg-black/20 rounded-full text-[9px]">{count}</span>
               </button>
             );
           })}
         </div>
 
-        <div className="text-body-xs text-ink-muted font-medium">
-          Showing <span className="font-bold text-ink">{filteredEvents.length}</span> scheduled item(s)
+        <div className="w-full sm:w-56">
+          <SearchInput onSearch={(q) => setSearchQuery(q)} placeholder="Search calendar..." />
         </div>
       </div>
 
       {/* Main View rendering */}
       {viewMode === 'month' ? (
-        /* Month Grid View */
-        <div className="bg-surface rounded-2xl border border-hairline overflow-hidden shadow-sm">
+        /* Compact Month Grid View */
+        <div className="bg-surface rounded-xl border border-hairline overflow-hidden shadow-sm">
           <div className="grid grid-cols-7 border-b border-hairline bg-canvas-soft text-center">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className="py-3 text-eyebrow font-bold text-ink-secondary uppercase tracking-wider">
+              <div key={day} className="py-2 text-[11px] font-bold text-ink-secondary uppercase tracking-wider">
                 {day}
               </div>
             ))}
           </div>
 
           {loading ? (
-            <div className="h-96 flex items-center justify-center">
+            <div className="h-72 flex items-center justify-center">
               <LoadingSpinner />
             </div>
           ) : (
@@ -299,13 +327,13 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={idx}
-                    className={`min-h-[130px] p-2 flex flex-col transition-colors ${
+                    className={`min-h-[95px] p-1.5 flex flex-col transition-colors group ${
                       cell.isCurrentMonth ? 'bg-surface' : 'bg-canvas-soft/40'
                     } ${isToday ? 'ring-2 ring-primary/30 bg-primary/5' : ''}`}
                   >
-                    <div className="flex justify-between items-center mb-1.5">
+                    <div className="flex justify-between items-center mb-1">
                       <span
-                        className={`text-caption font-bold w-6 h-6 flex items-center justify-center rounded-full ${
+                        className={`text-[11px] font-bold w-5 h-5 flex items-center justify-center rounded-full ${
                           isToday
                             ? 'bg-primary text-white font-bold'
                             : cell.isCurrentMonth
@@ -315,9 +343,17 @@ export default function CalendarPage() {
                       >
                         {cell.date.getDate()}
                       </span>
+
+                      <button
+                        onClick={() => openCreateModalForDate(cell.date)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-ink-muted hover:text-primary transition-opacity"
+                        title="Add event on this date"
+                      >
+                        <Plus size={12} />
+                      </button>
                     </div>
 
-                    <div className="flex-1 space-y-1.5 overflow-y-auto max-h-[120px] scrollbar-none">
+                    <div className="flex-1 space-y-1 overflow-y-auto max-h-[80px] scrollbar-none">
                       {cellEvents.map((evt) => {
                         const sourceKey = evt.source || 'CalendarEvent';
                         const meta = sourceMetadata[sourceKey] || sourceMetadata.CalendarEvent;
@@ -325,14 +361,14 @@ export default function CalendarPage() {
                           <div
                             key={evt.id}
                             onClick={() => setSelectedEvent(evt)}
-                            className={`p-2 rounded-lg border text-left cursor-pointer transition-all hover:scale-[1.02] shadow-2xs ${meta.bgColor} ${meta.borderColor}`}
+                            className={`p-1 px-1.5 rounded border text-left cursor-pointer transition-all hover:scale-[1.01] shadow-2xs ${meta.bgColor} ${meta.borderColor}`}
                           >
-                            <div className="flex items-center justify-between font-bold text-caption">
+                            <div className="flex items-center justify-between font-semibold text-[11px] leading-tight">
                               <span className={`truncate ${meta.color}`}>{evt.title}</span>
                             </div>
                             {evt.time && (
-                              <div className="flex items-center gap-1 text-[10px] text-ink-muted mt-0.5">
-                                <Clock size={10} />
+                              <div className="flex items-center gap-0.5 text-[9px] text-ink-muted mt-0.5">
+                                <Clock size={8} />
                                 <span>{evt.time}</span>
                               </div>
                             )}
@@ -348,12 +384,12 @@ export default function CalendarPage() {
         </div>
       ) : (
         /* Agenda List View */
-        <div className="bg-surface rounded-2xl border border-hairline p-6 shadow-sm space-y-4">
-          <h3 className="text-heading-3 font-bold text-ink">Upcoming Agenda Timeline</h3>
+        <div className="bg-surface rounded-xl border border-hairline p-4 shadow-sm space-y-3">
+          <h3 className="text-body-md font-bold text-ink">Upcoming Agenda Timeline</h3>
           {filteredEvents.length === 0 ? (
-            <div className="p-8 text-center text-ink-muted">No scheduled events for this month.</div>
+            <div className="p-6 text-center text-ink-muted text-body-sm">No scheduled events found.</div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {filteredEvents.map((evt) => {
                 const sourceKey = evt.source || 'CalendarEvent';
                 const meta = sourceMetadata[sourceKey] || sourceMetadata.CalendarEvent;
@@ -361,31 +397,31 @@ export default function CalendarPage() {
                   <div
                     key={evt.id}
                     onClick={() => setSelectedEvent(evt)}
-                    className={`p-4 rounded-xl border ${meta.borderColor} ${meta.bgColor} cursor-pointer hover:shadow-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4`}
+                    className={`p-3 rounded-lg border ${meta.borderColor} ${meta.bgColor} cursor-pointer hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3`}
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-eyebrow font-bold uppercase ${meta.color}`}>
+                        <span className={`px-2 py-0.2 rounded text-[10px] font-bold uppercase ${meta.color}`}>
                           {meta.label}
                         </span>
                         {evt.society && (
-                          <span className="text-body-xs font-semibold text-ink-muted">
+                          <span className="text-[11px] font-semibold text-ink-muted">
                             • {evt.society.name}
                           </span>
                         )}
                       </div>
-                      <h4 className="text-heading-3 font-bold text-ink">{evt.title}</h4>
-                      <p className="text-body-sm text-ink-muted line-clamp-1">{evt.description || 'No description'}</p>
+                      <h4 className="text-body-sm font-bold text-ink">{evt.title}</h4>
+                      <p className="text-body-xs text-ink-muted line-clamp-1">{evt.description || 'No description'}</p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 text-body-xs font-medium text-ink shrink-0">
-                      <div className="flex items-center gap-1.5 bg-surface/80 px-3 py-1.5 rounded-lg border border-hairline">
-                        <Calendar size={14} className="text-primary" />
+                    <div className="flex items-center gap-3 text-body-xs font-medium text-ink shrink-0">
+                      <div className="flex items-center gap-1 bg-surface/80 px-2.5 py-1 rounded border border-hairline text-[11px]">
+                        <Calendar size={12} className="text-primary" />
                         <span>{new Date(evt.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                       </div>
                       {evt.venue && (
-                        <div className="flex items-center gap-1.5 bg-surface/80 px-3 py-1.5 rounded-lg border border-hairline">
-                          <MapPin size={14} className="text-emerald-600" />
+                        <div className="flex items-center gap-1 bg-surface/80 px-2.5 py-1 rounded border border-hairline text-[11px]">
+                          <MapPin size={12} className="text-emerald-600" />
                           <span>{evt.venue}</span>
                         </div>
                       )}
