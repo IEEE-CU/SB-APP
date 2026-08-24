@@ -12,6 +12,23 @@ const {
 const router = express.Router();
 router.use(authenticate);
 
+// Fields a caller may update via PUT /cards/:id. Deliberately excludes
+// `channelId` (and any other relationship field that determines the card's
+// society scope) so an edit cannot be used to relocate a card past the
+// authorization check already performed against its original channel.
+const EDITABLE_CARD_FIELDS = [
+  "title",
+  "description",
+  "status",
+  "priority",
+  "order",
+  "dueDate",
+  "assignees",
+  "projectId",
+  "parentCardId",
+  "blockedBy",
+];
+
 /**
  * Fetches the channel a board belongs to and verifies the caller's scope
  * covers that channel's society. Returns the channel on success, or null
@@ -131,7 +148,11 @@ router.put(
       if (!channel) return;
 
       const prevStatus = card.status;
-      Object.assign(card, req.body);
+      EDITABLE_CARD_FIELDS.forEach((field) => {
+        if (req.body[field] !== undefined) {
+          card[field] = req.body[field];
+        }
+      });
       await card.save();
 
       // Auto-post announcement to connected channel if status changed to DONE
@@ -181,5 +202,8 @@ router.delete(
     }
   },
 );
+
+// Exposed for unit testing the PUT /cards/:id allow-list without a DB.
+router.EDITABLE_CARD_FIELDS = EDITABLE_CARD_FIELDS;
 
 module.exports = router;

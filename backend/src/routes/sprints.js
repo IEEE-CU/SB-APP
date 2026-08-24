@@ -9,6 +9,19 @@ const {
 const Sprint = require("../models/Sprint");
 const Milestone = require("../models/Milestone");
 
+// Fields a caller may update via PUT /sprints/:sprintId. Deliberately
+// excludes `societyId` so an edit cannot be used to relocate a sprint past
+// the authorization check already performed against its original society.
+const EDITABLE_SPRINT_FIELDS = [
+  "name",
+  "goal",
+  "startDate",
+  "endDate",
+  "status",
+  "totalPoints",
+  "completedPoints",
+];
+
 // GET /api/v1/societies/:societyId/sprints
 router.get(
   "/sprints",
@@ -82,7 +95,11 @@ router.put(
           message: "Access denied. You do not have access to this sprint.",
         });
       }
-      Object.assign(sprint, req.body);
+      EDITABLE_SPRINT_FIELDS.forEach((field) => {
+        if (req.body[field] !== undefined) {
+          sprint[field] = req.body[field];
+        }
+      });
       await sprint.save();
       res.json({ success: true, data: sprint });
     } catch (err) {
@@ -143,5 +160,8 @@ router.post(
     }
   },
 );
+
+// Exposed for unit testing the PUT /sprints/:sprintId allow-list without a DB.
+router.EDITABLE_SPRINT_FIELDS = EDITABLE_SPRINT_FIELDS;
 
 module.exports = router;
