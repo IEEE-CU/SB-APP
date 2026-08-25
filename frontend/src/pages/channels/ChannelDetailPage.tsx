@@ -2,17 +2,20 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { channelsService } from "@/services/channels";
+import { useSocietyStore } from "@/store/societyStore";
 import { LoadingSpinner } from "@/components/ui";
 import ChannelChatFeed from "@/components/channels/ChannelChatFeed";
 import type { Channel } from "@/types/models";
 
 /**
- * Resolves a channel by its slug (the channel's kebab-case `name`, which the
- * backend enforces as unique per society) so channel URLs stay readable and
- * stable across reloads instead of exposing raw ObjectIds.
+ * Resolves a chat channel by its slug (the channel's kebab-case `name`, which
+ * the backend enforces as unique per society) so channel URLs stay readable
+ * instead of exposing raw ObjectIds. Resolves against the active society, the
+ * same list the sidebar builds its links from.
  */
 export default function ChannelDetailPage() {
   const { slug } = useParams<{ slug: string }>();
+  const { activeSocietyId } = useSocietyStore();
   const navigate = useNavigate();
   const [channel, setChannel] = useState<Channel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,14 +24,18 @@ export default function ChannelDetailPage() {
     if (!slug) return;
     setLoading(true);
     channelsService
-      .getChannels()
+      .getChannels(activeSocietyId || undefined)
       .then((res) => {
-        const match = (res.data.data || []).find((c) => c.name === slug);
+        // Backend defaults Channel.type to "chat"; a board channel must not
+        // render the chat feed, so it falls through to the not-found state.
+        const match = (res.data.data || []).find(
+          (c) => c.name === slug && (c.type ?? "chat") === "chat",
+        );
         setChannel(match || null);
       })
       .catch(() => setChannel(null))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, activeSocietyId]);
 
   if (loading) return <LoadingSpinner />;
   if (!channel)

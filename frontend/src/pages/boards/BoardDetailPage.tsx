@@ -2,16 +2,19 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { channelsService } from "@/services/channels";
+import { useSocietyStore } from "@/store/societyStore";
 import { LoadingSpinner } from "@/components/ui";
 import KanbanBoardView from "@/components/board/KanbanBoardView";
 import type { Channel } from "@/types/models";
 
 /**
  * Resolves a board channel by its slug (the channel's kebab-case `name`) and
- * hands the resolved id to the existing Kanban view.
+ * hands the resolved id to the existing Kanban view. Resolves against the
+ * active society, the same list the sidebar builds its links from.
  */
 export default function BoardDetailPage() {
   const { slug } = useParams<{ slug: string }>();
+  const { activeSocietyId } = useSocietyStore();
   const navigate = useNavigate();
   const [channel, setChannel] = useState<Channel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,14 +23,18 @@ export default function BoardDetailPage() {
     if (!slug) return;
     setLoading(true);
     channelsService
-      .getChannels()
+      .getChannels(activeSocietyId || undefined)
       .then((res) => {
-        const match = (res.data.data || []).find((c) => c.name === slug);
+        // Only a channel explicitly typed as "board" may render the Kanban
+        // view; chat channels fall through to the not-found state.
+        const match = (res.data.data || []).find(
+          (c) => c.name === slug && c.type === "board",
+        );
         setChannel(match || null);
       })
       .catch(() => setChannel(null))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, activeSocietyId]);
 
   if (loading) return <LoadingSpinner />;
   if (!channel)
