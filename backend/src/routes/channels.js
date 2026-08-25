@@ -337,6 +337,25 @@ router.post(
           .json({ success: false, message: "Message content is required" });
       }
 
+      // A reply may only target a parent inside this same channel, otherwise a
+      // caller could graft a message onto a thread in another channel/society.
+      const requestedParentId = parentMessageId || parentId || null;
+      let validatedParentId = null;
+      if (requestedParentId) {
+        const parent = await Message.findById(requestedParentId);
+        if (
+          !parent ||
+          !parent.channelId ||
+          parent.channelId.toString() !== channel._id.toString()
+        ) {
+          return res.status(400).json({
+            success: false,
+            message: "Parent message does not belong to this channel",
+          });
+        }
+        validatedParentId = parent._id;
+      }
+
       const message = await Message.create({
         body: messageContent,
         plainText: plainText || messageContent,
@@ -346,7 +365,7 @@ router.post(
         channelId: channel._id,
         calendarEvent,
         poll,
-        parentMessageId: parentMessageId || parentId || null,
+        parentMessageId: validatedParentId,
       });
 
       const populated = await Message.findById(message._id).populate(
@@ -362,12 +381,10 @@ router.post(
         });
       }
 
-      res
-        .status(201)
-        .json({
-          success: true,
-          data: { ...populated.toJSON(), reactions: [] },
-        });
+      res.status(201).json({
+        success: true,
+        data: { ...populated.toJSON(), reactions: [] },
+      });
     } catch (error) {
       next(error);
     }
@@ -496,12 +513,10 @@ router.post(
         });
       }
 
-      res
-        .status(201)
-        .json({
-          success: true,
-          data: { ...populatedReply.toJSON(), reactions: [] },
-        });
+      res.status(201).json({
+        success: true,
+        data: { ...populatedReply.toJSON(), reactions: [] },
+      });
     } catch (error) {
       next(error);
     }

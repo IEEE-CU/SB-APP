@@ -13,12 +13,24 @@ export default function UserDetailPage() {
 
   useEffect(() => {
     if (!id) return;
+    // Guard against a slower response for a previous id overwriting the
+    // current one when navigating straight between user detail pages.
+    let cancelled = false;
     setLoading(true);
     userService
       .getUser(id)
-      .then((res) => setUser(res.data.data))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (!cancelled) setUser(res.data.data);
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (loading) return <LoadingSpinner />;

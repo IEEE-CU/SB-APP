@@ -57,10 +57,23 @@ router.post(
           .json({ success: false, message: "Content is required" });
       }
 
+      // Persist against the scope-resolved society so created messages match
+      // the req.scopeFilter the GET handler reads them back with.
+      const societyId =
+        req.userScope?.societyId ||
+        req.user.societyId?._id ||
+        req.user.societyId ||
+        null;
+      if (!societyId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Society ID is required" });
+      }
+
       const message = await CommunityMessage.create({
         content,
         authorId: req.user._id,
-        societyId: req.user.societyId || null,
+        societyId,
       });
 
       const populated = await CommunityMessage.findById(message._id).populate(
@@ -68,10 +81,14 @@ router.post(
         "name email",
       );
 
-      // Real-time socket broadcast
+      // Real-time broadcast scoped to the owning society's room, so a message
+      // is not delivered to every connected socket regardless of society.
       const io = req.app.get("io");
-      if (io) {
-        io.emit("community:message", populated);
+      if (io && message.societyId) {
+        io.to(`society:${message.societyId}`).emit(
+          "community:message",
+          populated,
+        );
       }
 
       res.status(201).json({

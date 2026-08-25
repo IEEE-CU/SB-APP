@@ -1,3 +1,5 @@
+const { resolvePermissions } = require("./resolvePermissions");
+
 const userSockets = new Map(); // userId -> Set of socketIds
 const socketUserMap = new Map(); // socketId -> { userId, activeChannel, lastSeen }
 
@@ -16,6 +18,18 @@ function setupPresenceHandlers(io) {
       activeChannel: null,
       lastSeen: new Date(),
     });
+
+    // Join the caller's own society room so society-scoped broadcasts reach
+    // only that society's sockets. Users with no society scope join no room.
+    resolvePermissions(userId)
+      .then((resolved) => {
+        if (resolved?.scope?.societyId) {
+          socket.join(`society:${resolved.scope.societyId}`);
+        }
+      })
+      .catch(() => {
+        /* leave the socket out of any society room on failure */
+      });
 
     // Notify user is online
     io.emit("presence:update", {
@@ -129,4 +143,3 @@ module.exports = {
   userSockets,
   socketUserMap,
 };
-

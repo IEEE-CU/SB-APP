@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { userService } from "@/services/users";
 import {
   DataTable,
@@ -52,7 +52,20 @@ export default function UserManagementPage() {
   };
 
   const columns = [
-    { key: "name", header: "Name" },
+    {
+      key: "name",
+      header: "Name",
+      // Focusable link so each user is reachable by keyboard; the row-level
+      // click handler below stays as a mouse convenience.
+      render: (item: User) => (
+        <Link
+          to={`/admin/users/${item.id}`}
+          className="text-primary hover:underline font-medium"
+        >
+          {item.name}
+        </Link>
+      ),
+    },
     { key: "email", header: "Email" },
     {
       key: "isActive",

@@ -81,6 +81,7 @@ export const router = createBrowserRouter([
           { path: "/boards/:slug", element: <BoardDetailPage /> },
           { path: "/tasks", element: <TasksPage /> },
           { path: "/calendar", element: <CalendarPage /> },
+          { path: "*", element: <NotFoundPage /> },
         ],
       },
       {
@@ -92,7 +93,6 @@ export const router = createBrowserRouter([
           { path: "/admin/users/:id", element: <UserDetailPage /> },
         ],
       },
-      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ]);
