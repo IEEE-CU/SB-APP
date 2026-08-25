@@ -1,0 +1,61 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { userService } from "@/services/users";
+import { LoadingSpinner } from "@/components/ui";
+import type { User } from "@/types/models";
+
+export default function UserDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    userService
+      .getUser(id)
+      .then((res) => setUser(res.data.data))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!user)
+    return <div className="text-body-sm text-ink-muted">User not found</div>;
+
+  return (
+    <div>
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink mb-4"
+      >
+        <ArrowLeft size={16} /> Back
+      </button>
+      <h1 className="text-heading-1 font-bold text-ink mb-6">{user.name}</h1>
+      <div className="bg-surface rounded-lg border border-hairline p-6 max-w-2xl space-y-4">
+        <div>
+          <label className="text-eyebrow text-ink-muted uppercase">Email</label>
+          <p className="text-body-md text-ink mt-1">{user.email}</p>
+        </div>
+        <div>
+          <label className="text-eyebrow text-ink-muted uppercase">
+            Status
+          </label>
+          <p className="text-body-md text-ink mt-1">
+            {user.isActive ? "Active" : "Inactive"}
+          </p>
+        </div>
+        <div>
+          <label className="text-eyebrow text-ink-muted uppercase">
+            Joined
+          </label>
+          <p className="text-body-md text-ink mt-1">
+            {new Date(user.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

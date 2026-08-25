@@ -32,10 +32,34 @@ export default function CollapsibleChannelMenu() {
       } catch {
         // Fallback default channels for initial development
         setChannels([
-          { id: "general", name: "general", icon: "💬", type: "chat", categoryName: "text channels" },
-          { id: "announcements", name: "announcements", icon: "📢", type: "chat", categoryName: "text channels" },
-          { id: "events-planning", name: "events-planning", icon: "📌", type: "chat", categoryName: "text channels" },
-          { id: "kanban-board", name: "kanban-board", icon: "📋", type: "board", categoryName: "boards" },
+          {
+            id: "general",
+            name: "general",
+            icon: "💬",
+            type: "chat",
+            categoryName: "text channels",
+          },
+          {
+            id: "announcements",
+            name: "announcements",
+            icon: "📢",
+            type: "chat",
+            categoryName: "text channels",
+          },
+          {
+            id: "events-planning",
+            name: "events-planning",
+            icon: "📌",
+            type: "chat",
+            categoryName: "text channels",
+          },
+          {
+            id: "kanban-board",
+            name: "kanban-board",
+            icon: "📋",
+            type: "board",
+            categoryName: "boards",
+          },
         ]);
       } finally {
         setLoading(false);
@@ -66,7 +90,10 @@ export default function CollapsibleChannelMenu() {
           >
             <MessageSquare size={13} />
             <span>Chat Channels</span>
-            <ChevronDown size={12} className={`transition-transform ${isChatOpen ? "" : "-rotate-90"}`} />
+            <ChevronDown
+              size={12}
+              className={`transition-transform ${isChatOpen ? "" : "-rotate-90"}`}
+            />
           </button>
           <button
             onClick={() => setIsCreateModalOpen(true)}
@@ -80,12 +107,20 @@ export default function CollapsibleChannelMenu() {
         {isChatOpen && (
           <div className="mt-1 flex flex-col gap-0.5 pl-2">
             {loading ? (
-              <p className="px-3 py-1 text-caption text-ink-muted">Loading channels...</p>
+              <p className="px-3 py-1 text-caption text-ink-muted">
+                Loading channels...
+              </p>
             ) : chatChannels.length === 0 ? (
-              <p className="px-3 py-1 text-caption text-ink-muted">No chat channels</p>
+              <p className="px-3 py-1 text-caption text-ink-muted">
+                No chat channels
+              </p>
             ) : (
               chatChannels.map((c) => (
-                <NavLink key={c.id} to={`/channels/${c.id}`} className={channelLinkClass}>
+                <NavLink
+                  key={c.id}
+                  to={`/channels/${c.name}`}
+                  className={channelLinkClass}
+                >
                   <div className="flex items-center gap-2 truncate">
                     <span className="text-caption">{c.icon || "💬"}</span>
                     <span className="truncate"># {c.name}</span>
@@ -107,16 +142,25 @@ export default function CollapsibleChannelMenu() {
             <LayoutGrid size={13} />
             <span>Kanban Boards</span>
           </div>
-          <ChevronDown size={12} className={`transition-transform ${isBoardOpen ? "" : "-rotate-90"}`} />
+          <ChevronDown
+            size={12}
+            className={`transition-transform ${isBoardOpen ? "" : "-rotate-90"}`}
+          />
         </button>
 
         {isBoardOpen && (
           <div className="mt-1 flex flex-col gap-0.5 pl-2">
             {boardChannels.length === 0 ? (
-              <p className="px-3 py-1 text-caption text-ink-muted">No board channels</p>
+              <p className="px-3 py-1 text-caption text-ink-muted">
+                No board channels
+              </p>
             ) : (
               boardChannels.map((c) => (
-                <NavLink key={c.id} to={`/boards/${c.id}`} className={channelLinkClass}>
+                <NavLink
+                  key={c.id}
+                  to={`/boards/${c.name}`}
+                  className={channelLinkClass}
+                >
                   <div className="flex items-center gap-2 truncate">
                     <span className="text-caption">{c.icon || "📋"}</span>
                     <span className="truncate">{c.name}</span>
