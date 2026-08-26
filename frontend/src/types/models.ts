@@ -107,6 +107,10 @@ export interface Channel {
   name: string;
   description?: string;
   societyId?: string; // Optional links to societies
+  /** Discriminates chat channels from kanban board channels. Backend defaults to "chat". */
+  type?: "chat" | "board";
+  icon?: string;
+  categoryName?: string;
   isPrivate: boolean;
   memberIds: string[];
   createdAt: string;
@@ -140,4 +144,3 @@ export interface UnifiedCalendarEvent {
   society?: { id: string; name: string; shortName?: string };
   metadata?: Record<string, any>;
 }
-
