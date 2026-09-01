@@ -40,9 +40,10 @@ export default function RegisterPage() {
       await registerUser(data.name, data.email, data.password);
       toast.success("Account created!");
       navigate("/dashboard");
-    } catch (err: unknown) {
+    } catch (err: any) {
       const message =
-        err instanceof Error ? err.message : "Registration failed";
+        err?.response?.data?.message ||
+        (err instanceof Error ? err.message : "Registration failed");
       toast.error(message);
     } finally {
       setIsLoading(false);

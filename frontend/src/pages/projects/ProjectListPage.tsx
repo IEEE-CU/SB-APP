@@ -14,6 +14,7 @@ import { slugify } from "@/utils/slug";
 import type { Project } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
 import { PageTransition, AnimatedBadge } from "@/components/ui/WatermelonMotion";
+import toast from "react-hot-toast";
 
 export default function ProjectListPage() {
   const [data, setData] = useState<Project[]>([]);
@@ -71,7 +72,7 @@ export default function ProjectListPage() {
         setAllData(res.data.data);
         setMeta(res.data.meta);
       })
-      .catch(() => {})
+      .catch(() => toast.error("Failed to load projects"))
       .finally(() => setLoading(false));
   }, [page, limit]);
 

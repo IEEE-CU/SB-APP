@@ -8,8 +8,8 @@ import toast from "react-hot-toast";
 import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  email: z.string().email("Invalid email address").min(1, "Email is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -33,8 +33,10 @@ export default function LoginPage() {
       await login(data.email, data.password);
       toast.success("Welcome back!");
       navigate("/dashboard");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Login failed";
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        (err instanceof Error ? err.message : "Login failed");
       toast.error(message);
     } finally {
       setIsLoading(false);

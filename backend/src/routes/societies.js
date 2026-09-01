@@ -6,6 +6,7 @@ const {
   adminOnly,
   societyAccess,
 } = require("../middleware/auth");
+const { parseLimit } = require("../utils/pagination");
 
 const router = express.Router();
 
@@ -43,7 +44,16 @@ const calculateBalance = async (societyId, budget) => {
  */
 router.get("/", async (req, res, next) => {
   try {
-    const societies = await Society.find().sort({ name: 1 }).lean();
+    const { limit = 100, page = 1 } = req.query;
+    
+    const parsedLimit = parseLimit(limit);
+    const parsedPage = parseInt(page, 10) || 1;
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const [societies, totalItems] = await Promise.all([
+      Society.find().sort({ name: 1 }).skip(skip).limit(parsedLimit).lean(),
+      Society.countDocuments()
+    ]);
 
     // Calculate balances for all societies
     const societiesWithBalances = await Promise.all(
@@ -58,6 +68,12 @@ router.get("/", async (req, res, next) => {
       success: true,
       count: societiesWithBalances.length,
       data: societiesWithBalances,
+      meta: {
+        page: parsedPage,
+        limit: parsedLimit,
+        totalItems,
+        totalPages: Math.ceil(totalItems / parsedLimit) || 1,
+      }
     });
   } catch (error) {
     next(error);

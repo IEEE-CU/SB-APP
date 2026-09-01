@@ -213,6 +213,18 @@ export default function CommunityPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Clean up all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(typingTimeoutRef.current).forEach(clearTimeout);
+      if (localTypingTimeoutRef.current) {
+        clearTimeout(localTypingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const localTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Handle Typing notification trigger
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
@@ -230,8 +242,12 @@ export default function CommunityPage() {
       lastTypingTimeRef.current = Date.now();
     }
 
+    if (localTypingTimeoutRef.current) {
+      clearTimeout(localTypingTimeoutRef.current);
+    }
+
     // Debounced stop typing
-    setTimeout(() => {
+    localTypingTimeoutRef.current = setTimeout(() => {
       const timeDiff = Date.now() - lastTypingTimeRef.current;
       if (timeDiff >= 2000 && isTypingRef.current) {
         socket.emit('typing-stop', {

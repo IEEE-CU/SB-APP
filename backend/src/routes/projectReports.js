@@ -17,22 +17,36 @@ router.use(authenticate);
  */
 router.get("/", async (req, res, next) => {
   try {
-    const { societyId, projectId, limit = 100 } = req.query;
+    const { societyId, projectId, limit = 100, page = 1 } = req.query;
     const filter = {};
 
     if (societyId) filter.societyId = societyId;
     if (projectId) filter.projectId = projectId;
 
-    const reports = await ProjectReport.find(filter)
-      .populate("societyId", "name shortName")
-      .populate("projectId", "title category")
-      .sort({ createdAt: -1 })
-      .limit(parseLimit(limit));
+    const parsedLimit = parseLimit(limit);
+    const parsedPage = parseInt(page, 10) || 1;
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const [reports, totalItems] = await Promise.all([
+      ProjectReport.find(filter)
+        .populate("societyId", "name shortName")
+        .populate("projectId", "title category")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parsedLimit),
+      ProjectReport.countDocuments(filter)
+    ]);
 
     res.json({
       success: true,
       count: reports.length,
       data: reports,
+      meta: {
+        page: parsedPage,
+        limit: parsedLimit,
+        totalItems,
+        totalPages: Math.ceil(totalItems / parsedLimit) || 1,
+      }
     });
   } catch (error) {
     next(error);

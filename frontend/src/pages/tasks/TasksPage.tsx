@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CheckSquare, Plus, Trash2, Clock } from "lucide-react";
 import api from "@/lib/api";
 import { useSocietyStore } from "@/store/societyStore";
 import { Button } from "@/components/ui";
 import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 
 export interface TaskItem {
   id: string;
@@ -22,13 +23,14 @@ export default function TasksPage() {
   const { activeSocietyId } = useSocietyStore();
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [categoryName, setCategoryName] = useState("General");
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get("/tasks", { params: { societyId: activeSocietyId } });
@@ -39,14 +41,15 @@ export default function TasksPage() {
         { id: "t1", title: "Submit Monthly Financial Audit", completed: false, status: "IN_PROGRESS", priority: "HIGH", categoryName: "Finance", categoryColor: "#ef4444" },
         { id: "t2", title: "Prepare Agenda for AGM", completed: true, status: "COMPLETED", priority: "MEDIUM", categoryName: "General", categoryColor: "#3b82f6" },
       ]);
+      toast.error("Failed to load tasks. Showing demo data.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeSocietyId]);
 
   useEffect(() => {
     fetchTasks();
-  }, [activeSocietyId]);
+  }, [fetchTasks]);
 
 
   const toggleTaskCompleted = async (task: TaskItem) => {
@@ -58,15 +61,22 @@ export default function TasksPage() {
       await api.put(`/tasks/${task.id}`, { status: newStatus });
     } catch {
       // Revert if API fails
+      setTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, status: task.status, completed: task.status === "COMPLETED" } : t))
+      );
+      toast.error("Failed to update task status");
     }
   };
 
   const handleDeleteTask = async (id: string) => {
+    const previousTasks = [...tasks];
     setTasks((prev) => prev.filter((t) => t.id !== id));
     try {
       await api.delete(`/tasks/${id}`);
+      toast.success("Task deleted successfully");
     } catch {
-      fetchTasks();
+      setTasks(previousTasks);
+      toast.error("Failed to delete task");
     }
   };
 
@@ -75,22 +85,42 @@ export default function TasksPage() {
     if (!title.trim()) return;
 
     try {
+      setSubmitting(true);
       const res = await api.post("/tasks", {
         title,
         description,
         dueDate: dueDate || null,
-        categoryName,
+        categoryName: categoryName || "General",
         societyId: activeSocietyId,
       });
       if (res.data?.data) {
         setTasks((prev) => [res.data.data, ...prev]);
+      } else {
+        // Optimistic UI for fallback
+        const newTask: TaskItem = {
+          id: `t${Date.now()}`,
+          title,
+          description,
+          dueDate: dueDate || undefined,
+          categoryName: categoryName || "General",
+          completed: false,
+          status: "NOT_STARTED",
+          priority: "MEDIUM",
+          categoryColor: "#8b5cf6"
+        };
+        setTasks((prev) => [newTask, ...prev]);
       }
+      toast.success("Task created successfully");
       setTitle("");
       setDescription("");
       setDueDate("");
+      setCategoryName("General");
       setIsAddModalOpen(false);
     } catch (err) {
       console.error("Failed to create task", err);
+      toast.error("Failed to create task");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -135,7 +165,12 @@ export default function TasksPage() {
                       <span className={`text-body-sm font-semibold ${t.status === "COMPLETED" ? "line-through text-ink-muted" : "text-ink"}`}>
                         {t.title}
                       </span>
-                      <div className="flex items-center gap-2 text-[11px] text-ink-muted mt-0.5">
+                      {t.description && (
+                        <span className={`text-body-xs mt-0.5 ${t.status === "COMPLETED" ? "line-through text-ink-muted/70" : "text-ink-secondary"}`}>
+                          {t.description}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-2 text-[11px] text-ink-muted mt-1">
                         <span className="px-2 py-0.5 rounded-full bg-surface border border-hairline text-primary font-medium">
                           {t.categoryName}
                         </span>
@@ -188,6 +223,17 @@ export default function TasksPage() {
                       placeholder="Task title..."
                     />
                   </div>
+                  
+                  <div>
+                    <label className="text-eyebrow text-ink-muted uppercase block mb-1">Description (Optional)</label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary resize-none"
+                      placeholder="Task description..."
+                      rows={3}
+                    />
+                  </div>
 
                   <div>
                     <label className="text-eyebrow text-ink-muted uppercase block mb-1">Category</label>
@@ -211,10 +257,10 @@ export default function TasksPage() {
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4 border-t border-hairline">
-                    <Button type="button" variant="secondary" onClick={() => setIsAddModalOpen(false)}>
+                    <Button type="button" variant="secondary" onClick={() => setIsAddModalOpen(false)} disabled={submitting}>
                       Cancel
                     </Button>
-                    <Button type="submit">Create Task</Button>
+                    <Button type="submit" loading={submitting} disabled={submitting}>Create Task</Button>
                   </div>
                 </form>
               </motion.div>

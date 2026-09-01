@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,7 +16,7 @@ import toast from 'react-hot-toast';
 const reportSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   content: z.string().optional(),
-  type: z.enum(['financial', 'activity', 'general']).optional(),
+  type: z.union([z.enum(['financial', 'activity', 'general']), z.literal('')]).optional(),
   societyId: z.string().optional(),
 });
 
@@ -32,6 +33,11 @@ export default function ReportFormPage() {
   const [societies, setSocieties] = useState<Society[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
   const navigate = useNavigate();
+
+  const { hasAccess } = usePermissions();
+  const canEdit = hasAccess('reports', 'write');
+  const canCreate = hasAccess('reports', 'create');
+  const isAuthorized = isEdit ? canEdit : canCreate;
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ReportForm>({
     resolver: zodResolver(reportSchema),
@@ -71,12 +77,17 @@ export default function ReportFormPage() {
 
   const onSubmit = async (data: ReportForm) => {
     setSubmitting(true);
+    const formattedData = {
+      ...data,
+      type: data.type === '' ? undefined : data.type,
+      societyId: data.societyId === '' ? undefined : data.societyId,
+    };
     try {
       if (isEdit && reportId) {
-        await reportService.updateReport(reportId, data as any);
+        await reportService.updateReport(reportId, formattedData as any);
         toast.success('Report updated');
       } else {
-        await reportService.createReport(data as any);
+        await reportService.createReport(formattedData as any);
         toast.success('Report created');
       }
       navigate('/reports');
@@ -87,6 +98,7 @@ export default function ReportFormPage() {
     }
   };
 
+  if (!isAuthorized) return <Navigate to="/reports" replace />;
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -119,6 +131,7 @@ export default function ReportFormPage() {
                   <option value="activity">Activity / Event Report</option>
                   <option value="general">General Administrative Report</option>
                 </select>
+                {errors.type && <p className="text-caption text-red-500 mt-1">{errors.type.message}</p>}
               </div>
 
               <div>

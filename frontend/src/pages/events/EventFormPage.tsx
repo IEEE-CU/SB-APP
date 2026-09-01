@@ -140,7 +140,10 @@ export default function EventFormPage() {
     };
 
     try {
-      if (isEdit && eventId) {
+      if (isEdit) {
+        if (!eventId) {
+          throw new Error("Cannot update event: Event ID is missing");
+        }
         await eventService.updateEvent(eventId, formattedData as any);
         toast.success("Event updated successfully");
       } else {
@@ -148,8 +151,9 @@ export default function EventFormPage() {
         toast.success("Event created successfully");
       }
       navigate(`/events/${generatedSlug}`);
-    } catch {
-      toast.error("Failed to save event");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to save event");
     } finally {
       setSubmitting(false);
     }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,8 +18,8 @@ const projectSchema = z.object({
   societyId: z.string().optional(),
   status: z.enum(['planning', 'active', 'completed', 'on_hold']),
   techStackRaw: z.string().optional(),
-  githubUrl: z.string().optional(),
-  demoUrl: z.string().optional(),
+  githubUrl: z.union([z.string().url('Invalid URL'), z.literal('')]).optional(),
+  demoUrl: z.union([z.string().url('Invalid URL'), z.literal('')]).optional(),
 });
 
 type ProjectForm = z.infer<typeof projectSchema>;
@@ -33,6 +34,11 @@ export default function ProjectFormPage() {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [societies, setSocieties] = useState<Society[]>([]);
   const navigate = useNavigate();
+  
+  const { hasAccess } = usePermissions();
+  const canEdit = hasAccess('projects', 'write');
+  const canCreate = hasAccess('projects', 'create');
+  const isAuthorized = isEdit ? canEdit : canCreate;
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProjectForm>({
     resolver: zodResolver(projectSchema),
@@ -77,11 +83,11 @@ export default function ProjectFormPage() {
     const formattedData = {
       title: data.title,
       description: data.description,
-      societyId: data.societyId,
+      societyId: data.societyId === '' ? undefined : data.societyId,
       status: data.status,
       techStack: data.techStackRaw ? data.techStackRaw.split(',').map((s) => s.trim()).filter(Boolean) : [],
-      githubUrl: data.githubUrl,
-      demoUrl: data.demoUrl,
+      githubUrl: data.githubUrl === '' ? undefined : data.githubUrl,
+      demoUrl: data.demoUrl === '' ? undefined : data.demoUrl,
     };
 
     try {
@@ -100,6 +106,7 @@ export default function ProjectFormPage() {
     }
   };
 
+  if (!isAuthorized) return <Navigate to="/projects" replace />;
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -177,6 +184,7 @@ export default function ProjectFormPage() {
                   placeholder="https://github.com/ieee/..."
                   className="w-full px-3 py-2 bg-surface/50 border border-white/20 dark:border-white/5 rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
+                {errors.githubUrl && <p className="text-caption text-red-500 mt-1">{errors.githubUrl.message}</p>}
               </div>
 
               <div>
@@ -186,6 +194,7 @@ export default function ProjectFormPage() {
                   placeholder="https://..."
                   className="w-full px-3 py-2 bg-surface/50 border border-white/20 dark:border-white/5 rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
+                {errors.demoUrl && <p className="text-caption text-red-500 mt-1">{errors.demoUrl.message}</p>}
               </div>
             </div>
 
