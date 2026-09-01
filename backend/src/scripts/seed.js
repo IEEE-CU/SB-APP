@@ -470,9 +470,9 @@ const systemRoles = [
     name: "ieee_member",
     displayName: "IEEE Member",
     level: "member",
-    scope: "student_branch",
+    scope: "society",
     description:
-      "General IEEE Member with branch-wide view and participation access",
+      "General IEEE Member with access limited to their own society (per the community_hub: limited_own_scope RBAC matrix entry)",
   },
 ];
 

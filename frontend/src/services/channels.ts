@@ -1,19 +1,31 @@
-import api from '@/lib/api';
-import type { ApiResponse } from '@/types/api';
-import type { Channel, Message } from '@/types/models';
+import api from "@/lib/api";
+import type { ApiResponse } from "@/types/api";
+import type { Channel, Message } from "@/types/models";
 
 export const channelsService = {
-  getChannels: () =>
-    api.get<ApiResponse<Channel[]>>('/channels'),
+  /**
+   * Lists channels for the given society. When societyId is omitted the
+   * backend falls back to the authenticated user's own society scope.
+   */
+  getChannels: (societyId?: string) =>
+    api.get<ApiResponse<Channel[]>>("/channels", {
+      params: societyId ? { societyId } : undefined,
+    }),
 
   getChannel: (channelId: string) =>
     api.get<ApiResponse<Channel>>(`/channels/${channelId}`),
 
-  createChannel: (data: { name: string; description?: string; isPrivate?: boolean; societyId?: string }) =>
-    api.post<ApiResponse<Channel>>('/channels', data),
+  createChannel: (data: {
+    name: string;
+    description?: string;
+    isPrivate?: boolean;
+    societyId?: string;
+  }) => api.post<ApiResponse<Channel>>("/channels", data),
 
-  updateChannel: (channelId: string, data: { name?: string; description?: string; isPrivate?: boolean }) =>
-    api.put<ApiResponse<Channel>>(`/channels/${channelId}`, data),
+  updateChannel: (
+    channelId: string,
+    data: { name?: string; description?: string; isPrivate?: boolean },
+  ) => api.put<ApiResponse<Channel>>(`/channels/${channelId}`, data),
 
   deleteChannel: (channelId: string) =>
     api.delete<ApiResponse<null>>(`/channels/${channelId}`),
@@ -21,7 +33,13 @@ export const channelsService = {
   getChannelMessages: (channelId: string) =>
     api.get<ApiResponse<Message[]>>(`/channels/${channelId}/messages`),
 
-  sendChannelMessage: (channelId: string, content: string, parentId?: string, attachments?: string[], poll?: any) =>
+  sendChannelMessage: (
+    channelId: string,
+    content: string,
+    parentId?: string,
+    attachments?: string[],
+    poll?: any,
+  ) =>
     api.post<ApiResponse<Message>>(`/channels/${channelId}/messages`, {
       content,
       parentId,
@@ -30,17 +48,28 @@ export const channelsService = {
     }),
 
   addReaction: (messageId: string, emoji: string) =>
-    api.post<ApiResponse<Message>>(`/messages/${messageId}/reactions`, { emoji }),
+    api.post<ApiResponse<Message>>(`/messages/${messageId}/reactions`, {
+      emoji,
+    }),
 
   removeReaction: (messageId: string, emoji: string) =>
-    api.delete<ApiResponse<Message>>(`/messages/${messageId}/reactions`, { data: { emoji } }),
+    api.delete<ApiResponse<Message>>(`/messages/${messageId}/reactions`, {
+      data: { emoji },
+    }),
 
   addMember: (channelId: string, userId: string) =>
-    api.post<ApiResponse<Channel>>(`/channels/${channelId}/members`, { userId }),
+    api.post<ApiResponse<Channel>>(`/channels/${channelId}/members`, {
+      userId,
+    }),
 
   removeMember: (channelId: string, userId: string) =>
-    api.delete<ApiResponse<Channel>>(`/channels/${channelId}/members`, { data: { userId } }),
+    api.delete<ApiResponse<Channel>>(`/channels/${channelId}/members`, {
+      data: { userId },
+    }),
 
   castVote: (messageId: string, optionIndex: number) =>
-    api.post<ApiResponse<Message>>(`/channels/messages/${messageId}/poll/vote`, { optionIndex }),
+    api.post<ApiResponse<Message>>(
+      `/channels/messages/${messageId}/poll/vote`,
+      { optionIndex },
+    ),
 };

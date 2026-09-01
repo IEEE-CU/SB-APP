@@ -16,21 +16,43 @@ export interface BoardCardItem {
   blockedBy?: string[];
 }
 
-const STATUS_COLUMNS: { key: BoardCardItem["status"]; title: string; color: string }[] = [
+const STATUS_COLUMNS: {
+  key: BoardCardItem["status"];
+  title: string;
+  color: string;
+}[] = [
   { key: "TODO", title: "To Do", color: "border-slate-400 text-slate-500" },
-  { key: "IN_PROGRESS", title: "In Progress", color: "border-blue-500 text-blue-500" },
-  { key: "IN_REVIEW", title: "In Review", color: "border-amber-500 text-amber-500" },
+  {
+    key: "IN_PROGRESS",
+    title: "In Progress",
+    color: "border-blue-500 text-blue-500",
+  },
+  {
+    key: "IN_REVIEW",
+    title: "In Review",
+    color: "border-amber-500 text-amber-500",
+  },
   { key: "DONE", title: "Done", color: "border-emerald-500 text-emerald-500" },
 ];
 
-export default function KanbanBoardView() {
-  const { channelId } = useParams<{ channelId?: string }>();
+interface KanbanBoardViewProps {
+  /** Resolved channel id. Falls back to the :channelId route param when omitted. */
+  channelId?: string;
+}
+
+export default function KanbanBoardView({
+  channelId: channelIdProp,
+}: KanbanBoardViewProps = {}) {
+  const { channelId: channelIdParam } = useParams<{ channelId?: string }>();
+  const channelId = channelIdProp ?? channelIdParam;
   const [cards, setCards] = useState<BoardCardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedColumn, setSelectedColumn] = useState<BoardCardItem["status"]>("TODO");
+  const [selectedColumn, setSelectedColumn] =
+    useState<BoardCardItem["status"]>("TODO");
   const [newTitle, setNewTitle] = useState("");
-  const [newPriority, setNewPriority] = useState<BoardCardItem["priority"]>("MEDIUM");
+  const [newPriority, setNewPriority] =
+    useState<BoardCardItem["priority"]>("MEDIUM");
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -41,9 +63,27 @@ export default function KanbanBoardView() {
         setCards(res.data?.data || []);
       } catch {
         setCards([
-          { id: "c1", title: "Setup Project Repository", status: "DONE", priority: "HIGH", order: 0 },
-          { id: "c2", title: "Design Society Landing Banner", status: "IN_PROGRESS", priority: "MEDIUM", order: 0 },
-          { id: "c3", title: "Review Event Grant Budget", status: "TODO", priority: "URGENT", order: 0 },
+          {
+            id: "c1",
+            title: "Setup Project Repository",
+            status: "DONE",
+            priority: "HIGH",
+            order: 0,
+          },
+          {
+            id: "c2",
+            title: "Design Society Landing Banner",
+            status: "IN_PROGRESS",
+            priority: "MEDIUM",
+            order: 0,
+          },
+          {
+            id: "c3",
+            title: "Review Event Grant Budget",
+            status: "TODO",
+            priority: "URGENT",
+            order: 0,
+          },
         ]);
       } finally {
         setLoading(false);
@@ -53,9 +93,12 @@ export default function KanbanBoardView() {
     fetchCards();
   }, [channelId]);
 
-  const handleStatusChange = async (cardId: string, newStatus: BoardCardItem["status"]) => {
+  const handleStatusChange = async (
+    cardId: string,
+    newStatus: BoardCardItem["status"],
+  ) => {
     setCards((prev) =>
-      prev.map((c) => (c.id === cardId ? { ...c, status: newStatus } : c))
+      prev.map((c) => (c.id === cardId ? { ...c, status: newStatus } : c)),
     );
     try {
       await api.put(`/boards/cards/${cardId}`, { status: newStatus });
@@ -109,9 +152,14 @@ export default function KanbanBoardView() {
         {STATUS_COLUMNS.map((col) => {
           const colCards = cards.filter((c) => c.status === col.key);
           return (
-            <div key={col.key} className="bg-canvas-soft/40 border border-hairline/60 rounded-xl p-4 flex flex-col gap-3 min-h-[500px]">
+            <div
+              key={col.key}
+              className="bg-canvas-soft/40 border border-hairline/60 rounded-xl p-4 flex flex-col gap-3 min-h-[500px]"
+            >
               <div className="flex items-center justify-between pb-2 border-b border-hairline/60">
-                <span className={`text-eyebrow font-bold uppercase tracking-wider ${col.color}`}>
+                <span
+                  className={`text-eyebrow font-bold uppercase tracking-wider ${col.color}`}
+                >
                   {col.title} ({colCards.length})
                 </span>
                 <button
@@ -126,7 +174,9 @@ export default function KanbanBoardView() {
               </div>
 
               {loading ? (
-                <p className="text-caption text-ink-muted py-4 text-center">Loading...</p>
+                <p className="text-caption text-ink-muted py-4 text-center">
+                  Loading...
+                </p>
               ) : (
                 colCards.map((card) => (
                   <div
@@ -134,19 +184,29 @@ export default function KanbanBoardView() {
                     className="bg-surface border border-hairline/60 rounded-lg p-3.5 shadow-sm space-y-2 group hover:border-primary/50 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-body-sm font-semibold text-ink leading-snug">{card.title}</h4>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${priorityColors[card.priority]}`}>
+                      <h4 className="text-body-sm font-semibold text-ink leading-snug">
+                        {card.title}
+                      </h4>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full ${priorityColors[card.priority]}`}
+                      >
                         {card.priority}
                       </span>
                     </div>
 
-                    {card.description && <p className="text-caption text-ink-muted line-clamp-2">{card.description}</p>}
+                    {card.description && (
+                      <p className="text-caption text-ink-muted line-clamp-2">
+                        {card.description}
+                      </p>
+                    )}
 
                     {/* Move status buttons */}
                     <div className="pt-2 flex items-center justify-between border-t border-hairline/40 text-[11px] text-ink-muted">
                       <span>Move to:</span>
                       <div className="flex items-center gap-1">
-                        {STATUS_COLUMNS.filter((s) => s.key !== card.status).map((s) => (
+                        {STATUS_COLUMNS.filter(
+                          (s) => s.key !== card.status,
+                        ).map((s) => (
                           <button
                             key={s.key}
                             onClick={() => handleStatusChange(card.id, s.key)}
@@ -169,10 +229,14 @@ export default function KanbanBoardView() {
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-surface border border-hairline rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4">
-            <h3 className="text-title font-semibold text-ink">Add Task to {selectedColumn}</h3>
+            <h3 className="text-title font-semibold text-ink">
+              Add Task to {selectedColumn}
+            </h3>
             <form onSubmit={handleCreateCard} className="space-y-4">
               <div>
-                <label className="text-eyebrow text-ink-muted uppercase block mb-1">Task Title</label>
+                <label className="text-eyebrow text-ink-muted uppercase block mb-1">
+                  Task Title
+                </label>
                 <input
                   type="text"
                   required
@@ -184,7 +248,9 @@ export default function KanbanBoardView() {
               </div>
 
               <div>
-                <label className="text-eyebrow text-ink-muted uppercase block mb-1">Priority</label>
+                <label className="text-eyebrow text-ink-muted uppercase block mb-1">
+                  Priority
+                </label>
                 <select
                   value={newPriority}
                   onChange={(e) => setNewPriority(e.target.value as any)}
@@ -198,7 +264,11 @@ export default function KanbanBoardView() {
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-hairline">
-                <Button type="button" variant="secondary" onClick={() => setIsAddModalOpen(false)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsAddModalOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit">Create Card</Button>

@@ -216,6 +216,30 @@ const attachScope = (fieldName = "society") => {
 };
 
 /**
+ * Checks whether a given societyId is permitted under the scope previously
+ * computed by `attachScope` (available as `req.scopeFilter`). An empty
+ * scopeFilter means the caller's role has global/unrestricted access
+ * (e.g. sb_faculty_advisor). Use this to authorize access to a specific
+ * resource once its owning societyId is known (from a query/body param
+ * for list/create, or from the fetched resource itself for detail/edit/
+ * delete), rather than trusting a client-supplied societyId directly.
+ *
+ * @param {import('express').Request} req - Request already processed by attachScope
+ * @param {string|import('mongoose').Types.ObjectId} societyId - The resource's societyId
+ * @returns {boolean}
+ */
+const isSocietyInScope = (req, societyId) => {
+  if (!societyId) return false;
+  const filter = req.scopeFilter;
+  if (!filter) return false;
+  const keys = Object.keys(filter);
+  if (keys.length === 0) return true;
+  const scopedValue = filter[keys[0]];
+  if (!scopedValue) return false;
+  return societyId.toString() === scopedValue.toString();
+};
+
+/**
  * Middleware for direct audit logging of specific route activities.
  *
  * @param {string} action - The action description
@@ -257,5 +281,6 @@ module.exports = {
   requireRole,
   requireSuperAdmin,
   attachScope,
+  isSocietyInScope,
   auditLogger,
 };

@@ -8,6 +8,7 @@ import {
   Megaphone,
   MessageCircle,
   Users,
+  CheckSquare,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { ACCESS_LEVELS } from "@/lib/permissionLevels";
@@ -41,6 +42,7 @@ const navItems = [
     label: "Community Hub",
     module: "community_hub",
   },
+  { to: "/tasks", icon: CheckSquare, label: "Tasks", module: null },
   {
     to: "/calendar",
     icon: Calendar,

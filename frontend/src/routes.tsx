@@ -25,8 +25,13 @@ import AnnouncementDetailPage from "@/pages/announcements/AnnouncementDetailPage
 import AnnouncementFormPage from "@/pages/announcements/AnnouncementFormPage";
 import CommunityPage from "@/pages/community/CommunityPage";
 import CalendarPage from "@/pages/calendar/CalendarPage";
+import ChannelDetailPage from "@/pages/channels/ChannelDetailPage";
+import BoardDetailPage from "@/pages/boards/BoardDetailPage";
+import TasksPage from "@/pages/tasks/TasksPage";
 import UserManagementPage from "@/pages/admin/UserManagementPage";
+import UserDetailPage from "@/pages/admin/UserDetailPage";
 import LandingPage from "@/pages/LandingPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 export const router = createBrowserRouter([
   {
@@ -74,14 +79,21 @@ export const router = createBrowserRouter([
             element: <AnnouncementFormPage />,
           },
           { path: "/community", element: <CommunityPage /> },
+          { path: "/channels/:slug", element: <ChannelDetailPage /> },
+          { path: "/boards/:slug", element: <BoardDetailPage /> },
+          { path: "/tasks", element: <TasksPage /> },
           { path: "/calendar", element: <CalendarPage /> },
+          { path: "*", element: <NotFoundPage /> },
         ],
       },
       {
         element: (
           <ProtectedRoute requiredModule="users" requiredAction="admin" />
         ),
-        children: [{ path: "/admin/users", element: <UserManagementPage /> }],
+        children: [
+          { path: "/admin/users", element: <UserManagementPage /> },
+          { path: "/admin/users/:id", element: <UserDetailPage /> },
+        ],
       },
     ],
   },
