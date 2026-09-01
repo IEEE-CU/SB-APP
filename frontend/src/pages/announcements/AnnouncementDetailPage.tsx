@@ -102,7 +102,7 @@ export default function AnnouncementDetailPage() {
             <PermissionGate module="announcements" action="write">
               <Button
                 variant="secondary"
-                onClick={() => navigate(`/announcements/${announcement.id}/edit`)}
+                onClick={() => navigate(`/announcements/${slugify(announcement.title)}/edit`)}
               >
                 Edit Notice
               </Button>

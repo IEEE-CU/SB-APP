@@ -29,13 +29,13 @@ export default function EventDetailPage() {
           return eventService.getEvent(found.id).then((r) => {
             const ev = r.data.data;
             setEvent(ev);
-            setRsvpCount(ev.rsvpCount || Math.floor(Math.random() * 40) + 15);
+            setRsvpCount(ev.rsvpCount ?? 0);
           });
         } else {
           return eventService.getEvent(slug).then((r) => {
             const ev = r.data.data;
             setEvent(ev);
-            setRsvpCount(ev.rsvpCount || Math.floor(Math.random() * 40) + 15);
+            setRsvpCount(ev.rsvpCount ?? 0);
           });
         }
       })
@@ -98,7 +98,7 @@ export default function EventDetailPage() {
 
           <div className="flex items-center gap-3">
             <PermissionGate module="events" action="write">
-              <Button variant="secondary" onClick={() => navigate(`/events/${event.id}/edit`)}>
+              <Button variant="secondary" onClick={() => navigate(`/events/${event.slug || slugify(event.title)}/edit`)}>
                 Edit Event
               </Button>
             </PermissionGate>
