@@ -13,6 +13,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { slugify } from "@/utils/slug";
 import type { Event } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
+import { PageTransition, AnimatedBadge } from "@/components/ui/WatermelonMotion";
 
 export default function EventListPage() {
   const [data, setData] = useState<Event[]>([]);
@@ -99,19 +100,19 @@ export default function EventListPage() {
       header: "Status",
       sortable: true,
       render: (item: Event) => (
-        <span
-          className={`inline-flex px-2 py-0.5 rounded-full text-eyebrow ${
+        <AnimatedBadge
+          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase ${
             item.status === "upcoming"
-              ? "bg-primary/10 text-primary"
+              ? "bg-primary/20 text-primary dark:text-blue-400 border border-primary/20"
               : item.status === "completed"
-                ? "bg-accent-green/10 text-accent-green"
+                ? "bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/20"
                 : item.status === "cancelled"
-                  ? "bg-red-100 text-red-600"
-                  : "bg-accent-orange/10 text-accent-orange"
+                  ? "bg-red-500/20 text-red-700 dark:text-red-400 border border-red-500/20"
+                  : "bg-orange-500/20 text-orange-700 dark:text-orange-400 border border-orange-500/20"
           }`}
         >
           {item.status}
-        </span>
+        </AnimatedBadge>
       ),
     },
     {
@@ -119,7 +120,7 @@ export default function EventListPage() {
       header: "Date",
       sortable: true,
       render: (item: Event) =>
-        item.date ? new Date(item.date).toLocaleDateString() : "—",
+        item.date ? new Date(item.date).toLocaleDateString(undefined, { dateStyle: 'medium' }) : "—",
     },
     {
       key: "location",
@@ -132,16 +133,22 @@ export default function EventListPage() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-heading-1 font-bold text-ink">Events</h1>
-        <PermissionGate module="events" action="write">
-          <Button onClick={() => navigate("/events/new")}>New Event</Button>
-        </PermissionGate>
+    <PageTransition className="max-w-7xl mx-auto flex flex-col gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink mb-1">Events</h1>
+          <p className="text-ink-muted text-sm font-medium">Manage and discover branch activities</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="w-full sm:w-72">
+            <SearchInput onSearch={handleSearch} placeholder="Search events..." />
+          </div>
+          <PermissionGate module="events" action="write">
+            <Button onClick={() => navigate("/events/new")} className="shadow-soft-1">New Event</Button>
+          </PermissionGate>
+        </div>
       </div>
-      <div className="mb-4 max-w-xs">
-        <SearchInput onSearch={handleSearch} placeholder="Search events..." />
-      </div>
+      
       <DataTable
         columns={columns}
         data={data}
@@ -151,6 +158,6 @@ export default function EventListPage() {
         onSort={handleSort}
       />
       <Pagination meta={meta} onPageChange={goToPage} />
-    </div>
+    </PageTransition>
   );
 }

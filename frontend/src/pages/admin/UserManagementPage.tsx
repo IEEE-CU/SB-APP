@@ -7,6 +7,7 @@ import {
   SearchInput,
   LoadingSpinner,
 } from "@/components/ui";
+import { PageTransition, AnimatedCard, AnimatedBadge } from "@/components/ui/WatermelonMotion";
 import { usePagination } from "@/hooks/usePagination";
 import type { User } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
@@ -55,8 +56,6 @@ export default function UserManagementPage() {
     {
       key: "name",
       header: "Name",
-      // Focusable link so each user is reachable by keyboard; the row-level
-      // click handler below stays as a mouse convenience.
       render: (item: User) => (
         <Link
           to={`/admin/users/${item.id}`}
@@ -71,11 +70,9 @@ export default function UserManagementPage() {
       key: "isActive",
       header: "Status",
       render: (item: User) => (
-        <span
-          className={`inline-flex px-2 py-0.5 rounded-full text-eyebrow ${item.isActive ? "bg-accent-green/10 text-accent-green" : "bg-red-100 text-red-600"}`}
-        >
+        <AnimatedBadge variant={item.isActive ? "success" : "danger"}>
           {item.isActive ? "Active" : "Inactive"}
-        </span>
+        </AnimatedBadge>
       ),
     },
     {
@@ -88,19 +85,25 @@ export default function UserManagementPage() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div>
+    <PageTransition>
       <h1 className="text-heading-1 font-bold text-ink mb-6">
         User Management
       </h1>
-      <div className="mb-4 max-w-xs">
-        <SearchInput onSearch={handleSearch} placeholder="Search users..." />
-      </div>
-      <DataTable
-        columns={columns}
-        data={data}
-        onRowClick={(item: User) => navigate(`/admin/users/${item.id}`)}
-      />
-      <Pagination meta={meta} onPageChange={goToPage} />
-    </div>
+      <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-3xl p-6 shadow-2xl">
+        <div className="mb-6 max-w-sm">
+          <SearchInput onSearch={handleSearch} placeholder="Search users..." />
+        </div>
+        <div className="rounded-2xl overflow-hidden border border-white/10 dark:border-white/5">
+          <DataTable
+            columns={columns}
+            data={data}
+            onRowClick={(item: User) => navigate(`/admin/users/${item.id}`)}
+          />
+        </div>
+        <div className="mt-6">
+          <Pagination meta={meta} onPageChange={goToPage} />
+        </div>
+      </AnimatedCard>
+    </PageTransition>
   );
 }

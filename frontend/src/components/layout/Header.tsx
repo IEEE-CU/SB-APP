@@ -19,30 +19,30 @@ export default function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-surface/70 backdrop-blur-md border-b border-hairline/60 flex items-center justify-between px-4 sm:px-6 shadow-sm z-50">
+    <header className="h-[60px] flex items-center justify-between px-4 sm:px-6 z-50 bg-transparent">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="p-2 -ml-2 rounded-md hover:bg-canvas-soft text-ink-secondary transition-colors lg:hidden"
+          className="p-2 -ml-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 text-ink-secondary transition-colors lg:hidden active:scale-95"
           aria-label="Open Menu"
         >
           <Menu size={20} />
         </button>
         {/* IEEE SB Brand Mark */}
-        <div className="w-8 h-8 rounded-md bg-primary hidden sm:flex items-center justify-center text-white font-bold text-title shadow-soft-1">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-blue-600 hidden sm:flex items-center justify-center text-white font-bold text-[10px] shadow-sm shadow-primary/20">
           IEEE
         </div>
-        <span className="text-title font-semibold text-ink tracking-tight hidden md:inline">
-          IEEE Campus Community Hub
+        <span className="text-base font-semibold tracking-tight text-ink hidden md:inline ml-1">
+          Campus Hub
         </span>
-        <div className="w-px h-5 bg-hairline hidden md:block"></div>
+        <div className="w-px h-5 bg-hairline hidden md:block mx-2"></div>
         <SocietySwitcher />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
         <button
           onClick={toggleDarkMode}
-          className="p-2 rounded-md hover:bg-canvas-soft text-ink-secondary transition-colors"
+          className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-ink-secondary transition-colors active:scale-90"
           title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
           aria-label="Toggle theme"
         >
@@ -50,18 +50,18 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </button>
         <button
           onClick={() => navigate("/profile")}
-          className="flex items-center gap-2 text-body-sm text-ink-secondary hover:text-ink transition-colors px-2 py-1.5 rounded-md hover:bg-canvas-soft"
+          className="flex items-center gap-2 text-sm text-ink-secondary hover:text-ink transition-colors px-3 py-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 font-medium"
         >
           <User size={16} />
-          <span className="font-medium">{user?.name || "Profile"}</span>
+          <span className="hidden sm:inline">{user?.name || "Profile"}</span>
         </button>
-        <div className="w-px h-5 bg-hairline"></div>
+        <div className="w-px h-5 bg-hairline mx-1"></div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink transition-colors px-2 py-1.5 rounded-md hover:bg-canvas-soft"
+          className="flex items-center gap-2 text-sm text-ink-muted hover:text-red-500 transition-colors p-2 sm:px-3 sm:py-2 rounded-full hover:bg-red-500/10 active:scale-95"
         >
           <LogOut size={16} />
-          <span>Logout</span>
+          <span className="hidden sm:inline font-medium">Logout</span>
         </button>
       </div>
     </header>

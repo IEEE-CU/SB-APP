@@ -1,18 +1,24 @@
 import { Link } from "react-router-dom";
+import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 
 export default function NotFoundPage() {
   return (
-    <div className="flex flex-col items-center justify-center text-center py-24">
-      <h1 className="text-heading-1 font-bold text-ink">Page not found</h1>
-      <p className="text-body-sm text-ink-muted mt-2 max-w-sm">
-        The page you're looking for doesn't exist or may have been moved.
-      </p>
-      <Link
-        to="/dashboard"
-        className="mt-6 text-body-sm font-semibold text-primary hover:underline"
-      >
-        Back to Dashboard
-      </Link>
-    </div>
+    <PageTransition>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center py-24 p-6">
+        <AnimatedCard className="max-w-md w-full p-8 bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl flex flex-col items-center">
+          <h1 className="text-display-2 font-bold text-ink mb-4">404</h1>
+          <h2 className="text-heading-3 font-bold text-ink mb-2">Page not found</h2>
+          <p className="text-body-sm text-ink-muted mb-8 text-center">
+            The page you're looking for doesn't exist or may have been moved.
+          </p>
+          <Link
+            to="/dashboard"
+            className="px-6 py-2.5 bg-primary text-white font-medium rounded-full hover:bg-primary-active transition-colors shadow-soft-1"
+          >
+            Back to Dashboard
+          </Link>
+        </AnimatedCard>
+      </div>
+    </PageTransition>
   );
 }

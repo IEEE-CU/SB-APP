@@ -21,6 +21,7 @@ import {
   Landmark,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 
 export default function LandingPage() {
   const { isAuthenticated } = useAuthStore();
@@ -100,8 +101,9 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-canvas-soft text-ink font-sans flex flex-col selection:bg-primary/20 transition-colors duration-200">
-      {/* ─── STICKY HEADER ─── */}
+    <PageTransition>
+      <div className="min-h-screen bg-canvas-soft text-ink font-sans flex flex-col selection:bg-primary/20 transition-colors duration-200">
+        {/* ─── STICKY HEADER ─── */}
       <header className="sticky top-0 z-50 bg-surface/90 backdrop-blur-md border-b border-hairline transition-all">
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -525,7 +527,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Feature Card 1 — Event & Activity Hub */}
-            <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
+            <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-lg p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
               <div>
                 <div className="w-12 h-12 rounded-lg bg-accent-teal/10 text-accent-teal flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
                   <Calendar size={24} />
@@ -541,10 +543,10 @@ export default function LandingPage() {
               <div className="mt-6 flex items-center gap-1 text-body-sm font-semibold text-accent-teal">
                 <span>Unified Calendar Sync</span>
               </div>
-            </div>
+            </AnimatedCard>
 
             {/* Feature Card 2 — Events */}
-            <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
+            <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-lg p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
               <div>
                 <div className="w-12 h-12 rounded-lg bg-accent-purple/20 text-accent-purple-deep flex items-center justify-center mb-6 group-hover:-rotate-6 transition-transform">
                   <Calendar size={24} />
@@ -561,10 +563,10 @@ export default function LandingPage() {
               <div className="mt-6 flex items-center gap-1 text-body-sm font-semibold text-accent-purple-deep">
                 <span>Budget vs. actuals tracking</span>
               </div>
-            </div>
+            </AnimatedCard>
 
             {/* Feature Card 3 — Projects */}
-            <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
+            <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-lg p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
               <div>
                 <div className="w-12 h-12 rounded-lg bg-accent-orange/10 text-accent-orange flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
                   <FolderKanban size={24} />
@@ -580,10 +582,10 @@ export default function LandingPage() {
               <div className="mt-6 flex items-center gap-1 text-body-sm font-semibold text-accent-orange">
                 <span>Milestone & grant tracking</span>
               </div>
-            </div>
+            </AnimatedCard>
 
             {/* Feature Card 4 — Community Hub */}
-            <div className="bg-surface rounded-lg border border-hairline p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
+            <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-lg p-6 hover:shadow-soft-1 transition-all duration-300 flex flex-col justify-between group">
               <div>
                 <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:-rotate-6 transition-transform">
                   <MessageSquare size={24} />
@@ -600,7 +602,7 @@ export default function LandingPage() {
               <div className="mt-6 flex items-center gap-1 text-body-sm font-semibold text-primary">
                 <span>No Discord needed</span>
               </div>
-            </div>
+            </AnimatedCard>
           </div>
 
           {/* Interactive Feature Demo Panel */}
@@ -1446,6 +1448,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </PageTransition>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { calendarService } from '@/services/calendar';
 import type { UnifiedCalendarEvent } from '@/types/models';
 import { LoadingSpinner, Button, SearchInput } from '@/components/ui';
+import { PageTransition, AnimatedCard } from '@/components/ui/WatermelonMotion';
 import toast from 'react-hot-toast';
 import { ChevronLeft, ChevronRight, Filter, Calendar, MapPin, Clock, Plus, X, Calendar as CalendarIcon, List, LayoutGrid, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -191,9 +192,9 @@ export default function CalendarPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <PageTransition className="space-y-6 max-w-6xl mx-auto">
       {/* Top Header Controls Section */}
-      <div className="bg-surface p-6 md:p-8 rounded-2xl border border-hairline shadow-sm space-y-6">
+      <AnimatedCard className="bg-surface/60 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/20 dark:border-white/5 shadow-2xl space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-primary/10 rounded-xl text-primary font-bold shrink-0">
@@ -267,10 +268,10 @@ export default function CalendarPage() {
             </button>
           </div>
         </div>
-      </div>
+      </AnimatedCard>
 
       {/* Toolbar & Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface px-4 py-2.5 rounded-xl border border-hairline shadow-sm">
+      <AnimatedCard className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface/60 backdrop-blur-xl px-4 py-3 rounded-2xl border border-white/20 dark:border-white/5 shadow-xl">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-eyebrow font-bold text-ink-muted uppercase tracking-wider flex items-center gap-1 mr-1">
             <Filter size={12} /> Sources:
@@ -299,12 +300,12 @@ export default function CalendarPage() {
         <div className="w-full sm:w-56">
           <SearchInput onSearch={(q) => setSearchQuery(q)} placeholder="Search calendar..." />
         </div>
-      </div>
+      </AnimatedCard>
 
       {/* Main View rendering */}
       {viewMode === 'month' ? (
         /* Compact Month Grid View */
-        <div className="bg-surface rounded-xl border border-hairline overflow-hidden shadow-sm">
+        <AnimatedCard className="bg-surface/60 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-white/5 overflow-hidden shadow-2xl">
           <div className="grid grid-cols-7 border-b border-hairline bg-canvas-soft text-center">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
               <div key={day} className="py-2 text-[11px] font-bold text-ink-secondary uppercase tracking-wider">
@@ -318,7 +319,7 @@ export default function CalendarPage() {
               <LoadingSpinner />
             </div>
           ) : (
-            <div className="grid grid-cols-7 divide-x divide-y divide-hairline bg-canvas">
+            <div className="grid grid-cols-7 divide-x divide-y divide-hairline bg-canvas/30">
               {calendarCells.map((cell, idx) => {
                 const cellDateStr = cell.date.toISOString().split('T')[0];
                 const cellEvents = eventsByDate[cellDateStr] || [];
@@ -328,7 +329,7 @@ export default function CalendarPage() {
                   <div
                     key={idx}
                     className={`min-h-[95px] p-1.5 flex flex-col transition-colors group ${
-                      cell.isCurrentMonth ? 'bg-surface' : 'bg-canvas-soft/40'
+                      cell.isCurrentMonth ? 'bg-surface/50' : 'bg-canvas-soft/20'
                     } ${isToday ? 'ring-2 ring-primary/30 bg-primary/5' : ''}`}
                   >
                     <div className="flex justify-between items-center mb-1">
@@ -381,10 +382,10 @@ export default function CalendarPage() {
               })}
             </div>
           )}
-        </div>
+        </AnimatedCard>
       ) : (
         /* Agenda List View */
-        <div className="bg-surface rounded-xl border border-hairline p-4 shadow-sm space-y-3">
+        <AnimatedCard className="bg-surface/60 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-white/5 p-6 shadow-2xl space-y-3">
           <h3 className="text-body-md font-bold text-ink">Upcoming Agenda Timeline</h3>
           {filteredEvents.length === 0 ? (
             <div className="p-6 text-center text-ink-muted text-body-sm">No scheduled events found.</div>
@@ -431,7 +432,7 @@ export default function CalendarPage() {
               })}
             </div>
           )}
-        </div>
+        </AnimatedCard>
       )}
 
       {/* Event Details Modal */}
@@ -565,6 +566,6 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageTransition>
   );
 }

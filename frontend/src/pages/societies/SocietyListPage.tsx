@@ -13,6 +13,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { slugify } from "@/utils/slug";
 import type { Society } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
+import { PageTransition } from "@/components/ui/WatermelonMotion";
 
 export default function SocietyListPage() {
   const [data, setData] = useState<Society[]>([]);
@@ -123,7 +124,7 @@ export default function SocietyListPage() {
       header: "",
       sortable: false,
       render: (item: Society) => (
-        <div className="w-10 h-10 rounded-md bg-canvas-soft border border-hairline flex items-center justify-center font-bold text-body-sm text-ink-secondary tracking-tight">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-sm text-primary tracking-tight shadow-sm">
           {getShortName(item.name)}
         </div>
       ),
@@ -145,31 +146,34 @@ export default function SocietyListPage() {
       key: "createdAt",
       header: "Created",
       sortable: true,
-      render: (item: Society) => new Date(item.createdAt).toLocaleDateString(),
+      render: (item: Society) => new Date(item.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }),
     },
   ];
 
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-heading-1 font-bold text-ink">Societies</h1>
-        <PermissionGate module="societies" action="write">
-          <Button onClick={() => navigate("/societies/new")}>
-            New Society
-          </Button>
-        </PermissionGate>
-      </div>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-        <div className="w-full sm:w-80">
-          <SearchInput
-            onSearch={handleSearch}
-            placeholder="Search societies..."
-          />
+    <PageTransition className="max-w-7xl mx-auto flex flex-col gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink mb-1">Societies</h1>
+          <p className="text-ink-muted text-sm font-medium">Manage student branches and technical chapters</p>
         </div>
-        {/* Dropdown removed per user request; sorting is now in table headers */}
+        <div className="flex items-center gap-4">
+          <div className="w-full sm:w-72">
+            <SearchInput
+              onSearch={handleSearch}
+              placeholder="Search societies..."
+            />
+          </div>
+          <PermissionGate module="societies" action="write">
+            <Button onClick={() => navigate("/societies/new")} className="shadow-soft-1">
+              New Society
+            </Button>
+          </PermissionGate>
+        </div>
       </div>
+      
       <DataTable
         columns={columns}
         data={data}
@@ -181,6 +185,6 @@ export default function SocietyListPage() {
         onSort={handleSort}
       />
       <Pagination meta={meta} onPageChange={goToPage} />
-    </div>
+    </PageTransition>
   );
 }

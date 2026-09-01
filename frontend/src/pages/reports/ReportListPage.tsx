@@ -15,6 +15,8 @@ import type { Report } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
 import { ShieldCheck, Download, LayoutGrid, List, Sparkles, Filter } from "lucide-react";
 import toast from "react-hot-toast";
+import { PageTransition, AnimatedCard, AnimatedBadge } from "@/components/ui/WatermelonMotion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ReportListPage() {
   const [data, setData] = useState<Report[]>([]);
@@ -116,7 +118,7 @@ export default function ReportListPage() {
             {item.title}
           </div>
           {item.societyName && (
-            <div className="text-body-xs text-ink-muted mt-0.5">{item.societyName}</div>
+            <div className="text-xs text-ink-muted mt-0.5">{item.societyName}</div>
           )}
         </div>
       ),
@@ -126,12 +128,12 @@ export default function ReportListPage() {
       header: "Category",
       sortable: true,
       render: (item: Report) => (
-        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-eyebrow font-bold uppercase ${
-          item.type === "financial" ? "bg-emerald-50 text-emerald-700" :
-          item.type === "activity" ? "bg-indigo-50 text-indigo-700" : "bg-canvas-soft text-ink-secondary border border-hairline"
+        <AnimatedBadge className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase border ${
+          item.type === "financial" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" :
+          item.type === "activity" ? "bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-500/20" : "bg-canvas-soft text-ink-secondary border-hairline"
         }`}>
           {item.type || "General"}
-        </span>
+        </AnimatedBadge>
       ),
     },
     {
@@ -139,7 +141,7 @@ export default function ReportListPage() {
       header: "Verification",
       sortable: false,
       render: () => (
-        <span className="inline-flex items-center gap-1 text-body-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/20 px-2 py-1 rounded-full border border-emerald-500/20">
           <ShieldCheck size={14} /> Approved
         </span>
       ),
@@ -155,180 +157,166 @@ export default function ReportListPage() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="max-w-7xl mx-auto flex flex-col gap-6 pb-12">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
         <div>
-          <h1 className="text-heading-1 font-bold text-ink">Reports & Compliance Hub</h1>
-          <p className="text-body-sm text-ink-muted mt-0.5">
-            Official financial audits, activity logs, and AI compliance reports for Christ University IEEE SB.
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink mb-1">Reports Hub</h1>
+          <p className="text-body-sm text-ink-muted font-medium">
+            Financial audits, activity logs, and AI compliance.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="secondary" onClick={handleBatchDownload} className="flex items-center gap-1.5">
+          <Button variant="secondary" onClick={handleBatchDownload} className="flex items-center gap-1.5 shadow-sm bg-surface/80 backdrop-blur-md">
             <Download size={16} /> Export All
           </Button>
           <PermissionGate module="reports" action="write">
-            <Button onClick={() => navigate("/reports/new")}>New Report</Button>
+            <Button onClick={() => navigate("/reports/new")} className="shadow-soft-1">New Report</Button>
           </PermissionGate>
         </div>
       </div>
 
       {/* Metrics Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-surface rounded-xl border border-hairline p-4 shadow-sm">
-          <div className="text-eyebrow text-ink-muted uppercase font-semibold">Total Reports</div>
-          <div className="text-heading-2 font-bold text-ink mt-1">{allData.length}</div>
-        </div>
-        <div className="bg-surface rounded-xl border border-hairline p-4 shadow-sm">
-          <div className="text-eyebrow text-ink-muted uppercase font-semibold">Financial Audits</div>
-          <div className="text-heading-2 font-bold text-emerald-600 mt-1">
+        <AnimatedCard delay={0.1} className="bg-surface/60 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 p-5 shadow-sm">
+          <div className="text-xs text-ink-muted uppercase font-bold tracking-widest">Total Reports</div>
+          <div className="text-4xl font-bold text-ink mt-2">{allData.length}</div>
+        </AnimatedCard>
+        <AnimatedCard delay={0.15} className="bg-surface/60 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 p-5 shadow-sm">
+          <div className="text-xs text-ink-muted uppercase font-bold tracking-widest">Financial Audits</div>
+          <div className="text-4xl font-bold text-emerald-600 mt-2">
             {allData.filter((r) => r.type === "financial").length || 3}
           </div>
-        </div>
-        <div className="bg-surface rounded-xl border border-hairline p-4 shadow-sm">
-          <div className="text-eyebrow text-ink-muted uppercase font-semibold">AI Auditor Score</div>
-          <div className="text-heading-2 font-bold text-primary mt-1">98.4%</div>
-        </div>
-        <div className="bg-surface rounded-xl border border-hairline p-4 shadow-sm">
-          <div className="text-eyebrow text-ink-muted uppercase font-semibold">Verification Status</div>
-          <div className="text-heading-2 font-bold text-indigo-600 mt-1">100% Passed</div>
-        </div>
+        </AnimatedCard>
+        <AnimatedCard delay={0.2} className="bg-surface/60 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 p-5 shadow-sm">
+          <div className="text-xs text-ink-muted uppercase font-bold tracking-widest">AI Auditor Score</div>
+          <div className="text-4xl font-bold text-primary mt-2">98.4%</div>
+        </AnimatedCard>
+        <AnimatedCard delay={0.25} className="bg-surface/60 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 p-5 shadow-sm">
+          <div className="text-xs text-ink-muted uppercase font-bold tracking-widest">Verification Status</div>
+          <div className="text-4xl font-bold text-indigo-600 mt-2">100%</div>
+        </AnimatedCard>
       </div>
 
       {/* AI Auditor Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-blue-800">
-        <div>
-          <div className="flex items-center gap-2 text-blue-300 text-xs font-bold uppercase tracking-wider mb-1">
-            <Sparkles className="animate-spin text-amber-400" size={14} />
+      <AnimatedCard delay={0.3} className="p-8 rounded-3xl bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-white/10 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-black/20 pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/20 blur-3xl rounded-full pointer-events-none" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-blue-300 text-xs font-bold uppercase tracking-widest mb-3">
+            <Sparkles className="animate-pulse text-amber-400" size={16} />
             Google Gemini AI Auditor Active
           </div>
-          <h3 className="text-xl font-bold">IEEE Financial & Operational Auditor</h3>
-          <p className="text-body-sm text-blue-100 mt-1 max-w-xl">
+          <h3 className="text-2xl font-bold tracking-tight mb-2">IEEE Financial & Operational Auditor</h3>
+          <p className="text-sm text-blue-100/90 font-medium max-w-2xl leading-relaxed">
             Real-time compliance checks, budget balance reconciliation, and automated insight generation for IEEE Student Branch chapters.
           </p>
         </div>
-        <Button 
-          variant="secondary"
+        <button 
           onClick={() => navigate("/reports/ai-audit")}
-          className="bg-white text-blue-900 hover:bg-blue-50 border-none font-bold shadow-md whitespace-nowrap"
+          className="relative z-10 px-6 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md rounded-2xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap"
         >
           View AI Insights →
-        </Button>
-      </div>
+        </button>
+      </AnimatedCard>
 
       {/* Filters & View Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface rounded-xl border border-hairline p-3 shadow-sm">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-body-xs text-ink-muted uppercase font-bold px-2 flex items-center gap-1">
-            <Filter size={12} /> Filter:
+      <AnimatedCard delay={0.35} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface/60 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 p-3 shadow-sm z-10 relative">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+          <span className="text-xs text-ink-muted uppercase font-bold px-2 flex items-center gap-1">
+            <Filter size={14} /> Filter:
           </span>
-          <button
-            onClick={() => setSelectedType("all")}
-            className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold transition-colors ${
-              selectedType === "all" ? "bg-primary text-white" : "bg-canvas-soft text-ink-muted hover:text-ink"
-            }`}
-          >
-            All Reports ({allData.length})
-          </button>
-          <button
-            onClick={() => setSelectedType("financial")}
-            className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold transition-colors ${
-              selectedType === "financial" ? "bg-primary text-white" : "bg-canvas-soft text-ink-muted hover:text-ink"
-            }`}
-          >
-            Financial
-          </button>
-          <button
-            onClick={() => setSelectedType("activity")}
-            className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold transition-colors ${
-              selectedType === "activity" ? "bg-primary text-white" : "bg-canvas-soft text-ink-muted hover:text-ink"
-            }`}
-          >
-            Activity Logs
-          </button>
-          <button
-            onClick={() => setSelectedType("general")}
-            className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold transition-colors ${
-              selectedType === "general" ? "bg-primary text-white" : "bg-canvas-soft text-ink-muted hover:text-ink"
-            }`}
-          >
-            Administrative
-          </button>
+          {["all", "financial", "activity", "general"].map((type) => (
+            <button
+              key={type}
+              onClick={() => setSelectedType(type)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                selectedType === type ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-black/5 dark:bg-white/5 text-ink-muted hover:text-ink hover:bg-black/10 dark:hover:bg-white/10"
+              }`}
+            >
+              {type === "all" ? `All Reports (${allData.length})` : type === "general" ? "Administrative" : type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
+          ))}
         </div>
 
         <div className="flex items-center gap-3">
           <div className="w-full sm:w-64">
             <SearchInput onSearch={handleSearch} placeholder="Search reports..." />
           </div>
-          <div className="flex border border-hairline rounded-lg overflow-hidden bg-canvas-soft">
+          <div className="flex bg-black/5 dark:bg-white/5 rounded-xl p-1 gap-1">
             <button
               onClick={() => setViewMode("table")}
-              className={`p-2 transition-colors ${viewMode === "table" ? "bg-surface text-primary shadow-xs" : "text-ink-muted hover:text-ink"}`}
+              className={`p-2 rounded-lg transition-all ${viewMode === "table" ? "bg-white dark:bg-black shadow-sm text-primary" : "text-ink-muted hover:text-ink"}`}
               title="Table View"
             >
               <List size={18} />
             </button>
             <button
               onClick={() => setViewMode("cards")}
-              className={`p-2 transition-colors ${viewMode === "cards" ? "bg-surface text-primary shadow-xs" : "text-ink-muted hover:text-ink"}`}
+              className={`p-2 rounded-lg transition-all ${viewMode === "cards" ? "bg-white dark:bg-black shadow-sm text-primary" : "text-ink-muted hover:text-ink"}`}
               title="Grid Cards View"
             >
               <LayoutGrid size={18} />
             </button>
           </div>
         </div>
-      </div>
+      </AnimatedCard>
 
       {/* Content Rendering (Table vs Cards) */}
-      {viewMode === "table" ? (
-        <DataTable
-          columns={columns}
-          data={data}
-          onRowClick={(item) => navigate(`/reports/${slugify(item.title)}`)}
-          sortKey={sortKey}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-        />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => navigate(`/reports/${slugify(item.title)}`)}
-              className="p-5 rounded-xl border border-hairline bg-surface hover:border-primary cursor-pointer transition-all shadow-sm space-y-3 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`px-2.5 py-0.5 rounded-full text-eyebrow font-bold uppercase ${
-                    item.type === "financial" ? "bg-emerald-50 text-emerald-700" :
-                    item.type === "activity" ? "bg-indigo-50 text-indigo-700" : "bg-canvas-soft text-ink-secondary"
-                  }`}>
-                    {item.type || "General"}
-                  </span>
-                  <span className="text-body-xs text-ink-muted">
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </span>
+      <AnimatePresence mode="wait">
+        {viewMode === "table" ? (
+          <motion.div key="table" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <DataTable
+              columns={columns}
+              data={data}
+              onRowClick={(item) => navigate(`/reports/${slugify(item.title)}`)}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+            />
+          </motion.div>
+        ) : (
+          <motion.div key="cards" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {data.map((item, index) => (
+              <AnimatedCard
+                delay={index * 0.05}
+                key={item.id}
+                onClick={() => navigate(`/reports/${slugify(item.title)}`)}
+                className="p-6 rounded-3xl border border-white/20 dark:border-white/5 bg-surface/60 backdrop-blur-xl hover:border-primary/50 cursor-pointer shadow-sm hover:shadow-md flex flex-col justify-between h-full"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <AnimatedBadge className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase border ${
+                      item.type === "financial" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" :
+                      item.type === "activity" ? "bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-500/20" : "bg-black/5 dark:bg-white/5 text-ink-muted border-white/10"
+                    }`}>
+                      {item.type || "General"}
+                    </AnimatedBadge>
+                    <span className="text-xs font-semibold text-ink-muted">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-ink text-lg line-clamp-2 leading-tight">{item.title}</h4>
+                  <p className="text-sm font-medium text-ink-muted mt-2 line-clamp-3">
+                    Official report document submitted under {item.societyName || "IEEE Student Branch"}.
+                  </p>
                 </div>
-                <h4 className="font-bold text-ink text-body-md line-clamp-2">{item.title}</h4>
-                <p className="text-body-xs text-ink-muted mt-2 line-clamp-3">
-                  Official report document submitted under {item.societyName || "IEEE Student Branch"}.
-                </p>
-              </div>
 
-              <div className="pt-3 border-t border-hairline flex items-center justify-between text-body-xs text-ink-muted">
-                <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                  <ShieldCheck size={14} /> AI Verified
-                </span>
-                <span className="text-primary font-bold">Open Report →</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                <div className="pt-4 mt-4 border-t border-white/10 dark:border-white/5 flex items-center justify-between text-sm font-semibold">
+                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                    <ShieldCheck size={16} /> AI Verified
+                  </span>
+                  <span className="text-primary hover:underline">Open Report →</span>
+                </div>
+              </AnimatedCard>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Pagination meta={meta} onPageChange={goToPage} />
-    </div>
+    </PageTransition>
   );
 }

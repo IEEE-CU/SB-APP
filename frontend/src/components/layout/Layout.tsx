@@ -53,31 +53,11 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden bg-canvas-soft text-ink font-sans transition-colors duration-200">
-      {/* Decorative background gradients for the organic aesthetic */}
-      <div
-        className="absolute top-0 right-0 w-[500px] max-w-full h-[500px] rounded-full pointer-events-none opacity-[0.04] dark:opacity-[0.02] blur-[100px] -z-10"
-        style={{
-          background:
-            "radial-gradient(circle, var(--color-primary), transparent 70%)",
-        }}
-        aria-hidden="true"
-      />
-      <div
-        className="absolute bottom-0 left-0 w-[600px] max-w-full h-[600px] rounded-full pointer-events-none opacity-[0.03] dark:opacity-[0.02] blur-[120px] -z-10"
-        style={{
-          background:
-            "radial-gradient(circle, var(--color-secondary), transparent 70%)",
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Header with frosted glass effect */}
-      <div className="relative z-50">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
-      </div>
-
-      <div className="flex flex-1 overflow-hidden relative z-10 w-full">
+    <div className="h-screen w-full sm:p-4 md:p-6 lg:p-8 flex items-center justify-center relative overflow-hidden bg-transparent text-ink font-sans transition-colors duration-200">
+      
+      {/* Window Container */}
+      <div className="flex w-full h-full max-w-[1600px] overflow-hidden rounded-none sm:rounded-3xl border-0 sm:border border-white/20 dark:border-white/5 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.2)] bg-surface backdrop-blur-2xl transition-all duration-300 relative">
+        
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div
@@ -86,15 +66,23 @@ export default function Layout() {
           />
         )}
 
+        {/* Sidebar now sits on the left natively inside the flex window */}
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 relative">
-          <AnimatePresence mode="wait">
-            <PageTransition key={location.pathname} className="h-full max-w-[100vw]">
-              <Outlet />
-            </PageTransition>
-          </AnimatePresence>
-        </main>
+        {/* Main Content Area (Right Side) */}
+        <div className="flex flex-1 flex-col overflow-hidden relative w-full bg-canvas/40">
+          <div className="relative z-50 border-b border-hairline bg-surface/50 backdrop-blur-md">
+            <Header onMenuClick={() => setSidebarOpen(true)} />
+          </div>
+
+          <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-8 relative">
+            <AnimatePresence mode="wait">
+              <PageTransition key={location.pathname} className="h-full max-w-[100vw]">
+                <Outlet />
+              </PageTransition>
+            </AnimatePresence>
+          </main>
+        </div>
       </div>
     </div>
   );

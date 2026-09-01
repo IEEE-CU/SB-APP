@@ -4,6 +4,7 @@ import { channelsService } from '@/services/channels';
 import { conversationsService } from '@/services/conversations';
 import { userService } from '@/services/users';
 import { Button, LoadingSpinner } from '@/components/ui';
+import { PageTransition } from '@/components/ui/WatermelonMotion';
 import { useAuthStore } from '@/store/authStore';
 import { getSocket, connectSocket } from '@/lib/socket';
 import type { Channel, Conversation, Message, User } from '@/types/models';
@@ -381,9 +382,9 @@ export default function CommunityPage() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] bg-surface border border-hairline rounded-2xl overflow-hidden shadow-soft-3">
+    <PageTransition className="flex h-[calc(100vh-8rem)] bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-3xl overflow-hidden shadow-2xl">
       {/* SIDEBAR */}
-      <div className="w-80 border-r border-hairline/60 bg-canvas-soft/40 flex flex-col h-full">
+      <div className="w-80 border-r border-hairline/60 bg-canvas-soft/20 flex flex-col h-full">
         {/* Toggle tabs */}
         <div className="flex p-3 border-b border-hairline/60 gap-1 bg-surface">
           <button
@@ -831,6 +832,6 @@ export default function CommunityPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageTransition>
   );
 }

@@ -9,6 +9,7 @@ import { slugify } from "@/utils/slug";
 import type { Announcement } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
 import { Bell, AlertTriangle, Info, Pin, Filter, Calendar } from "lucide-react";
+import { PageTransition, AnimatedCard, AnimatedBadge } from "@/components/ui/WatermelonMotion";
 
 export default function AnnouncementListPage() {
   const [data, setData] = useState<Announcement[]>([]);
@@ -64,7 +65,7 @@ export default function AnnouncementListPage() {
   const highPriorityCount = allData.filter(a => a.priority === 'high').length;
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -82,51 +83,51 @@ export default function AnnouncementListPage() {
 
       {/* High priority alert banner if any */}
       {highPriorityCount > 0 && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-900 shadow-xs">
-          <AlertTriangle className="text-red-600 shrink-0 mt-0.5" size={20} />
-          <div className="flex-1 text-body-sm">
+        <AnimatedCard className="p-4 rounded-2xl bg-red-500/10 backdrop-blur-xl border border-red-500/20 flex items-start gap-3 text-red-600 shadow-lg shadow-red-500/5">
+          <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
+          <div className="flex-1 text-body-sm text-red-700 dark:text-red-400">
             <span className="font-bold">Attention: {highPriorityCount} Urgent Broadcast(s)</span>
-            <p className="text-red-700 text-body-xs mt-0.5">
+            <p className="opacity-90 text-body-xs mt-0.5">
               Please review high-priority notices regarding upcoming deadlines and mandatory branch activities.
             </p>
           </div>
-        </div>
+        </AnimatedCard>
       )}
 
       {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface rounded-xl border border-hairline p-3 shadow-sm">
+      <AnimatedCard className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-3 shadow-lg">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           <span className="text-body-xs text-ink-muted uppercase font-bold px-2 flex items-center gap-1">
             <Filter size={12} /> Priority:
           </span>
           <button
             onClick={() => setSelectedPriority("all")}
-            className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold transition-colors ${
-              selectedPriority === "all" ? "bg-primary text-white" : "bg-canvas-soft text-ink-muted hover:text-ink"
+            className={`px-4 py-2 rounded-xl text-body-xs font-semibold transition-all duration-300 ${
+              selectedPriority === "all" ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-surface/50 text-ink-muted hover:text-ink hover:bg-surface border border-transparent hover:border-white/10"
             }`}
           >
             All ({allData.length})
           </button>
           <button
             onClick={() => setSelectedPriority("high")}
-            className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold transition-colors ${
-              selectedPriority === "high" ? "bg-red-600 text-white" : "bg-canvas-soft text-ink-muted hover:text-ink"
+            className={`px-4 py-2 rounded-xl text-body-xs font-semibold transition-all duration-300 ${
+              selectedPriority === "high" ? "bg-red-500 text-white shadow-md shadow-red-500/20" : "bg-surface/50 text-ink-muted hover:text-ink hover:bg-surface border border-transparent hover:border-white/10"
             }`}
           >
             Urgent ({allData.filter(a => a.priority === 'high').length})
           </button>
           <button
             onClick={() => setSelectedPriority("medium")}
-            className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold transition-colors ${
-              selectedPriority === "medium" ? "bg-amber-600 text-white" : "bg-canvas-soft text-ink-muted hover:text-ink"
+            className={`px-4 py-2 rounded-xl text-body-xs font-semibold transition-all duration-300 ${
+              selectedPriority === "medium" ? "bg-amber-500 text-white shadow-md shadow-amber-500/20" : "bg-surface/50 text-ink-muted hover:text-ink hover:bg-surface border border-transparent hover:border-white/10"
             }`}
           >
             Important ({allData.filter(a => a.priority === 'medium').length})
           </button>
           <button
             onClick={() => setSelectedPriority("low")}
-            className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold transition-colors ${
-              selectedPriority === "low" ? "bg-indigo-600 text-white" : "bg-canvas-soft text-ink-muted hover:text-ink"
+            className={`px-4 py-2 rounded-xl text-body-xs font-semibold transition-all duration-300 ${
+              selectedPriority === "low" ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/20" : "bg-surface/50 text-ink-muted hover:text-ink hover:bg-surface border border-transparent hover:border-white/10"
             }`}
           >
             General ({allData.filter(a => a.priority === 'low').length})
@@ -136,45 +137,47 @@ export default function AnnouncementListPage() {
         <div className="w-full sm:w-72">
           <SearchInput onSearch={handleSearch} placeholder="Search announcements..." />
         </div>
-      </div>
+      </AnimatedCard>
 
       {/* List of Announcement Cards */}
       <div className="space-y-4">
         {data.length === 0 ? (
-          <div className="p-12 text-center bg-surface rounded-xl border border-hairline text-ink-muted space-y-2">
-            <Info size={32} className="mx-auto text-ink-muted opacity-50" />
-            <p className="font-semibold text-ink">No announcements found matching filter criteria.</p>
-          </div>
+          <AnimatedCard className="p-12 text-center bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl text-ink-muted space-y-3">
+            <Info size={36} className="mx-auto text-ink-muted opacity-50" />
+            <p className="font-semibold text-ink text-body-md">No announcements found matching filter criteria.</p>
+          </AnimatedCard>
         ) : (
-          data.map((a) => (
-            <div
+          data.map((a, index) => (
+            <AnimatedCard
               key={a.id}
               onClick={() => navigate(`/announcements/${slugify(a.title)}`)}
-              className="bg-surface rounded-xl border border-hairline p-6 hover:border-primary cursor-pointer transition-all shadow-sm space-y-3"
+              className="group bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-6 hover:border-primary/50 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-xl space-y-4"
+              style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2.5">
-                  {a.priority === "high" && <Pin className="text-red-500 fill-red-500" size={16} />}
-                  <h3 className="text-heading-3 font-bold text-ink hover:text-primary transition-colors">
+                <div className="flex items-center gap-3">
+                  {a.priority === "high" && <div className="p-2 bg-red-500/10 rounded-xl"><Pin className="text-red-500 fill-red-500" size={18} /></div>}
+                  <h3 className="text-heading-3 font-bold text-ink group-hover:text-primary transition-colors">
                     {a.title}
                   </h3>
                 </div>
 
-                <span
-                  className={`inline-flex px-3 py-0.5 rounded-full text-eyebrow font-bold uppercase shrink-0 ${
+                <AnimatedBadge
+                  variant={
                     a.priority === "high"
-                      ? "bg-red-100 text-red-700 border border-red-200"
+                      ? "danger"
                       : a.priority === "medium"
-                        ? "bg-amber-100 text-amber-700 border border-amber-200"
-                        : "bg-canvas-soft text-ink-muted border border-hairline"
-                  }`}
+                        ? "warning"
+                        : "default"
+                  }
+                  className="shrink-0"
                 >
                   {a.priority === "high" ? "Urgent Broadcast" : a.priority === "medium" ? "Important Notice" : "General"}
-                </span>
+                </AnimatedBadge>
               </div>
 
               <div
-                className="text-body-sm text-ink-secondary leading-relaxed line-clamp-2"
+                className="text-body-sm text-ink-secondary leading-relaxed line-clamp-2 opacity-90"
                 dangerouslySetInnerHTML={{
                   __html: DOMPurify.sanitize(
                     (a.content || (a as any).message || "")
@@ -182,19 +185,19 @@ export default function AnnouncementListPage() {
                 }}
               />
 
-              <div className="pt-3 border-t border-hairline flex items-center justify-between text-body-xs text-ink-muted">
-                <div className="flex items-center gap-2">
-                  <Calendar size={14} />
-                  <span>Posted {new Date(a.createdAt).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</span>
+              <div className="pt-4 border-t border-white/10 dark:border-white/5 flex items-center justify-between text-body-xs text-ink-muted">
+                <div className="flex items-center gap-2 bg-surface/50 px-3 py-1.5 rounded-lg border border-white/5">
+                  <Calendar size={14} className="text-primary" />
+                  <span className="font-medium">Posted {new Date(a.createdAt).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</span>
                 </div>
-                <span className="font-semibold text-primary hover:underline">Read Full Notice →</span>
+                <span className="font-semibold text-primary group-hover:translate-x-1 transition-transform inline-block">Read Full Notice →</span>
               </div>
-            </div>
+            </AnimatedCard>
           ))
         )}
       </div>
 
       <Pagination meta={meta} onPageChange={goToPage} />
-    </div>
+    </PageTransition>
   );
 }
