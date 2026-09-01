@@ -91,7 +91,7 @@ export default function ProjectDetailPage() {
 
           <div className="flex items-center gap-3">
             <PermissionGate module="projects" action="write">
-              <Button variant="secondary" onClick={() => navigate(`/projects/${project.id}/edit`)}>
+              <Button variant="secondary" onClick={() => navigate(`/projects/${project.slug || slugify(project.title)}/edit`)}>
                 Edit Project
               </Button>
             </PermissionGate>
