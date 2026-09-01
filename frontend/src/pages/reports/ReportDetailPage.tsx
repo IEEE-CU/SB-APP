@@ -82,7 +82,7 @@ export default function ReportDetailPage() {
               <Download size={16} /> Export PDF
             </Button>
             <PermissionGate module="reports" action="write">
-              <Button variant="secondary" onClick={() => navigate(`/reports/${report.id}/edit`)}>Edit</Button>
+              <Button variant="secondary" onClick={() => navigate(`/reports/${report.slug || slugify(report.title)}/edit`)}>Edit</Button>
             </PermissionGate>
             <PermissionGate module="reports" action="delete">
               <Button variant="danger" onClick={handleDelete}>Delete</Button>
