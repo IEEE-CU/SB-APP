@@ -10,6 +10,7 @@ import {
 } from "@/components/ui";
 import PermissionGate from "@/components/PermissionGate";
 import { usePagination } from "@/hooks/usePagination";
+import { slugify } from "@/utils/slug";
 import type { Event } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
 
@@ -144,7 +145,7 @@ export default function EventListPage() {
       <DataTable
         columns={columns}
         data={data}
-        onRowClick={(item) => navigate(`/events/${item.id}`)}
+        onRowClick={(item) => navigate(`/events/${slugify(item.title)}`)}
         sortKey={sortKey}
         sortDirection={sortDirection}
         onSort={handleSort}

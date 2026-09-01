@@ -7,6 +7,7 @@ async function main() {
   const uri = mongoServer.getUri();
 
   console.log(`📡 In-Memory MongoDB running at: ${uri}`);
+  require("dotenv").config({ path: require("path").join(__dirname, "../../.env") });
   process.env.MONGODB_URI = uri;
 
   const action = process.argv[2];
@@ -43,8 +44,18 @@ async function main() {
       await mongoServer.stop();
       process.exit(1);
     }
+  } else if (action === "dev" || action === "server") {
+    console.log("\n--- Seeding In-Memory DB ---");
+    try {
+      const seed = require("./seed");
+      await seed();
+    } catch (e) {
+      console.error("Seeding error:", e.message);
+    }
+    console.log("\n--- Starting Backend Server with In-Memory DB ---");
+    require("../server");
   } else {
-    console.log("Usage: node runWithMemoryDb.js [test|seed]");
+    console.log("Usage: node runWithMemoryDb.js [test|seed|dev]");
     await mongoServer.stop();
     process.exit(0);
   }

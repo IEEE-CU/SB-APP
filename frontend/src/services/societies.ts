@@ -15,4 +15,10 @@ export const societyService = {
     id: string,
     data: Partial<Pick<Society, 'name' | 'description'>>,
   ) => api.patch<ApiResponse<Society>>(`/societies/${id}`, data),
+  getSocietyTerms: (societyId: string) =>
+    api.get<ApiResponse<any[]>>(`/societies/${societyId}/terms`),
+  createSocietyTerm: (societyId: string, data: any) =>
+    api.post<ApiResponse<any>>(`/societies/${societyId}/terms`, data),
+  updateHandoverChecklist: (societyId: string, termId: string, data: any) =>
+    api.patch<ApiResponse<any>>(`/societies/${societyId}/terms/${termId}/handover`, data),
 };

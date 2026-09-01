@@ -66,11 +66,16 @@ router.get(
           req.user.societyId?._id ||
           req.user.societyId;
       }
+
       if (!societyId) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Society ID is required" });
+        const firstSociety = await require("../models/Society").findOne().sort({ createdAt: 1 });
+        societyId = firstSociety?._id;
       }
+
+      if (!societyId) {
+        return res.json({ success: true, count: 0, data: [] });
+      }
+
       const channels = await Channel.find({ societyId }).sort({ name: 1 });
       res.json({ success: true, count: channels.length, data: channels });
     } catch (error) {

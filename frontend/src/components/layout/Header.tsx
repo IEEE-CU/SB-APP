@@ -33,7 +33,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
           IEEE
         </div>
         <span className="text-title font-semibold text-ink tracking-tight hidden md:inline">
-          IEEE Student Branch
+          IEEE Campus Community Hub
         </span>
         <div className="w-px h-5 bg-hairline hidden md:block"></div>
         <SocietySwitcher />

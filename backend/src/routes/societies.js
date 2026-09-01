@@ -584,11 +584,108 @@ router.patch("/:id", societyAccess, async (req, res, next) => {
     if (type !== undefined) society.type = type;
     if (budget !== undefined) society.budget = budget;
 
-    await society.save();
-
     res.json({
       success: true,
       data: society,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   GET /api/societies/:id/terms
+ * @desc    Get all academic terms for a society
+ * @access  All authenticated users
+ */
+router.get("/:id/terms", async (req, res, next) => {
+  try {
+    const SocietyTerm = require("../models/SocietyTerm");
+    const terms = await SocietyTerm.find({ society: req.params.id })
+      .populate("chair", "name email")
+      .populate("treasurer", "name email")
+      .sort({ academicYear: -1 });
+
+    res.json({
+      success: true,
+      data: terms,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   POST /api/societies/:id/terms
+ * @desc    Create/Open a new academic term for a society
+ * @access  Admin only
+ */
+router.post("/:id/terms", adminOnly, async (req, res, next) => {
+  try {
+    const SocietyTerm = require("../models/SocietyTerm");
+    const AuditLog = require("../models/AuditLog");
+    const { academicYear, allocatedBudget, openingBalance, chairId, treasurerId } = req.body;
+
+    const term = await SocietyTerm.create({
+      society: req.params.id,
+      academicYear,
+      allocatedBudget: allocatedBudget || 0,
+      openingBalance: openingBalance || 0,
+      chair: chairId || null,
+      treasurer: treasurerId || null,
+      status: "OPEN",
+    });
+
+    await AuditLog.create({
+      userId: req.user._id,
+      action: "CREATE_SOCIETY_TERM",
+      module: "societies",
+      details: { societyId: req.params.id, academicYear, termId: term._id },
+    });
+
+    res.status(201).json({
+      success: true,
+      data: term,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   PATCH /api/societies/:id/terms/:termId/handover
+ * @desc    Update term handover checklist and status
+ * @access  Admin or Society Office Bearer
+ */
+router.patch("/:id/terms/:termId/handover", societyAccess, async (req, res, next) => {
+  try {
+    const SocietyTerm = require("../models/SocietyTerm");
+    const AuditLog = require("../models/AuditLog");
+    const { reportsSubmitted, balanceReconciled, assetsTransferred, notes, status } = req.body;
+
+    const term = await SocietyTerm.findOne({ _id: req.params.termId, society: req.params.id });
+    if (!term) {
+      return res.status(404).json({ success: false, message: "Term not found" });
+    }
+
+    if (reportsSubmitted !== undefined) term.handoverChecklist.reportsSubmitted = reportsSubmitted;
+    if (balanceReconciled !== undefined) term.handoverChecklist.balanceReconciled = balanceReconciled;
+    if (assetsTransferred !== undefined) term.handoverChecklist.assetsTransferred = assetsTransferred;
+    if (notes !== undefined) term.handoverChecklist.notes = notes;
+    if (status !== undefined) term.status = status;
+
+    await term.save();
+
+    await AuditLog.create({
+      userId: req.user._id,
+      action: "UPDATE_TERM_HANDOVER",
+      module: "societies",
+      details: { societyId: req.params.id, termId: term._id, status: term.status },
+    });
+
+    res.json({
+      success: true,
+      data: term,
     });
   } catch (error) {
     next(error);

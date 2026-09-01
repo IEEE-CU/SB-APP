@@ -6,6 +6,7 @@
   "scripts": {
     "prepare": "husky",
     "start": "node backend/src/server.js",
+    "dev": "node start.js",
     "seed": "node backend/src/scripts/seed.js",
     "backup": "node backend/src/scripts/backup.js",
     "restore": "node backend/src/scripts/restore.js",

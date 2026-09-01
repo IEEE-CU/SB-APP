@@ -10,6 +10,7 @@ import {
 } from "@/components/ui";
 import PermissionGate from "@/components/PermissionGate";
 import { usePagination } from "@/hooks/usePagination";
+import { slugify } from "@/utils/slug";
 import type { Project } from "@/types/models";
 import type { PaginationMeta } from "@/types/api";
 
@@ -137,7 +138,7 @@ export default function ProjectListPage() {
       <DataTable
         columns={columns}
         data={data}
-        onRowClick={(item) => navigate(`/projects/${item.id}`)}
+        onRowClick={(item) => navigate(`/projects/${slugify(item.title)}`)}
         sortKey={sortKey}
         sortDirection={sortDirection}
         onSort={handleSort}

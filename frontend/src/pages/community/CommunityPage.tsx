@@ -59,9 +59,17 @@ export default function CommunityPage() {
           conversationsService.getConversations(),
           userService.getUsers(1, 100),
         ]);
-        setChannels(chanRes.data.data || []);
-        setConversations(convRes.data.data || []);
-        setAllUsers((userRes.data as any).data || []);
+        setChannels(Array.isArray(chanRes.data.data) ? chanRes.data.data : []);
+        const rawConvs = Array.isArray(convRes.data.data) ? convRes.data.data : [];
+        const formattedConvs = rawConvs.map((c: any) => {
+          if (c.participants) return c;
+          const participants = [];
+          if (c.userOneId) participants.push(typeof c.userOneId === 'object' ? { id: c.userOneId._id || c.userOneId.id, name: c.userOneId.name || 'User' } : { id: c.userOneId, name: 'User' });
+          if (c.userTwoId) participants.push(typeof c.userTwoId === 'object' ? { id: c.userTwoId._id || c.userTwoId.id, name: c.userTwoId.name || 'User' } : { id: c.userTwoId, name: 'User' });
+          return { ...c, participants };
+        });
+        setConversations(formattedConvs);
+        setAllUsers(Array.isArray((userRes.data as any).data) ? (userRes.data as any).data : []);
         
         // Auto-select first channel if exists
         const firstChan = chanRes.data.data?.[0];
@@ -183,14 +191,14 @@ export default function CommunityPage() {
       if (selectedChannel) {
         try {
           const res = await channelsService.getChannelMessages(selectedChannel.id);
-          setMessages(res.data.data || []);
+          setMessages(Array.isArray(res.data.data) ? res.data.data : []);
         } catch {
           toast.error('Failed to load messages');
         }
       } else if (selectedConversation) {
         try {
           const res = await conversationsService.getConversationMessages(selectedConversation.id);
-          setMessages(res.data.data || []);
+          setMessages(Array.isArray(res.data.data) ? res.data.data : []);
         } catch {
           toast.error('Failed to load messages');
         }
@@ -458,7 +466,8 @@ export default function CommunityPage() {
               </div>
               <div className="space-y-0.5">
                 {conversations.map((conv) => {
-                  const partner = conv.participants.find((p) => p.id !== user?.id) || conv.participants[0];
+                  const participants = conv.participants || [];
+                  const partner = participants.find((p) => p.id !== user?.id) || participants[0];
                   return (
                     <button
                       key={conv.id}

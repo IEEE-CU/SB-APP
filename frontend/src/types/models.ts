@@ -10,6 +10,13 @@ export interface User {
   updatedAt: string;
 }
 
+export interface OfficeBearer {
+  name: string;
+  position: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface Society {
   id: string;
   name: string;
@@ -17,39 +24,66 @@ export interface Society {
   logoSlug?: string; // lowercase slug matching /public/logos/{slug}_logo.{ext}
   description?: string;
   chairId?: string;
+  budget?: number;
+  balance?: number;
+  officeBearers?: OfficeBearer[];
   memberIds: string[];
   createdAt: string;
+  slug?: string;
+  category?: string;
+  websiteUrl?: string;
 }
 
 export interface Event {
   id: string;
   title: string;
+  slug?: string;
   description?: string;
   societyId?: string;
+  societyName?: string;
   date?: string;
+  time?: string;
   location?: string;
   status: "upcoming" | "ongoing" | "completed" | "cancelled";
   createdAt: string;
+  capacity?: number;
+  rsvpCount?: number;
+  speakers?: { name: string; role: string; organization?: string }[];
+  budget?: number;
+  category?: string;
 }
 
 export interface Project {
   id: string;
   title: string;
+  slug?: string;
   description?: string;
   societyId?: string;
+  societyName?: string;
   status: "planning" | "active" | "completed" | "on_hold";
   memberIds: string[];
   createdAt: string;
+  techStack?: string[];
+  githubUrl?: string;
+  demoUrl?: string;
+  progress?: number;
+  milestones?: { title: string; completed: boolean }[];
 }
 
 export interface Report {
   id: string;
   title: string;
+  slug?: string;
   content?: string;
   societyId?: string;
+  societyName?: string;
   authorId?: string;
+  authorName?: string;
   type?: "financial" | "activity" | "general";
   createdAt: string;
+  status?: "draft" | "under_review" | "approved" | "archived";
+  downloadUrl?: string;
+  summary?: string;
 }
 
 export interface Announcement {

@@ -38,6 +38,11 @@ const eventSchema = new mongoose.Schema({
         required: true,
         enum: ['Workshop', 'Seminar', 'Conference', 'Competition', 'Field Trip', 'Outreach', 'Social Event', 'Other']
     },
+    status: {
+        type: String,
+        enum: ['DRAFT', 'PROPOSED', 'APPROVED', 'PUBLISHED', 'REGISTRATION_OPEN', 'ONGOING', 'COMPLETED', 'ARCHIVED', 'CANCELLED'],
+        default: 'DRAFT'
+    },
     participants: {
         type: Number,
         required: true,
