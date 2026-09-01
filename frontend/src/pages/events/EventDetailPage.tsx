@@ -98,7 +98,7 @@ export default function EventDetailPage() {
 
           <div className="flex items-center gap-3">
             <PermissionGate module="events" action="write">
-              <Button variant="secondary" onClick={() => navigate(`/events/${event.id}/edit`)}>
+              <Button variant="secondary" onClick={() => navigate(`/events/${event.slug || slugify(event.title)}/edit`)}>
                 Edit Event
               </Button>
             </PermissionGate>
