@@ -213,6 +213,8 @@ export default function CommunityPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const localTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Clean up all timeouts on unmount
   useEffect(() => {
     return () => {
@@ -222,8 +224,6 @@ export default function CommunityPage() {
       }
     };
   }, []);
-
-  const localTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle Typing notification trigger
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
