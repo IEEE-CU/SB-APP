@@ -53,6 +53,7 @@ function setupPresenceHandlers(io) {
 
     // Typing Indicators
     socket.on("typing:start", ({ channelId, user }) => {
+      if (!socket.rooms.has(`channel:${channelId}`)) return;
       socket.to(`channel:${channelId}`).emit("typing:start", {
         channelId,
         user: user || { id: userId },
@@ -60,6 +61,7 @@ function setupPresenceHandlers(io) {
     });
 
     socket.on("typing:stop", ({ channelId, user }) => {
+      if (!socket.rooms.has(`channel:${channelId}`)) return;
       socket.to(`channel:${channelId}`).emit("typing:stop", {
         channelId,
         user: user || { id: userId },
@@ -68,6 +70,7 @@ function setupPresenceHandlers(io) {
 
     // Canvas stroke broadcasting
     socket.on("canvas:draw", ({ channelId, stroke }) => {
+      if (!socket.rooms.has(`channel:${channelId}`)) return;
       socket.to(`channel:${channelId}`).emit("canvas:draw", {
         channelId,
         stroke,

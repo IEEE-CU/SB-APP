@@ -8,6 +8,7 @@ import { ArrowLeft, Bell, CheckCircle2, Share2, Calendar, ShieldCheck } from "lu
 import { slugify } from "@/utils/slug";
 import type { Announcement } from "@/types/models";
 import toast from "react-hot-toast";
+import { PageTransition, AnimatedCard, AnimatedBadge } from "@/components/ui/WatermelonMotion";
 
 export default function AnnouncementDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -64,51 +65,52 @@ export default function AnnouncementDetailPage() {
     );
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <PageTransition className="space-y-6 max-w-4xl mx-auto">
       <button
         onClick={() => navigate("/announcements")}
-        className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink transition-colors"
+        className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink transition-colors bg-surface/50 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10 w-fit"
       >
         <ArrowLeft size={16} /> Back to Announcements
       </button>
 
       {/* Header Banner Card */}
-      <div className="bg-surface rounded-2xl border border-hairline p-6 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-8 shadow-xl space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className={`inline-flex px-3 py-0.5 rounded-full text-eyebrow font-bold uppercase ${
+            <div className="flex items-center gap-3 mb-4">
+              <AnimatedBadge
+                variant={
                   announcement.priority === "high"
-                    ? "bg-red-100 text-red-700 border border-red-200"
+                    ? "danger"
                     : announcement.priority === "medium"
-                      ? "bg-amber-100 text-amber-700 border border-amber-200"
-                      : "bg-canvas-soft text-ink-muted border border-hairline"
-                }`}
+                      ? "warning"
+                      : "default"
+                }
               >
                 {announcement.priority === "high" ? "Urgent Broadcast" : announcement.priority === "medium" ? "Important Notice" : "General"}
-              </span>
-              <span className="flex items-center gap-1 text-body-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              </AnimatedBadge>
+              <AnimatedBadge variant="success" className="flex items-center gap-1">
                 <ShieldCheck size={14} /> Official IEEE Broadcast
-              </span>
+              </AnimatedBadge>
             </div>
-            <h1 className="text-heading-1 font-bold text-ink">{announcement.title}</h1>
+            <h1 className="text-heading-1 font-bold text-ink leading-tight">{announcement.title}</h1>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="secondary" onClick={handleShare} className="flex items-center gap-1.5">
+            <Button variant="secondary" onClick={handleShare} className="flex items-center gap-1.5 shadow-sm">
               <Share2 size={16} /> Share
             </Button>
             <PermissionGate module="announcements" action="write">
               <Button
                 variant="secondary"
                 onClick={() => navigate(`/announcements/${slugify(announcement.title)}/edit`)}
+                className="shadow-sm"
               >
                 Edit Notice
               </Button>
             </PermissionGate>
             <PermissionGate module="announcements" action="delete">
-              <Button variant="danger" onClick={handleDelete}>
+              <Button variant="danger" onClick={handleDelete} className="shadow-sm">
                 Delete
               </Button>
             </PermissionGate>
@@ -116,38 +118,40 @@ export default function AnnouncementDetailPage() {
         </div>
 
         {/* Metadata Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-hairline text-body-xs text-ink-muted">
-          <div className="flex items-center gap-2">
-            <Calendar size={14} />
-            <span>Published on <span className="font-semibold text-ink">{new Date(announcement.createdAt).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</span></span>
+        <div className="flex flex-wrap items-center justify-between pt-6 border-t border-white/10 dark:border-white/5 gap-4">
+          <div className="flex items-center gap-2 text-body-sm bg-surface/50 px-4 py-2 rounded-xl border border-white/10">
+            <Calendar size={16} className="text-primary" />
+            <span className="text-ink-muted">Published on <span className="font-semibold text-ink">{new Date(announcement.createdAt).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</span></span>
           </div>
 
           <Button
             variant={acknowledged ? "secondary" : "primary"}
             onClick={handleAcknowledge}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-2 shadow-lg"
           >
             {acknowledged ? (
-              <span className="flex items-center gap-1 text-emerald-600 font-semibold"><CheckCircle2 size={16} /> Acknowledged</span>
+              <span className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold"><CheckCircle2 size={18} /> Acknowledged</span>
             ) : (
-              <span className="flex items-center gap-1"><Bell size={16} /> Acknowledge Notice</span>
+              <span className="flex items-center gap-2"><Bell size={18} /> Acknowledge Notice</span>
             )}
           </Button>
         </div>
-      </div>
+      </AnimatedCard>
 
       {/* Main Content Body */}
-      <div className="bg-surface rounded-xl border border-hairline p-8 shadow-sm space-y-4">
-        <h3 className="text-eyebrow text-ink-muted uppercase font-semibold">Notice Details</h3>
+      <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-10 shadow-xl space-y-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-white/10 dark:border-white/5">
+          <h3 className="text-eyebrow text-primary uppercase font-bold tracking-wider">Notice Details</h3>
+        </div>
         <div
-          className="text-body-md text-ink leading-relaxed prose max-w-none dark:prose-invert"
+          className="text-body-lg text-ink leading-relaxed prose prose-lg max-w-none dark:prose-invert prose-headings:text-ink prose-a:text-primary prose-strong:text-ink prose-p:opacity-90"
           dangerouslySetInnerHTML={{
             __html: DOMPurify.sanitize(
               announcement.content || (announcement as any).message || "<p>No notice content provided.</p>",
             ),
           }}
         />
-      </div>
-    </div>
+      </AnimatedCard>
+    </PageTransition>
   );
 }

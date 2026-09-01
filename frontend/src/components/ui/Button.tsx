@@ -1,26 +1,34 @@
-import { ButtonHTMLAttributes, forwardRef } from 'react';
+import { forwardRef } from 'react';
+import { motion, HTMLMotionProps } from 'framer-motion';
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
-type ButtonSize = 'sm' | 'md' | 'lg';
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'glass';
+type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
+
+interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
 }
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-on-primary hover:bg-primary-active',
-  secondary:
-    'bg-surface text-ink border border-hairline hover:bg-canvas-soft shadow-soft-1',
-  danger: 'bg-red-500 text-white hover:bg-red-600',
-  ghost: 'bg-transparent text-ink-secondary hover:bg-canvas-soft',
+  primary: 'bg-primary text-white hover:bg-primary-active shadow-[0_4px_14px_0_rgba(0,122,255,0.39)] border border-primary/20',
+  secondary: 'bg-surface/80 backdrop-blur-md text-ink border border-hairline hover:bg-surface shadow-sm',
+  danger: 'bg-red-500 text-white hover:bg-red-600 shadow-[0_4px_14px_0_rgba(239,68,68,0.39)]',
+  ghost: 'bg-transparent text-ink-secondary hover:bg-black/5 dark:hover:bg-white/10',
+  glass: 'bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/10 text-ink shadow-[0_8px_32px_0_rgba(0,0,0,0.05)] hover:bg-white/40 dark:hover:bg-black/40',
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-caption rounded-md',
-  md: 'px-4 py-2 text-button rounded-full',
-  lg: 'px-6 py-2.5 text-button rounded-full',
+  sm: 'px-3 py-1.5 text-xs font-semibold rounded-lg',
+  md: 'px-4 py-2 text-sm font-semibold rounded-xl',
+  lg: 'px-6 py-3 text-base font-semibold rounded-2xl',
+  icon: 'p-2 rounded-xl flex items-center justify-center',
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -29,17 +37,23 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = 'primary',
       size = 'md',
       loading,
-      className = '',
+      className,
       children,
       disabled,
       ...props
     },
     ref,
   ) => (
-    <button
+    <motion.button
       ref={ref}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center font-medium transition-colors disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
+      whileTap={{ scale: disabled || loading ? 1 : 0.95, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+      className={cn(
+        "inline-flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
+        variants[variant],
+        sizes[size],
+        className
+      )}
       {...props}
     >
       {loading && (
@@ -63,8 +77,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           />
         </svg>
       )}
-      {children}
-    </button>
+      <>{children}</>
+    </motion.button>
   ),
 );
 Button.displayName = 'Button';

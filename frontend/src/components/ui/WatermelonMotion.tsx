@@ -9,10 +9,10 @@ export interface PageTransitionProps {
 export const PageTransition: React.FC<PageTransitionProps> = ({ children, className = "" }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: 16, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -16, scale: 0.99 }}
+      transition={{ type: "spring", stiffness: 350, damping: 35 }}
       className={className}
     >
       {children}
@@ -34,11 +34,11 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
 }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.98 }}
+      initial={{ opacity: 0, y: 20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      whileHover={{ y: -4, scale: 1.01, transition: { type: "spring", stiffness: 400, damping: 25 } }}
-      whileTap={{ scale: 0.99 }}
-      transition={{ duration: 0.4, delay, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -2, scale: 1.02, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+      whileTap={{ scale: 0.97, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+      transition={{ type: "spring", stiffness: 300, damping: 25, delay }}
       className={className}
       {...props}
     >
@@ -50,7 +50,7 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
 export interface AnimatedBadgeProps {
   children: React.ReactNode;
   className?: string;
-  variant?: "primary" | "emerald" | "amber" | "purple";
+  variant?: "primary" | "emerald" | "amber" | "purple" | "success" | "danger" | "info" | "warning" | "default";
 }
 
 export const AnimatedBadge: React.FC<AnimatedBadgeProps> = ({ children, className = "" }) => {

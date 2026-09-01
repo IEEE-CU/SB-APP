@@ -16,7 +16,7 @@ router.use(authenticate);
  */
 router.get("/", async (req, res, next) => {
   try {
-    const { societyId, eventType, startDate, endDate, limit = 100 } = req.query;
+    const { societyId, eventType, startDate, endDate, limit = 100, page = 1 } = req.query;
 
     const filter = {};
     if (societyId) filter.societyId = societyId;
@@ -27,15 +27,29 @@ router.get("/", async (req, res, next) => {
       if (endDate) filter.date.$lte = new Date(endDate);
     }
 
-    const events = await Event.find(filter)
-      .populate("societyId", "name shortName")
-      .sort({ date: -1 })
-      .limit(parseLimit(limit));
+    const parsedLimit = parseLimit(limit);
+    const parsedPage = parseInt(page, 10) || 1;
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const [events, totalItems] = await Promise.all([
+      Event.find(filter)
+        .populate("societyId", "name shortName")
+        .sort({ date: -1 })
+        .skip(skip)
+        .limit(parsedLimit),
+      Event.countDocuments(filter)
+    ]);
 
     res.json({
       success: true,
       count: events.length,
       data: events,
+      meta: {
+        page: parsedPage,
+        limit: parsedLimit,
+        totalItems,
+        totalPages: Math.ceil(totalItems / parsedLimit) || 1,
+      }
     });
   } catch (error) {
     next(error);

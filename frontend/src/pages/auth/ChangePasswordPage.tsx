@@ -7,6 +7,7 @@ import { authService } from '@/services/auth';
 import { Button } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 
 const schema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
@@ -40,32 +41,37 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <div className="max-w-lg">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink mb-4">
-        <ArrowLeft size={16} /> Back
-      </button>
-      <h1 className="text-heading-1 font-bold text-ink mb-6">Change Password</h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-surface rounded-lg border border-hairline p-6 space-y-4">
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Current Password</label>
-          <input type="password" {...register('currentPassword')} className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-          {errors.currentPassword && <p className="text-caption text-red-500 mt-1">{errors.currentPassword.message}</p>}
-        </div>
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">New Password</label>
-          <input type="password" {...register('newPassword')} className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="Min 8 characters" />
-          {errors.newPassword && <p className="text-caption text-red-500 mt-1">{errors.newPassword.message}</p>}
-        </div>
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Confirm New Password</label>
-          <input type="password" {...register('confirmPassword')} className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="Repeat new password" />
-          {errors.confirmPassword && <p className="text-caption text-red-500 mt-1">{errors.confirmPassword.message}</p>}
-        </div>
-        <div className="flex gap-3 pt-2">
-          <Button type="submit" loading={submitting}>Change Password</Button>
-          <Button type="button" variant="secondary" onClick={() => navigate('/profile')}>Cancel</Button>
-        </div>
-      </form>
-    </div>
+    <PageTransition>
+      <div className="max-w-lg mx-auto">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink mb-4 transition-colors">
+          <ArrowLeft size={16} /> Back
+        </button>
+        <h1 className="text-heading-1 font-bold text-ink mb-6">Change Password</h1>
+        
+        <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-6 space-y-4 shadow-sm">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Current Password</label>
+              <input type="password" {...register('currentPassword')} className="w-full px-4 py-2.5 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
+              {errors.currentPassword && <p className="text-caption text-red-500 mt-1">{errors.currentPassword.message}</p>}
+            </div>
+            <div>
+              <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">New Password</label>
+              <input type="password" {...register('newPassword')} className="w-full px-4 py-2.5 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" placeholder="Min 8 characters" />
+              {errors.newPassword && <p className="text-caption text-red-500 mt-1">{errors.newPassword.message}</p>}
+            </div>
+            <div>
+              <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Confirm New Password</label>
+              <input type="password" {...register('confirmPassword')} className="w-full px-4 py-2.5 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" placeholder="Repeat new password" />
+              {errors.confirmPassword && <p className="text-caption text-red-500 mt-1">{errors.confirmPassword.message}</p>}
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" loading={submitting}>Change Password</Button>
+              <Button type="button" variant="secondary" onClick={() => navigate('/profile')}>Cancel</Button>
+            </div>
+          </form>
+        </AnimatedCard>
+      </div>
+    </PageTransition>
   );
 }

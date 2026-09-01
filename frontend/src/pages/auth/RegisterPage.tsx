@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import toast from "react-hot-toast";
+import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 
 const registerSchema = z
   .object({
@@ -39,9 +40,10 @@ export default function RegisterPage() {
       await registerUser(data.name, data.email, data.password);
       toast.success("Account created!");
       navigate("/dashboard");
-    } catch (err: unknown) {
+    } catch (err: any) {
       const message =
-        err instanceof Error ? err.message : "Registration failed";
+        err?.response?.data?.message ||
+        (err instanceof Error ? err.message : "Registration failed");
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -49,87 +51,91 @@ export default function RegisterPage() {
   };
 
   return (
-    <div>
-      <h2 className="text-heading-2 font-bold text-ink mb-6">Create account</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
-            Name
-          </label>
-          <input
-            type="text"
-            {...register("name")}
-            className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            placeholder="Your name"
-          />
-          {errors.name && (
-            <p className="text-caption text-red-500 mt-1">
-              {errors.name.message}
-            </p>
-          )}
-        </div>
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
-            Email
-          </label>
-          <input
-            type="email"
-            {...register("email")}
-            className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            placeholder="you@example.com"
-          />
-          {errors.email && (
-            <p className="text-caption text-red-500 mt-1">
-              {errors.email.message}
-            </p>
-          )}
-        </div>
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
-            Password
-          </label>
-          <input
-            type="password"
-            {...register("password")}
-            className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            placeholder="Min 8 characters"
-          />
-          {errors.password && (
-            <p className="text-caption text-red-500 mt-1">
-              {errors.password.message}
-            </p>
-          )}
-        </div>
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            {...register("confirmPassword")}
-            className="w-full px-3 py-2 bg-surface border border-hairline rounded-xs text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            placeholder="Repeat password"
-          />
-          {errors.confirmPassword && (
-            <p className="text-caption text-red-500 mt-1">
-              {errors.confirmPassword.message}
-            </p>
-          )}
-        </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-2.5 bg-primary text-on-primary text-button font-medium rounded-full hover:bg-primary-active transition-colors disabled:opacity-50"
-        >
-          {isLoading ? "Creating account..." : "Create account"}
-        </button>
-      </form>
-      <p className="text-body-sm text-ink-muted text-center mt-6">
-        Already have an account?{" "}
-        <Link to="/login" className="text-primary hover:underline">
-          Sign in
-        </Link>
-      </p>
-    </div>
+    <PageTransition>
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <AnimatedCard className="w-full max-w-md p-8 bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl shadow-xl">
+          <h2 className="text-heading-2 font-bold text-ink mb-6 text-center">Create account</h2>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
+                Name
+              </label>
+              <input
+                type="text"
+                {...register("name")}
+                className="w-full px-4 py-2.5 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="Your name"
+              />
+              {errors.name && (
+                <p className="text-caption text-red-500 mt-1">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
+                Email
+              </label>
+              <input
+                type="email"
+                {...register("email")}
+                className="w-full px-4 py-2.5 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="you@example.com"
+              />
+              {errors.email && (
+                <p className="text-caption text-red-500 mt-1">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
+                Password
+              </label>
+              <input
+                type="password"
+                {...register("password")}
+                className="w-full px-4 py-2.5 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="Min 8 characters"
+              />
+              {errors.password && (
+                <p className="text-caption text-red-500 mt-1">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                {...register("confirmPassword")}
+                className="w-full px-4 py-2.5 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                placeholder="Repeat password"
+              />
+              {errors.confirmPassword && (
+                <p className="text-caption text-red-500 mt-1">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full mt-6 py-2.5 bg-primary text-on-primary text-button font-medium rounded-xl hover:bg-primary-active transition-all disabled:opacity-50 shadow-lg shadow-primary/20"
+            >
+              {isLoading ? "Creating account..." : "Create account"}
+            </button>
+          </form>
+          <p className="text-body-sm text-ink-muted text-center mt-6">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary font-medium hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </AnimatedCard>
+      </div>
+    </PageTransition>
   );
 }

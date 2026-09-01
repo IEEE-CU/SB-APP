@@ -11,6 +11,7 @@ import { Button, LoadingSpinner } from "@/components/ui";
 import type { Society } from "@/types/models";
 import { slugify } from "@/utils/slug";
 import toast from "react-hot-toast";
+import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 
 const schema = z.object({
   title: z.string().min(1, "Announcement title is required"),
@@ -107,114 +108,120 @@ export default function AnnouncementFormPage() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-heading-1 font-bold text-ink mb-6">
-        {isEdit ? "Edit Announcement" : "Create New Campus Broadcast"}
-      </h1>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="bg-surface rounded-xl border border-hairline p-6 space-y-4 shadow-sm"
-      >
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
-            Announcement Title *
-          </label>
-          <input
-            {...register("title")}
-            placeholder="e.g. Call for Papers - IEEE Student Research Symposium 2025"
-            className="w-full px-3.5 py-2.5 bg-surface border border-hairline rounded-lg text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium"
-          />
-          {errors.title && (
-            <p className="text-caption text-red-500 mt-1">
-              {errors.title.message}
-            </p>
-          )}
-        </div>
+    <PageTransition>
+      <div className="max-w-3xl mx-auto space-y-6">
+        <h1 className="text-heading-1 font-bold text-ink mb-2">
+          {isEdit ? "Edit Announcement" : "Create New Campus Broadcast"}
+        </h1>
+        <p className="text-body-md text-ink-muted mb-6">
+          {isEdit ? "Update the details of your existing broadcast." : "Draft and publish a new official announcement for the campus."}
+        </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
-              Priority & Alert Level
-            </label>
-            <select
-              {...register("priority")}
-              className="w-full px-3.5 py-2.5 bg-surface border border-hairline rounded-lg text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            >
-              <option value="low">Low Priority (Routine Info)</option>
-              <option value="medium">Medium Priority (Important Notice)</option>
-              <option value="high">High Priority (Urgent Broadcast)</option>
-            </select>
-          </div>
+        <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-8 shadow-xl">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div>
+              <label className="block text-body-sm font-semibold text-ink-secondary mb-2">
+                Announcement Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                {...register("title")}
+                placeholder="e.g. Call for Papers - IEEE Student Research Symposium 2025"
+                className="w-full px-4 py-3 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary font-medium transition-all shadow-sm"
+              />
+              {errors.title && (
+                <p className="text-caption text-red-500 mt-1.5">
+                  {errors.title.message}
+                </p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
-              Target Society / Channel
-            </label>
-            <select
-              {...register("societyId")}
-              className="w-full px-3.5 py-2.5 bg-surface border border-hairline rounded-lg text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            >
-              <option value="">IEEE Student Branch (All Members)</option>
-              {societies.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.shortName || s.name.substring(0, 4)})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-body-sm font-semibold text-ink-secondary mb-2">
+                  Priority & Alert Level
+                </label>
+                <select
+                  {...register("priority")}
+                  className="w-full px-4 py-3 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-sm"
+                >
+                  <option value="low">Low Priority (Routine Info)</option>
+                  <option value="medium">Medium Priority (Important Notice)</option>
+                  <option value="high">High Priority (Urgent Broadcast)</option>
+                </select>
+              </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-body-sm font-medium text-ink-secondary">
-              Notice Content & Message *
-            </label>
-            <button
-              type="button"
-              onClick={() => setPreviewMode(!previewMode)}
-              className="text-body-xs font-semibold text-primary hover:underline"
-            >
-              {previewMode ? "Edit Mode" : "Preview Notice"}
-            </button>
-          </div>
+              <div>
+                <label className="block text-body-sm font-semibold text-ink-secondary mb-2">
+                  Target Society / Channel
+                </label>
+                <select
+                  {...register("societyId")}
+                  className="w-full px-4 py-3 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-sm"
+                >
+                  <option value="">IEEE Student Branch (All Members)</option>
+                  {societies.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.shortName || s.name.substring(0, 4)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-          {previewMode ? (
-            <div
-              className="p-4 bg-canvas-soft border border-hairline rounded-lg text-body-sm text-ink min-h-[160px] prose max-w-none"
-              dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(
-                  contentValue || "<i>No content to preview</i>"
-                ),
-              }}
-            />
-          ) : (
-            <textarea
-              {...register("content")}
-              rows={8}
-              placeholder="Write broadcast message, venue details, submission links, or deadlines..."
-              className="w-full px-3.5 py-2.5 bg-surface border border-hairline rounded-lg text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary leading-relaxed"
-            />
-          )}
-          {errors.content && (
-            <p className="text-caption text-red-500 mt-1">
-              {errors.content.message}
-            </p>
-          )}
-        </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-body-sm font-semibold text-ink-secondary">
+                  Notice Content & Message <span className="text-red-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode(!previewMode)}
+                  className="text-body-xs font-bold text-primary hover:text-primary-active px-3 py-1.5 bg-primary/10 rounded-lg transition-colors"
+                >
+                  {previewMode ? "Edit Mode" : "Preview Notice"}
+                </button>
+              </div>
 
-        <div className="flex gap-3 pt-2">
-          <Button type="submit" loading={submitting}>
-            {isEdit ? "Update Notice" : "Publish Broadcast"}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => navigate("/announcements")}
-          >
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </div>
+              {previewMode ? (
+                <div
+                  className="p-6 bg-surface/40 backdrop-blur-md border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink min-h-[200px] prose prose-sm max-w-none dark:prose-invert shadow-inner"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(
+                      contentValue || "<i>No content to preview</i>"
+                    ),
+                  }}
+                />
+              ) : (
+                <textarea
+                  {...register("content")}
+                  rows={10}
+                  placeholder="Write broadcast message, venue details, submission links, or deadlines..."
+                  className="w-full px-4 py-3 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary leading-relaxed transition-all shadow-sm resize-y"
+                />
+              )}
+              {errors.content && (
+                <p className="text-caption text-red-500 mt-1.5">
+                  {errors.content.message}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-4 pt-6 border-t border-white/10 dark:border-white/5">
+              <Button type="submit" loading={submitting} className="flex-1 sm:flex-none shadow-lg">
+                {isEdit ? "Update Notice" : "Publish Broadcast"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate("/announcements")}
+                className="flex-1 sm:flex-none shadow-sm"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </AnimatedCard>
+      </div>
+    </PageTransition>
   );
 }

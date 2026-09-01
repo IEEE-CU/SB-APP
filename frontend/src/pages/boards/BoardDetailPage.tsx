@@ -4,14 +4,10 @@ import { ArrowLeft } from "lucide-react";
 import { channelsService } from "@/services/channels";
 import { useSocietyStore } from "@/store/societyStore";
 import { LoadingSpinner } from "@/components/ui";
+import { PageTransition } from "@/components/ui/WatermelonMotion";
 import KanbanBoardView from "@/components/board/KanbanBoardView";
 import type { Channel } from "@/types/models";
 
-/**
- * Resolves a board channel by its slug (the channel's kebab-case `name`) and
- * hands the resolved id to the existing Kanban view. Resolves against the
- * active society, the same list the sidebar builds its links from.
- */
 export default function BoardDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { activeSocietyId } = useSocietyStore();
@@ -25,8 +21,6 @@ export default function BoardDetailPage() {
     channelsService
       .getChannels(activeSocietyId || undefined)
       .then((res) => {
-        // Only a channel explicitly typed as "board" may render the Kanban
-        // view; chat channels fall through to the not-found state.
         const match = (res.data.data || []).find(
           (c) => c.name === slug && c.type === "board",
         );
@@ -41,16 +35,16 @@ export default function BoardDetailPage() {
     return <div className="text-body-sm text-ink-muted">Board not found</div>;
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col">
+    <PageTransition className="h-[calc(100vh-8rem)] flex flex-col bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-3xl p-6 shadow-2xl">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink mb-4"
+        className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink mb-4 w-fit transition-colors"
       >
         <ArrowLeft size={16} /> Back
       </button>
       <div className="flex-1 min-h-0">
         <KanbanBoardView channelId={channel.id} />
       </div>
-    </div>
+    </PageTransition>
   );
 }

@@ -84,7 +84,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem("userRole", role);
       localStorage.setItem("userScope", JSON.stringify(scope));
       set({ permissions: perms, userRole: role, userScope: scope });
-    } catch {
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        get().logout();
+      }
       // Keep existing permissions if fetch fails (e.g. offline) unless unauthenticated
     }
   },

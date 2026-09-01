@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { userService } from "@/services/users";
 import { LoadingSpinner } from "@/components/ui";
+import { PageTransition, AnimatedCard, AnimatedBadge } from "@/components/ui/WatermelonMotion";
 import type { User } from "@/types/models";
 
 export default function UserDetailPage() {
@@ -13,8 +14,6 @@ export default function UserDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    // Guard against a slower response for a previous id overwriting the
-    // current one when navigating straight between user detail pages.
     let cancelled = false;
     setLoading(true);
     userService
@@ -38,15 +37,15 @@ export default function UserDetailPage() {
     return <div className="text-body-sm text-ink-muted">User not found</div>;
 
   return (
-    <div>
+    <PageTransition>
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink mb-4"
+        className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink mb-4 transition-colors"
       >
         <ArrowLeft size={16} /> Back
       </button>
       <h1 className="text-heading-1 font-bold text-ink mb-6">{user.name}</h1>
-      <div className="bg-surface rounded-lg border border-hairline p-6 max-w-2xl space-y-4">
+      <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-6 max-w-2xl space-y-4 shadow-xl">
         <div>
           <label className="text-eyebrow text-ink-muted uppercase">Email</label>
           <p className="text-body-md text-ink mt-1">{user.email}</p>
@@ -55,9 +54,11 @@ export default function UserDetailPage() {
           <label className="text-eyebrow text-ink-muted uppercase">
             Status
           </label>
-          <p className="text-body-md text-ink mt-1">
-            {user.isActive ? "Active" : "Inactive"}
-          </p>
+          <div className="mt-1">
+            <AnimatedBadge variant={user.isActive ? "success" : "danger"}>
+              {user.isActive ? "Active" : "Inactive"}
+            </AnimatedBadge>
+          </div>
         </div>
         <div>
           <label className="text-eyebrow text-ink-muted uppercase">
@@ -67,7 +68,7 @@ export default function UserDetailPage() {
             {new Date(user.createdAt).toLocaleDateString()}
           </p>
         </div>
-      </div>
-    </div>
+      </AnimatedCard>
+    </PageTransition>
   );
 }

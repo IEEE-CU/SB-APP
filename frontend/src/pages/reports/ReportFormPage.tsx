@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,6 +8,7 @@ import DOMPurify from 'dompurify';
 import { reportService } from '@/services/reports';
 import { societyService } from '@/services/societies';
 import { Button, LoadingSpinner } from '@/components/ui';
+import { PageTransition, AnimatedCard } from '@/components/ui/WatermelonMotion';
 import type { Society } from '@/types/models';
 import { slugify } from '@/utils/slug';
 import toast from 'react-hot-toast';
@@ -14,7 +16,7 @@ import toast from 'react-hot-toast';
 const reportSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   content: z.string().optional(),
-  type: z.enum(['financial', 'activity', 'general']).optional(),
+  type: z.union([z.enum(['financial', 'activity', 'general']), z.literal('')]).optional(),
   societyId: z.string().optional(),
 });
 
@@ -31,6 +33,11 @@ export default function ReportFormPage() {
   const [societies, setSocieties] = useState<Society[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
   const navigate = useNavigate();
+
+  const { hasAccess } = usePermissions();
+  const canEdit = hasAccess('reports', 'write');
+  const canCreate = hasAccess('reports', 'create');
+  const isAuthorized = isEdit ? canEdit : canCreate;
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ReportForm>({
     resolver: zodResolver(reportSchema),
@@ -70,12 +77,17 @@ export default function ReportFormPage() {
 
   const onSubmit = async (data: ReportForm) => {
     setSubmitting(true);
+    const formattedData = {
+      ...data,
+      type: data.type === '' ? undefined : data.type,
+      societyId: data.societyId === '' ? undefined : data.societyId,
+    };
     try {
       if (isEdit && reportId) {
-        await reportService.updateReport(reportId, data as any);
+        await reportService.updateReport(reportId, formattedData as any);
         toast.success('Report updated');
       } else {
-        await reportService.createReport(data as any);
+        await reportService.createReport(formattedData as any);
         toast.success('Report created');
       }
       navigate('/reports');
@@ -86,86 +98,92 @@ export default function ReportFormPage() {
     }
   };
 
+  if (!isAuthorized) return <Navigate to="/reports" replace />;
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-heading-1 font-bold text-ink mb-6">
-        {isEdit ? 'Edit Report' : 'Create New Official Report'}
-      </h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-surface rounded-xl border border-hairline p-6 space-y-4 shadow-sm">
-        <div>
-          <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Report Title *</label>
-          <input
-            {...register('title')}
-            placeholder="e.g. Q3 IEEE Financial Audit & Expenditure Log"
-            className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-          />
-          {errors.title && <p className="text-caption text-red-500 mt-1">{errors.title.message}</p>}
-        </div>
+    <PageTransition>
+      <div className="max-w-2xl">
+        <h1 className="text-heading-1 font-bold text-ink mb-6">
+          {isEdit ? 'Edit Report' : 'Create New Official Report'}
+        </h1>
+        <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-xl p-6 shadow-sm">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Report Title *</label>
+              <input
+                {...register('title')}
+                placeholder="e.g. Q3 IEEE Financial Audit & Expenditure Log"
+                className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              />
+              {errors.title && <p className="text-caption text-red-500 mt-1">{errors.title.message}</p>}
+            </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Report Category</label>
-            <select
-              {...register('type')}
-              className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            >
-              <option value="">Select type</option>
-              <option value="financial">Financial Report</option>
-              <option value="activity">Activity / Event Report</option>
-              <option value="general">General Administrative Report</option>
-            </select>
-          </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Report Category</label>
+                <select
+                  {...register('type')}
+                  className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                >
+                  <option value="">Select type</option>
+                  <option value="financial">Financial Report</option>
+                  <option value="activity">Activity / Event Report</option>
+                  <option value="general">General Administrative Report</option>
+                </select>
+                {errors.type && <p className="text-caption text-red-500 mt-1">{errors.type.message}</p>}
+              </div>
 
-          <div>
-            <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Society</label>
-            <select
-              {...register('societyId')}
-              className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            >
-              <option value="">IEEE Student Branch (Central)</option>
-              {societies.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.shortName || s.name.substring(0, 4)})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+              <div>
+                <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">Society</label>
+                <select
+                  {...register('societyId')}
+                  className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                >
+                  <option value="">IEEE Student Branch (Central)</option>
+                  {societies.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.shortName || s.name.substring(0, 4)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-body-sm font-medium text-ink-secondary">Report Document Body (HTML / Text)</label>
-            <button
-              type="button"
-              onClick={() => setPreviewMode(!previewMode)}
-              className="text-body-xs font-semibold text-primary hover:underline"
-            >
-              {previewMode ? 'Edit Mode' : 'Preview Document'}
-            </button>
-          </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-body-sm font-medium text-ink-secondary">Report Document Body (HTML / Text)</label>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode(!previewMode)}
+                  className="text-body-xs font-semibold text-primary hover:underline"
+                >
+                  {previewMode ? 'Edit Mode' : 'Preview Document'}
+                </button>
+              </div>
 
-          {previewMode ? (
-            <div
-              className="p-4 bg-canvas-soft border border-hairline rounded-md text-body-sm text-ink min-h-[200px] prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(contentValue || '<i>No preview content available</i>') }}
-            />
-          ) : (
-            <textarea
-              {...register('content')}
-              rows={10}
-              placeholder="Provide report details, financial line items, or executive summary..."
-              className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-mono text-xs"
-            />
-          )}
-        </div>
+              {previewMode ? (
+                <div
+                  className="p-4 bg-canvas-soft border border-hairline rounded-md text-body-sm text-ink min-h-[200px] prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(contentValue || '<i>No preview content available</i>') }}
+                />
+              ) : (
+                <textarea
+                  {...register('content')}
+                  rows={10}
+                  placeholder="Provide report details, financial line items, or executive summary..."
+                  className="w-full px-3 py-2 bg-surface border border-hairline rounded-md text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-mono text-xs"
+                />
+              )}
+            </div>
 
-        <div className="flex gap-3 pt-2">
-          <Button type="submit" loading={submitting}>{isEdit ? 'Update Report' : 'Submit Report'}</Button>
-          <Button type="button" variant="secondary" onClick={() => navigate('/reports')}>Cancel</Button>
-        </div>
-      </form>
-    </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" loading={submitting}>{isEdit ? 'Update Report' : 'Submit Report'}</Button>
+              <Button type="button" variant="secondary" onClick={() => navigate('/reports')}>Cancel</Button>
+            </div>
+          </form>
+        </AnimatedCard>
+      </div>
+    </PageTransition>
   );
 }

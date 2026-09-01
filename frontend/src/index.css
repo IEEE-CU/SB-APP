@@ -1,40 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --color-canvas: #ffffff;
-  --color-canvas-soft: #ffffff;
-  --color-surface: #ffffff;
-  --color-ink: #000000;
-  --color-ink-secondary: #31302e;
-  --color-ink-muted: #615d59;
-  --color-ink-faint: #a39e98;
-  --color-hairline: #e6e6e6;
-  --color-primary: #2563eb;
-  --color-primary-active: #1d4ed8;
-  --color-secondary: #2563eb;
+  --color-canvas: #fafafa;
+  --color-canvas-soft: #f2f2f7;
+  --color-surface: rgba(255, 255, 255, 0.75);
+  --color-ink: #1c1c1e;
+  --color-ink-secondary: #3a3a3c;
+  --color-ink-muted: #8e8e93;
+  --color-ink-faint: #c7c7cc;
+  --color-hairline: rgba(0, 0, 0, 0.08);
+  --color-primary: #007aff;
+  --color-primary-active: #0056b3;
+  --color-secondary: #5ac8fa;
 }
 
 .dark {
-  --color-canvas: #0a0a0a;
-  --color-canvas-soft: #121212;
-  --color-surface: #1a1a1a;
-  --color-ink: #ffffff;
-  --color-ink-secondary: rgba(255, 255, 255, 0.9);
-  --color-ink-muted: rgba(255, 255, 255, 0.6);
-  --color-ink-faint: rgba(255, 255, 255, 0.4);
-  --color-hairline: #222222;
-  --color-primary: #60a5fa;
-  --color-primary-active: #3b82f6;
-  --color-secondary: #60a5fa;
+  --color-canvas: #000000;
+  --color-canvas-soft: #1c1c1e;
+  --color-surface: rgba(28, 28, 30, 0.75);
+  --color-ink: #f2f2f7;
+  --color-ink-secondary: #e5e5ea;
+  --color-ink-muted: #8e8e93;
+  --color-ink-faint: #48484a;
+  --color-hairline: rgba(255, 255, 255, 0.1);
+  --color-primary: #0a84ff;
+  --color-primary-active: #006ce6;
+  --color-secondary: #64d2ff;
 }
 
 @layer base {
   body {
-    @apply bg-canvas-soft text-ink font-sans text-body-md antialiased;
+    @apply text-ink font-sans text-body-md antialiased;
+    background-color: var(--color-canvas-soft);
+    background-image: radial-gradient(circle at 10% 20%, rgba(0, 122, 255, 0.04) 0%, transparent 400px), radial-gradient(circle at 90% 80%, rgba(90, 200, 250, 0.04) 0%, transparent 400px);
+    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 }
 
