@@ -150,7 +150,8 @@ export default function OpportunitiesPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.98 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute left-0 right-0 mt-2 max-h-80 overflow-y-auto bg-canvas-soft border border-white/10 dark:border-white/5 rounded-2xl shadow-2xl z-50 py-1.5"
+                  data-lenis-prevent
+                  className="absolute left-0 right-0 mt-2 max-h-80 overflow-y-auto overscroll-contain bg-canvas-soft border border-white/10 dark:border-white/5 rounded-2xl shadow-2xl z-50 py-1.5"
                 >
                   {societies.map((s) => (
                     <button
