@@ -34,6 +34,28 @@ function resolveUrl(href, base) {
   }
 }
 
+const isBareUrl = (text) => /^(https?:\/\/|www\.)/i.test(text.trim());
+
+/**
+ * Some sites (e.g. ieeefoundation.org) link out using the raw URL as the
+ * anchor's visible text instead of a human title. Derive something readable
+ * from the last path segment instead of showing the URL verbatim.
+ */
+function humanizeUrl(url) {
+  try {
+    const { pathname } = new URL(url);
+    const slug = pathname.split("/").filter(Boolean).pop() || "";
+    const words = slug
+      .replace(/\.(html?|php|aspx?)$/i, "")
+      .split(/[-_]+/)
+      .filter(Boolean);
+    if (words.length === 0) return null;
+    return words.map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Best-effort scrape: looks for anchor tags whose visible text reads like an
  * award/scholarship/grant listing. Structure of these sites is not standardized,
@@ -57,12 +79,16 @@ async function scrapeSociety(source) {
     $("a[href]").each((_, el) => {
       if (found.size >= MAX_ITEMS_PER_SOCIETY) return;
 
-      const text = $(el).text().replace(/\s+/g, " ").trim();
+      let text = $(el).text().replace(/\s+/g, " ").trim();
       if (!looksLikeOpportunity(text)) return;
 
       const href = $(el).attr("href");
       const link = resolveUrl(href, url);
       if (!link) return;
+
+      if (isBareUrl(text)) {
+        text = humanizeUrl(link) || text;
+      }
 
       if (!found.has(link)) {
         found.set(link, text);
