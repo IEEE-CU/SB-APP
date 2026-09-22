@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: light;
   --color-canvas: #fafafa;
   --color-canvas-soft: #f2f2f7;
   --color-surface: rgba(255, 255, 255, 0.75);
@@ -17,6 +18,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --color-canvas: #000000;
   --color-canvas-soft: #1c1c1e;
   --color-surface: rgba(28, 28, 30, 0.75);
@@ -37,6 +39,16 @@
     background-image: radial-gradient(circle at 10% 20%, rgba(0, 122, 255, 0.04) 0%, transparent 400px), radial-gradient(circle at 90% 80%, rgba(90, 200, 250, 0.04) 0%, transparent 400px);
     background-attachment: fixed;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* Browser autofill (Chrome/Safari) forces black text via -webkit-text-fill-color,
+     ignoring our dark-mode CSS variables. Force it back to the theme's ink color. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-ink);
+    caret-color: var(--color-ink);
+    transition: background-color 9999s ease-in-out 0s;
   }
 }
 
