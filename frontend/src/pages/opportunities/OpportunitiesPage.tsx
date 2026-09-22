@@ -108,7 +108,7 @@ export default function OpportunitiesPage() {
         </div>
       </div>
 
-      <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-4 shadow-lg space-y-3">
+      <div className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-4 shadow-lg space-y-3">
         <span className="text-body-xs text-ink-muted uppercase font-bold px-1">
           Society
         </span>
@@ -150,7 +150,7 @@ export default function OpportunitiesPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.98 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute left-0 right-0 mt-2 max-h-80 overflow-y-auto bg-surface backdrop-blur-2xl border border-white/10 dark:border-white/5 rounded-2xl shadow-2xl z-50 py-1.5"
+                  className="absolute left-0 right-0 mt-2 max-h-80 overflow-y-auto bg-canvas-soft border border-white/10 dark:border-white/5 rounded-2xl shadow-2xl z-50 py-1.5"
                 >
                   {societies.map((s) => (
                     <button
@@ -186,7 +186,7 @@ export default function OpportunitiesPage() {
             />
           </div>
         )}
-      </AnimatedCard>
+      </div>
 
       {loading ? (
         <div className="flex justify-center py-16">
