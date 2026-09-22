@@ -108,7 +108,7 @@ export default function OpportunitiesPage() {
         </div>
       </div>
 
-      <div className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-4 shadow-lg space-y-3">
+      <div className="relative z-30 bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-4 shadow-lg space-y-3">
         <span className="text-body-xs text-ink-muted uppercase font-bold px-1">
           Society
         </span>
