@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Award,
+  Check,
   ChevronDown,
   ExternalLink,
   Info,
   RefreshCw,
   Sparkles,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   opportunityService,
   type Opportunity,
@@ -37,6 +39,21 @@ export default function OpportunitiesPage() {
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     setSocietiesLoading(true);
@@ -111,22 +128,53 @@ export default function OpportunitiesPage() {
         ) : societiesLoading ? (
           <div className="h-11 w-full sm:w-80 rounded-xl bg-canvas-soft animate-pulse" />
         ) : (
-          <div className="relative w-full sm:w-80">
-            <select
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-              className="w-full appearance-none px-4 py-2.5 pr-10 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all cursor-pointer"
+          <div className="relative w-full sm:w-80" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsOpen((v) => !v)}
+              className="w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm font-semibold text-ink hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all cursor-pointer"
             >
-              {societies.map((s) => (
-                <option key={s.society} value={s.society}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={16}
-              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-muted"
-            />
+              <span className="truncate">
+                {current?.label || "Select a society"}
+              </span>
+              <ChevronDown
+                size={16}
+                className={`shrink-0 text-ink-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            <AnimatePresence>
+              {isOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 right-0 mt-2 max-h-80 overflow-y-auto bg-surface backdrop-blur-2xl border border-white/10 dark:border-white/5 rounded-2xl shadow-2xl z-50 py-1.5"
+                >
+                  {societies.map((s) => (
+                    <button
+                      key={s.society}
+                      type="button"
+                      onClick={() => {
+                        setSelected(s.society);
+                        setIsOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-body-sm text-left transition-colors ${
+                        selected === s.society
+                          ? "text-primary font-semibold bg-primary/5"
+                          : "text-ink-secondary hover:bg-canvas-soft hover:text-ink"
+                      }`}
+                    >
+                      <span className="truncate">{s.label}</span>
+                      {selected === s.society && (
+                        <Check size={14} className="shrink-0 text-primary" />
+                      )}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
