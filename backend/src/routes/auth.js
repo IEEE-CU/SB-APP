@@ -72,6 +72,67 @@ router.post("/login", authLimiter, async (req, res, next) => {
 });
 
 /**
+ * @route   POST /api/auth/register
+ * @desc    Register a new user account
+ * @access  Public
+ */
+router.post("/register", authLimiter, async (req, res, next) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide name, email and password",
+      });
+    }
+
+    if (password.length < 4) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 4 characters",
+      });
+    }
+
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email already exists",
+      });
+    }
+
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      password,
+      role: "OFFICE_BEARER",
+    });
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
+    );
+
+    res.status(201).json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route   GET /api/auth/me
  * @desc    Get current user profile
  * @access  Private
