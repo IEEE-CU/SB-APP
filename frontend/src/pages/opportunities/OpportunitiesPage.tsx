@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Award, ExternalLink, Info, RefreshCw, Sparkles } from "lucide-react";
+import {
+  Award,
+  ChevronDown,
+  ExternalLink,
+  Info,
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
 import {
   opportunityService,
   type Opportunity,
@@ -102,29 +109,24 @@ export default function OpportunitiesPage() {
             </button>
           </div>
         ) : societiesLoading ? (
-          <div className="flex gap-2 px-1">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-9 w-24 rounded-xl bg-canvas-soft animate-pulse"
-              />
-            ))}
-          </div>
+          <div className="h-11 w-full sm:w-80 rounded-xl bg-canvas-soft animate-pulse" />
         ) : (
-          <div className="flex flex-wrap gap-2">
-            {societies.map((s) => (
-              <button
-                key={s.society}
-                onClick={() => setSelected(s.society)}
-                className={`px-4 py-2 rounded-xl text-body-xs font-semibold transition-all duration-300 ${
-                  selected === s.society
-                    ? "bg-primary text-white shadow-md shadow-primary/20"
-                    : "bg-surface/50 text-ink-muted hover:text-ink hover:bg-surface border border-transparent hover:border-white/10"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+          <div className="relative w-full sm:w-80">
+            <select
+              value={selected}
+              onChange={(e) => setSelected(e.target.value)}
+              className="w-full appearance-none px-4 py-2.5 pr-10 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all cursor-pointer"
+            >
+              {societies.map((s) => (
+                <option key={s.society} value={s.society}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={16}
+              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-muted"
+            />
           </div>
         )}
 
