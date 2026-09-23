@@ -25,6 +25,7 @@ const notesRouter = require("./notes");
 const sprintsRouter = require("./sprints");
 const notificationsRouter = require("./notifications");
 const importerRouter = require("./importers");
+const opportunitiesRouter = require("./opportunities");
 
 // Mount routes
 router.use("/auth", authRoutes);
@@ -54,6 +55,7 @@ router.use("/channels", channelRoutes);
 router.use("/conversations", conversationRoutes);
 router.use("/boards", boardsRouter);
 router.use("/tasks", tasksRouter);
+router.use("/opportunities", opportunitiesRouter);
 
 // Health check - reflects real DB connectivity so a load balancer / orchestrator
 // only routes traffic to instances that can actually serve requests.
