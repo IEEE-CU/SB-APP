@@ -42,8 +42,8 @@ jobs:
           npm run lint
           npm run typecheck
           npm run test:unit
-          npm run start:test-server &
-          npx wait-on --timeout 60000 http://localhost:5000/api/v1/health
+          TEST_READY_FILE="${RUNNER_TEMP}/sb-app-test-server.ready" npm run start:test-server &
+          npx wait-on --timeout 60000 http://localhost:5000/api/v1/health "file:${RUNNER_TEMP}/sb-app-test-server.ready"
           npm run test:contract
           node scripts/verify-rbac-matrix.js --baseUrl=http://localhost:5000
 
