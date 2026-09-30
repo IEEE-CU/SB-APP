@@ -11,7 +11,7 @@ const registerSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z.string().min(15, "Password must be at least 15 characters"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -54,7 +54,9 @@ export default function RegisterPage() {
     <PageTransition>
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
         <AnimatedCard className="w-full max-w-md p-8 bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl shadow-xl">
-          <h2 className="text-heading-2 font-bold text-ink mb-6 text-center">Create account</h2>
+          <h2 className="text-heading-2 font-bold text-ink mb-6 text-center">
+            Create account
+          </h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-body-sm font-medium text-ink-secondary mb-1.5">
@@ -96,7 +98,7 @@ export default function RegisterPage() {
                 type="password"
                 {...register("password")}
                 className="w-full px-4 py-2.5 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                placeholder="Min 8 characters"
+                placeholder="Min 15 characters"
               />
               {errors.password && (
                 <p className="text-caption text-red-500 mt-1">
@@ -130,7 +132,10 @@ export default function RegisterPage() {
           </form>
           <p className="text-body-sm text-ink-muted text-center mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary font-medium hover:underline">
+            <Link
+              to="/login"
+              className="text-primary font-medium hover:underline"
+            >
               Sign in
             </Link>
           </p>

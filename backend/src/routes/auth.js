@@ -83,7 +83,14 @@ router.post("/register", registrationLimiter, async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || typeof email !== "string" || !password) {
+    if (
+      typeof name !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !name ||
+      !email ||
+      !password
+    ) {
       return res.status(400).json({
         success: false,
         message: "Please provide name, email and password",
@@ -160,7 +167,12 @@ router.post(
     try {
       const { currentPassword, newPassword } = req.body;
 
-      if (!currentPassword || !newPassword) {
+      if (
+        typeof currentPassword !== "string" ||
+        typeof newPassword !== "string" ||
+        !currentPassword ||
+        !newPassword
+      ) {
         return res.status(400).json({
           success: false,
           message: "Please provide current and new password",
