@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const rateLimit = require("express-rate-limit");
 
 /**
  * General API limiter - applied to every request.
@@ -10,14 +10,14 @@ const rateLimit = require('express-rate-limit');
  * consistently across instances.
  */
 const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 300,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: {
-        success: false,
-        message: 'Too many requests. Please try again later.'
-    }
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests. Please try again later.",
+  },
 });
 
 /**
@@ -25,15 +25,30 @@ const generalLimiter = rateLimit({
  * Keyed by IP, small window, low ceiling to blunt credential-stuffing/brute force.
  */
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skipSuccessfulRequests: true,
-    message: {
-        success: false,
-        message: 'Too many attempts. Please try again in 15 minutes.'
-    }
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: {
+    success: false,
+    message: "Too many attempts. Please try again in 15 minutes.",
+  },
 });
 
-module.exports = { generalLimiter, authLimiter };
+/**
+ * Limiter for account registration. Unlike authLimiter it counts successful
+ * requests too, since each signup costs a bcrypt hash and a DB write.
+ */
+const registrationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many registration attempts. Please try again in 15 minutes.",
+  },
+});
+
+module.exports = { generalLimiter, authLimiter, registrationLimiter };

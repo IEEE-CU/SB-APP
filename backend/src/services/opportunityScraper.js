@@ -138,6 +138,14 @@ async function scrapeAllSocieties() {
           ),
         ),
       );
+
+      // Drop listings the society page no longer shows. Only done on a
+      // successful, non-empty scrape so a failure or broken selector never
+      // wipes valid listings.
+      await Opportunity.deleteMany({
+        society: result.society,
+        link: { $nin: result.items.map((item) => item.link) },
+      });
     }
   }
 

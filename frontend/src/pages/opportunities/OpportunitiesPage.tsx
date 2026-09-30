@@ -37,6 +37,8 @@ export default function OpportunitiesPage() {
   const [items, setItems] = useState<Opportunity[]>([]);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [oppError, setOppError] = useState(false);
+  const [oppRetry, setOppRetry] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -66,20 +68,31 @@ export default function OpportunitiesPage() {
   }, [retryCount]);
 
   useEffect(() => {
+    // Ignore responses from requests superseded by a newer selection/retry.
+    let stale = false;
     setLoading(true);
+    setOppError(false);
     setQuery("");
     opportunityService
       .getOpportunities(selected)
       .then((res) => {
+        if (stale) return;
         setItems(res.data.data);
         setFallbackUrl(res.data.fallbackUrl);
       })
       .catch(() => {
+        if (stale) return;
         setItems([]);
         setFallbackUrl(null);
+        setOppError(true);
       })
-      .finally(() => setLoading(false));
-  }, [selected]);
+      .finally(() => {
+        if (!stale) setLoading(false);
+      });
+    return () => {
+      stale = true;
+    };
+  }, [selected, oppRetry]);
 
   const current = societies.find((s) => s.society === selected);
 
@@ -182,6 +195,7 @@ export default function OpportunitiesPage() {
         {items.length > 0 && (
           <div className="pt-1">
             <SearchInput
+              key={selected}
               onSearch={setQuery}
               placeholder="Search within results..."
             />
@@ -193,6 +207,31 @@ export default function OpportunitiesPage() {
         <div className="flex justify-center py-16">
           <LoadingSpinner />
         </div>
+      ) : oppError ? (
+        <AnimatedCard className="p-12 text-center bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl text-ink-muted space-y-3">
+          <p className="font-semibold text-ink text-body-md">
+            Couldn't load listings for {current?.label || selected}.
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => setOppRetry((n) => n + 1)}
+              className="inline-flex items-center gap-1.5 text-primary font-medium hover:underline"
+            >
+              <RefreshCw size={14} /> Retry
+            </button>
+            {current?.url && (
+              <a
+                href={current.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-primary font-medium hover:underline"
+              >
+                Visit the official page <ExternalLink size={14} />
+              </a>
+            )}
+          </div>
+        </AnimatedCard>
       ) : items.length === 0 ? (
         <AnimatedCard className="p-12 text-center bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl text-ink-muted space-y-3">
           <RefreshCw className="mx-auto text-ink-muted opacity-50" size={36} />

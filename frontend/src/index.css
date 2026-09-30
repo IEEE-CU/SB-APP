@@ -48,7 +48,10 @@
   input:-webkit-autofill:focus {
     -webkit-text-fill-color: var(--color-ink);
     caret-color: var(--color-ink);
-    transition: background-color 9999s ease-in-out 0s;
+    /* Paint over the autofill background with the theme canvas so it tracks
+       light/dark mode instead of relying on a very long transition. */
+    -webkit-box-shadow: 0 0 0 1000px var(--color-canvas) inset;
+    box-shadow: 0 0 0 1000px var(--color-canvas) inset;
   }
 }
 

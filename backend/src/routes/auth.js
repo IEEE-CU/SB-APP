@@ -2,7 +2,10 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { authenticate } = require("../middleware/auth");
-const { authLimiter } = require("../middleware/rateLimiter");
+const {
+  authLimiter,
+  registrationLimiter,
+} = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
@@ -76,21 +79,21 @@ router.post("/login", authLimiter, async (req, res, next) => {
  * @desc    Register a new user account
  * @access  Public
  */
-router.post("/register", authLimiter, async (req, res, next) => {
+router.post("/register", registrationLimiter, async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || typeof email !== "string" || !password) {
       return res.status(400).json({
         success: false,
         message: "Please provide name, email and password",
       });
     }
 
-    if (password.length < 4) {
+    if (password.length < 15) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 4 characters",
+        message: "Password must be at least 15 characters",
       });
     }
 
@@ -164,10 +167,10 @@ router.post(
         });
       }
 
-      if (newPassword.length < 4) {
+      if (newPassword.length < 15) {
         return res.status(400).json({
           success: false,
-          message: "Password must be at least 4 characters",
+          message: "Password must be at least 15 characters",
         });
       }
 
