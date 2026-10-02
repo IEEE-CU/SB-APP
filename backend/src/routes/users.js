@@ -70,10 +70,10 @@ router.post(
     try {
       const { newPassword } = req.body;
 
-      if (!newPassword || newPassword.length < 4) {
+      if (typeof newPassword !== "string" || newPassword.length < 15) {
         return res.status(400).json({
           success: false,
-          message: "Password must be at least 4 characters",
+          message: "Password must be at least 15 characters",
         });
       }
 

@@ -25,6 +25,7 @@ import AnnouncementDetailPage from "@/pages/announcements/AnnouncementDetailPage
 import AnnouncementFormPage from "@/pages/announcements/AnnouncementFormPage";
 import CommunityPage from "@/pages/community/CommunityPage";
 import CalendarPage from "@/pages/calendar/CalendarPage";
+import OpportunitiesPage from "@/pages/opportunities/OpportunitiesPage";
 import ChannelDetailPage from "@/pages/channels/ChannelDetailPage";
 import BoardDetailPage from "@/pages/boards/BoardDetailPage";
 import TasksPage from "@/pages/tasks/TasksPage";
@@ -83,6 +84,7 @@ export const router = createBrowserRouter([
           { path: "/boards/:slug", element: <BoardDetailPage /> },
           { path: "/tasks", element: <TasksPage /> },
           { path: "/calendar", element: <CalendarPage /> },
+          { path: "/opportunities", element: <OpportunitiesPage /> },
           { path: "*", element: <NotFoundPage /> },
         ],
       },

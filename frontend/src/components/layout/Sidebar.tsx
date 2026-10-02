@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Users,
   CheckSquare,
+  Award,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { ACCESS_LEVELS } from "@/lib/permissionLevels";
@@ -24,6 +25,7 @@ const navItems = [
   { to: "/announcements", icon: Megaphone, label: "Announcements", module: "announcements" },
   { to: "/community", icon: MessageCircle, label: "Community Hub", module: "community_hub" },
   { to: "/tasks", icon: CheckSquare, label: "Tasks", module: null },
+  { to: "/opportunities", icon: Award, label: "Awards & Scholarships", module: null },
   { to: "/calendar", icon: Calendar, label: "Unified Calendar", module: null },
 ];
 

@@ -26,6 +26,7 @@ const RoleAssignment = require("./RoleAssignment");
 const SocietyTerm = require("./SocietyTerm");
 const EventRegistration = require("./EventRegistration");
 const ReportSnapshot = require("./ReportSnapshot");
+const Opportunity = require("./Opportunity");
 
 module.exports = {
   User,
@@ -56,6 +57,7 @@ module.exports = {
   SocietyTerm,
   EventRegistration,
   ReportSnapshot,
+  Opportunity,
 };
 
 

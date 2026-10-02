@@ -30,7 +30,10 @@ if (ENABLE_CLUSTER && cluster.isPrimary) {
     `🧵 Primary ${process.pid} is starting ${WORKER_COUNT} worker(s) for load balancing...`,
   );
 
-  for (let i = 0; i < WORKER_COUNT; i++) {
+  // Exactly one worker runs scheduled jobs (the daily scrape). The flag is
+  // handed to a replacement if that worker dies, so scheduling survives.
+  let schedulerLeaderId = cluster.fork({ SCHEDULER_LEADER: "1" }).id;
+  for (let i = 1; i < WORKER_COUNT; i++) {
     cluster.fork();
   }
 
@@ -41,7 +44,11 @@ if (ENABLE_CLUSTER && cluster.isPrimary) {
     console.error(
       `  Worker ${worker.process.pid} exited (code=${code}, signal=${signal}). Forking a replacement...`,
     );
-    cluster.fork();
+    if (worker.id === schedulerLeaderId) {
+      schedulerLeaderId = cluster.fork({ SCHEDULER_LEADER: "1" }).id;
+    } else {
+      cluster.fork();
+    }
   });
 
   const shutdownPrimary = (signal) => {
@@ -76,7 +83,34 @@ function startServer() {
   const app = express();
   const PORT = process.env.PORT || 5000;
 
-  connectDB();
+  connectDB().then(async (conn) => {
+    if (!conn) return;
+
+    // In dev (esp. the in-memory DB used by `npm run dev:memory`) the
+    // Opportunity collection starts empty every boot, and the daily cron
+    // wouldn't fill it until 3am. Seed it once on startup if empty so the
+    // Awards & Scholarships page has data immediately.
+    try {
+      const Opportunity = require("./models/Opportunity");
+      const count = await Opportunity.countDocuments();
+      if (count === 0) {
+        console.log("No opportunities found — running initial scrape...");
+        const { scrapeAllSocieties } = require("./services/opportunityScraper");
+        scrapeAllSocieties()
+          .then((results) => {
+            const total = results.reduce((sum, r) => sum + r.items.length, 0);
+            console.log(
+              `Initial opportunities scrape complete: ${total} item(s).`,
+            );
+          })
+          .catch((err) =>
+            console.error("Initial opportunities scrape failed:", err),
+          );
+      }
+    } catch (err) {
+      console.error("Could not check/seed opportunities:", err.message);
+    }
+  });
 
   // Trust the first proxy hop (Nginx/ELB/etc.) so req.ip and rate limiting
   // see the real client IP instead of the proxy's address.
@@ -148,7 +182,6 @@ function startServer() {
   `);
   });
 
-
   // Initialize Socket.io
   const { Server } = require("socket.io");
   const jwt = require("jsonwebtoken");
@@ -184,6 +217,26 @@ function startServer() {
   const { setupPresenceHandlers } = require("./services/presenceService");
   setupPresenceHandlers(io);
 
+  // Daily scrape of IEEE society award/grant/scholarship pages. In clustered
+  // mode every worker would otherwise run this redundantly, so only the
+  // scheduler-leader worker (or the single process in non-clustered dev)
+  // schedules it.
+  if (!ENABLE_CLUSTER || process.env.SCHEDULER_LEADER === "1") {
+    const cron = require("node-cron");
+    const { scrapeAllSocieties } = require("./services/opportunityScraper");
+
+    cron.schedule("0 3 * * *", () => {
+      console.log("Running scheduled IEEE opportunities scrape...");
+      scrapeAllSocieties()
+        .then((results) => {
+          const total = results.reduce((sum, r) => sum + r.items.length, 0);
+          console.log(
+            `Opportunities scrape complete: ${total} item(s) updated.`,
+          );
+        })
+        .catch((err) => console.error("Opportunities scrape failed:", err));
+    });
+  }
 
   // Graceful shutdown: stop accepting new connections, let in-flight
   // requests finish, close the DB connection, then exit. Without this,
