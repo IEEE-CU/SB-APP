@@ -94,6 +94,9 @@ async function run() {
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
     process.env.MONGODB_URI = mongoUri;
+    // This process owns the disposable in-memory database; register it so the
+    // seed script (which refuses unauthorized targets) may reset it.
+    require('../backend/src/utils/dbSafety').registerEphemeralTarget(mongoUri);
 
     // Connect and seed
     await mongoose.connect(mongoUri);

@@ -11,6 +11,30 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
+ * Object-level scope check for a loaded report. A report belongs to the
+ * society in `report.societyId`; `societyAccess` cannot enforce this on
+ * `/:id` routes because they carry no society parameter. Administrators are
+ * unrestricted (same policy as `societyAccess`); everyone else may only act on
+ * their own society's reports. Fails closed when either society is missing.
+ */
+const isReportInCallerScope = (user, report) => {
+  if (user.role === "ADMIN") return true;
+
+  const userSocietyId =
+    user.societyId?._id?.toString() || user.societyId?.toString();
+  const reportSocietyId =
+    report.societyId?._id?.toString() || report.societyId?.toString();
+
+  return Boolean(userSocietyId) && userSocietyId === reportSocietyId;
+};
+
+const outOfScope = (res) =>
+  res.status(403).json({
+    success: false,
+    message: "Access restricted to your own society",
+  });
+
+/**
  * @route   GET /api/project-reports
  * @desc    Get all reports
  * @access  All users
@@ -202,6 +226,10 @@ router.patch(
           .json({ success: false, message: "Report not found" });
       }
 
+      if (!isReportInCallerScope(req.user, report)) {
+        return outOfScope(res);
+      }
+
       // Update fields if provided
       if (title !== undefined) report.title = title;
       if (description !== undefined) report.description = description;
@@ -247,6 +275,10 @@ router.delete(
         return res
           .status(404)
           .json({ success: false, message: "Report not found" });
+      }
+
+      if (!isReportInCallerScope(req.user, report)) {
+        return outOfScope(res);
       }
 
       await ProjectReport.findByIdAndDelete(req.params.id);

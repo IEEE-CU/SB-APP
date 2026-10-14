@@ -1,5 +1,6 @@
 const { resolvePermissions } = require("../../services/resolvePermissions");
 const { logAudit } = require("../../services/auditLogger");
+const { isGrantingLevel } = require("../../middleware/rbac");
 const UserRole = require("../../models/UserRole");
 
 /**
@@ -86,7 +87,9 @@ const checkAccess = async (req, res, next) => {
 
     const resolved = await resolvePermissions(userId);
     const permKey = `${targetModule}:${targetAction}`;
-    const accessLevel = resolved.permissions[permKey] || "none";
+    // Same rule as requirePermission: only a recognized granting level counts.
+    const resolvedLevel = resolved.permissions[permKey];
+    const accessLevel = isGrantingLevel(resolvedLevel) ? resolvedLevel : "none";
     const allowed = accessLevel !== "none";
 
     let reason = allowed

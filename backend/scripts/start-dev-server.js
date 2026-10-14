@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const { MongoMemoryServer } = require("mongodb-memory-server");
+const { registerEphemeralTarget } = require("../src/utils/dbSafety");
 
 async function main() {
   console.log("🚀 Starting MongoDB Memory Server...");
@@ -7,9 +8,12 @@ async function main() {
   const uri = mongod.getUri();
 
   process.env.MONGODB_URI = uri;
+  // This process owns the disposable in-memory database; it is the only
+  // target the seed script may wipe without explicit operator authorization.
+  registerEphemeralTarget(uri);
   process.env.JWT_SECRET =
     process.env.JWT_SECRET || "your-secret-key-change-in-production";
-  process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+  process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "8h";
   process.env.NODE_ENV = "development";
   process.env.PORT = process.env.PORT || 5000;
 

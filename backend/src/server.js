@@ -184,7 +184,7 @@ function startServer() {
 
   // Initialize Socket.io
   const { Server } = require("socket.io");
-  const jwt = require("jsonwebtoken");
+  const { authenticateSocket } = require("./middleware/socketAuth");
   const io = new Server(server, {
     cors: {
       origin: process.env.FRONTEND_URL || [
@@ -196,20 +196,9 @@ function startServer() {
     },
   });
 
-  // Socket.io JWT Authentication Middleware
-  io.use((socket, next) => {
-    const token = socket.handshake.auth?.token;
-    if (!token) {
-      return next(new Error("Authentication error: Token required"));
-    }
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.user = decoded;
-      next();
-    } catch (err) {
-      next(new Error("Authentication error: Invalid token"));
-    }
-  });
+  // Socket.io JWT Authentication Middleware (token must verify and the user
+  // must still exist, as in the REST `authenticate` middleware)
+  io.use(authenticateSocket);
 
   // Make io accessible in express application
   app.set("io", io);

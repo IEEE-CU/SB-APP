@@ -4,9 +4,15 @@ const Transaction = require("../models/Transaction");
 const {
   authenticate,
   adminOnly,
-  societyAccess,
+  societyAccessByParam,
 } = require("../middleware/auth");
 const { parseLimit } = require("../utils/pagination");
+
+// Every society-guarded route in this router declares the target society as
+// `:id`. The shared `societyAccess` guard only reads `:societyId` and falls
+// back to the caller's own society, which let any office bearer act on any
+// society (AUD-018), so authorize against `:id` explicitly.
+const societyAccess = societyAccessByParam("id");
 
 const router = express.Router();
 
@@ -38,9 +44,60 @@ const calculateBalance = async (societyId, budget) => {
 };
 
 /**
+ * Normalizes a society reference (id, ObjectId, or populated document) to a
+ * comparable string. Returns null when no usable identifier is present.
+ */
+const societyKey = (ref) => {
+  if (ref === null || ref === undefined) return null;
+  const value = ref._id !== undefined && ref._id !== null ? ref._id : ref;
+  // A plain object without an identifier has no meaningful string form.
+  if (typeof value === "object" && value.toString === Object.prototype.toString) {
+    return null;
+  }
+  const key = String(value);
+  return key === "" ? null : key;
+};
+
+/**
+ * Member rosters and office-bearer phone numbers are visible only to the
+ * target society's own users (User.societyId) and administrators. Fails
+ * closed when either side has no identifier.
+ */
+const canSeeSocietyPii = (user, societyId) => {
+  if (user && user.role === "ADMIN") return true;
+  const own = user ? societyKey(user.societyId) : null;
+  return own !== null && own === societyKey(societyId);
+};
+
+/** Office bearers without their phone numbers (names, positions, emails stay). */
+const withoutPhones = (officeBearers) =>
+  officeBearers.map((ob) => {
+    const plain = typeof ob.toObject === "function" ? ob.toObject() : { ...ob };
+    delete plain.phone;
+    return plain;
+  });
+
+/**
+ * Returns the society as the caller may see it. Authorized callers get the
+ * object unchanged; others get a copy without `members` and without
+ * office-bearer phone numbers. The input is never mutated.
+ */
+const redactSociety = (society, user) => {
+  if (canSeeSocietyPii(user, society._id)) return society;
+
+  const redacted = { ...society };
+  delete redacted.members;
+  if (Array.isArray(society.officeBearers)) {
+    redacted.officeBearers = withoutPhones(society.officeBearers);
+  }
+  return redacted;
+};
+
+/**
  * @route   GET /api/societies
  * @desc    Get all societies with calculated balances
- * @access  All authenticated users
+ * @access  All authenticated users (member rosters and office-bearer phone
+ *          numbers only for the caller's own society and administrators)
  */
 router.get("/", async (req, res, next) => {
   try {
@@ -58,7 +115,7 @@ router.get("/", async (req, res, next) => {
     // Calculate balances for all societies
     const societiesWithBalances = await Promise.all(
       societies.map(async (society) => ({
-        ...society,
+        ...redactSociety(society, req.user),
         id: society._id,
         balance: await calculateBalance(society._id, society.budget),
       })),
@@ -96,12 +153,13 @@ router.get("/:id", async (req, res, next) => {
       });
     }
 
-    society.id = society._id;
-    society.balance = await calculateBalance(society._id, society.budget);
+    const data = redactSociety(society, req.user);
+    data.id = society._id;
+    data.balance = await calculateBalance(society._id, society.budget);
 
     res.json({
       success: true,
-      data: society,
+      data,
     });
   } catch (error) {
     next(error);
@@ -228,9 +286,13 @@ router.get("/:id/office-bearers", async (req, res, next) => {
       });
     }
 
+    // Names, positions and emails are visible to all authenticated users;
+    // phone numbers only to the society's own users and administrators.
     res.json({
       success: true,
-      data: society.officeBearers,
+      data: canSeeSocietyPii(req.user, society._id)
+        ? society.officeBearers
+        : withoutPhones(society.officeBearers || []),
     });
   } catch (error) {
     next(error);
@@ -373,6 +435,15 @@ router.get("/:id/members", async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: "Society not found",
+      });
+    }
+
+    // Member rosters are restricted to the society's own users and
+    // administrators.
+    if (!canSeeSocietyPii(req.user, society._id)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access restricted to your own society",
       });
     }
 

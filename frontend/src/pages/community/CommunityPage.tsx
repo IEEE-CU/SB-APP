@@ -164,8 +164,8 @@ export default function CommunityPage() {
     socket.on('message:reply', handleNewMessage);
     socket.on('message:reactions', handleReactionUpdate);
     socket.on('message:poll:update', handlePollUpdate);
-    socket.on('typing-start', handleTypingStart);
-    socket.on('typing-stop', handleTypingStop);
+    socket.on('typing:start', handleTypingStart);
+    socket.on('typing:stop', handleTypingStop);
 
     return () => {
       if (selectedChannel) {
@@ -178,8 +178,8 @@ export default function CommunityPage() {
       socket.off('message:reply', handleNewMessage);
       socket.off('message:reactions', handleReactionUpdate);
       socket.off('message:poll:update', handlePollUpdate);
-      socket.off('typing-start', handleTypingStart);
-      socket.off('typing-stop', handleTypingStop);
+      socket.off('typing:start', handleTypingStart);
+      socket.off('typing:stop', handleTypingStop);
     };
   }, [token, selectedChannel, selectedConversation, user?.id]);
 
@@ -233,7 +233,7 @@ export default function CommunityPage() {
 
     if (!isTypingRef.current) {
       isTypingRef.current = true;
-      socket.emit('typing-start', {
+      socket.emit('typing:start', {
         channelId: selectedChannel?.id,
         conversationId: selectedConversation?.id,
       });
@@ -250,7 +250,7 @@ export default function CommunityPage() {
     localTypingTimeoutRef.current = setTimeout(() => {
       const timeDiff = Date.now() - lastTypingTimeRef.current;
       if (timeDiff >= 2000 && isTypingRef.current) {
-        socket.emit('typing-stop', {
+        socket.emit('typing:stop', {
           channelId: selectedChannel?.id,
           conversationId: selectedConversation?.id,
         });
@@ -265,7 +265,7 @@ export default function CommunityPage() {
     
     // Stop typing notification immediately on send
     if (isTypingRef.current) {
-      getSocket().emit('typing-stop', {
+      getSocket().emit('typing:stop', {
         channelId: selectedChannel?.id,
         conversationId: selectedConversation?.id,
       });
