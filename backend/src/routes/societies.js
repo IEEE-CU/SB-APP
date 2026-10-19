@@ -7,6 +7,7 @@ const {
   societyAccessByParam,
 } = require("../middleware/auth");
 const { parseLimit } = require("../utils/pagination");
+const { requirePermission } = require("../middleware/rbac");
 
 // Every society-guarded route in this router declares the target society as
 // `:id`. The shared `societyAccess` guard only reads `:societyId` and falls
@@ -20,11 +21,12 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
- * Helper: Calculate society balance from transactions
+ * Helper: Calculate society balance from transactions. Only APPROVED
+ * transactions count (AUD-005): pending and rejected ones never affect a balance.
  */
 const calculateBalance = async (societyId, budget) => {
   const result = await Transaction.aggregate([
-    { $match: { societyId: societyId } },
+    { $match: { societyId: societyId, approvalStatus: "APPROVED" } },
     {
       $group: {
         _id: "$type",
@@ -651,34 +653,54 @@ router.post("/", adminOnly, async (req, res, next) => {
 
 /**
  * @route   PATCH /api/societies/:id
- * @desc    Update society name/description/type/budget
- * @access  Admin or Society Office Bearer
+ * @desc    Update society name/description/type (budget: administrators only)
+ * @access  Society scope (admin, or a user of this society) AND the existing
+ *          RBAC permission settings:edit, which the permission matrix grants to
+ *          sb_faculty_advisor, society_faculty_advisor, society_chair and
+ *          sb_chair. Budget stays administrator-only (PATCH /:id/budget).
  */
-router.patch("/:id", societyAccess, async (req, res, next) => {
-  try {
-    const { name, description, type, budget } = req.body;
+router.patch(
+  "/:id",
+  societyAccess,
+  requirePermission("settings", "edit"),
+  async (req, res, next) => {
+    try {
+      const { name, description, type, budget } = req.body;
 
-    const society = await Society.findById(req.params.id);
-    if (!society) {
-      return res.status(404).json({
-        success: false,
-        message: "Society not found",
+      const society = await Society.findById(req.params.id);
+      if (!society) {
+        return res.status(404).json({
+          success: false,
+          message: "Society not found",
+        });
+      }
+
+      if (name !== undefined) society.name = name;
+      if (description !== undefined) society.description = description;
+      if (type !== undefined) society.type = type;
+      // AUD-026: budget stays an administrator-only change, as on PATCH /:id/budget.
+      // Everyone else's budget value is ignored here (as it always effectively was,
+      // because nothing was ever saved); widening that is a separate decision.
+      if (budget !== undefined && req.user.role === "ADMIN") society.budget = budget;
+
+      // AUD-026: the handler assigned the fields but never saved them, so the
+      // response looked successful while nothing was stored. The editable paths
+      // are validated explicitly (including values that cannot be cast, which
+      // would otherwise be dropped silently) and the rest of the document - for
+      // example a legacy roster entry - is not re-validated, so it cannot block
+      // an unrelated rename.
+      await society.validate(["name", "description", "type", "budget"]);
+      await society.save({ validateBeforeSave: false });
+
+      res.json({
+        success: true,
+        data: society,
       });
+    } catch (error) {
+      next(error);
     }
-
-    if (name !== undefined) society.name = name;
-    if (description !== undefined) society.description = description;
-    if (type !== undefined) society.type = type;
-    if (budget !== undefined) society.budget = budget;
-
-    res.json({
-      success: true,
-      data: society,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 /**
  * @route   GET /api/societies/:id/terms

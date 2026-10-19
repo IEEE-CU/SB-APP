@@ -52,18 +52,27 @@ const SOCIETY_ID_ROUTES = [
   ["patch", "/:id/terms/:termId/handover"],
 ];
 
+// Routes that, after the society guard, also carry the existing RBAC permission
+// check (requirePermission): [guard, requirePermission, handler]. PATCH /:id
+// needs settings:edit in addition to the society scope.
+const WITH_PERMISSION_CHECK = new Set(["patch /:id"]);
+
 // Returns the guard (first handler) of a route in the real societies router,
-// asserting that it is followed by exactly one route handler.
+// asserting the exact shape of the route: the guard comes first and is followed
+// by the route handler (and, where listed above, the permission check).
 function guardFor(method, routePath) {
   const layer = societiesRouter.stack.find(
     (l) =>
       l.route && l.route.path === routePath && l.route.methods[method] === true,
   );
   assert.ok(layer, `route ${method.toUpperCase()} ${routePath} not found`);
+  const withPermission = WITH_PERMISSION_CHECK.has(`${method} ${routePath}`);
   assert.equal(
     layer.route.stack.length,
-    2,
-    `${method.toUpperCase()} ${routePath} should be [guard, handler]`,
+    withPermission ? 3 : 2,
+    withPermission
+      ? `${method.toUpperCase()} ${routePath} should be [guard, requirePermission, handler]`
+      : `${method.toUpperCase()} ${routePath} should be [guard, handler]`,
   );
   return layer.route.stack[0].handle;
 }
