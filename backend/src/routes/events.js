@@ -6,6 +6,10 @@ const { parseLimit } = require("../utils/pagination");
 
 const router = express.Router();
 
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+const invalidIdResponse = (res) =>
+  res.status(400).json({ success: false, message: "Invalid ID format." });
+
 // All routes require authentication
 router.use(authenticate);
 
@@ -419,6 +423,13 @@ router.post("/:id/register", async (req, res, next) => {
     const EventRegistration = require("../models/EventRegistration");
     const AuditLog = require("../models/AuditLog");
 
+    // AUD-020: the event must exist before a registration is created. The
+    // registrant is always the authenticated user; nothing in the body is used.
+    if (!OBJECT_ID_PATTERN.test(req.params.id)) return invalidIdResponse(res);
+    if (!(await Event.exists({ _id: req.params.id }))) {
+      return res.status(404).json({ success: false, message: "Event not found" });
+    }
+
     const registration = await EventRegistration.create({
       event: req.params.id,
       user: req.user._id,
@@ -447,23 +458,46 @@ router.post("/:id/register", async (req, res, next) => {
 /**
  * @route   GET /api/events/:id/registrations
  * @desc    Get all registered attendees for an event
- * @access  All authenticated users
+ * @access  Admin or an office bearer of the event's own society
  */
-router.get("/:id/registrations", async (req, res, next) => {
-  try {
-    const EventRegistration = require("../models/EventRegistration");
-    const registrations = await EventRegistration.find({ event: req.params.id })
-      .populate("user", "name email ieeeId")
-      .sort({ registeredAt: -1 });
+router.get(
+  "/:id/registrations",
+  requirePermission("events", "edit"),
+  async (req, res, next) => {
+    try {
+      const EventRegistration = require("../models/EventRegistration");
 
-    res.json({
-      success: true,
-      count: registrations.length,
-      data: registrations,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+      // AUD-020: the society is taken from the stored event, never from the
+      // client. Non-admins must belong to it; a missing society never matches.
+      if (!OBJECT_ID_PATTERN.test(req.params.id)) return invalidIdResponse(res);
+      const event = await Event.findById(req.params.id).select("societyId").lean();
+      if (!event) {
+        return res.status(404).json({ success: false, message: "Event not found" });
+      }
+      if (req.user.role !== "ADMIN") {
+        const userSocietyId =
+          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
+        if (!userSocietyId || event.societyId.toString() !== userSocietyId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
+      }
+
+      const registrations = await EventRegistration.find({ event: req.params.id })
+        .populate("user", "name email ieeeId")
+        .sort({ registeredAt: -1 });
+
+      res.json({
+        success: true,
+        count: registrations.length,
+        data: registrations,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 module.exports = router;
