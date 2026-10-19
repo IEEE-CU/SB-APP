@@ -61,20 +61,53 @@ const createRole = async (req, res, next) => {
       });
     }
 
-    const isSuperAdmin = req.userRole === "sb_faculty_advisor";
-
-    if ((isSystemRole || level === "super_admin") && !isSuperAdmin) {
-      return res.status(403).json({
+    // Free text that is compared and trimmed below must be text (a client could
+    // otherwise send an array or object to slip past the checks).
+    if (
+      typeof name !== "string" ||
+      typeof displayName !== "string" ||
+      typeof level !== "string" ||
+      typeof scope !== "string" ||
+      (description !== undefined && description !== null && typeof description !== "string")
+    ) {
+      return res.status(400).json({
         success: false,
         error: {
-          code: "PERMISSION_DENIED",
-          message:
-            "Only the SB Faculty Advisor (Super Admin) can create system roles or super_admin level roles",
+          code: "VALIDATION_ERROR",
+          message: "name, displayName, level, scope and description must be strings",
         },
       });
     }
 
     const normalizedName = name.toLowerCase().trim();
+
+    // AUD-027: the privileged tier is reserved to the SB Faculty Advisor. Anyone who
+    // holds roles_access:create may create ordinary roles, but not:
+    //   - a system role,
+    //   - a role at the super_admin or faculty_advisor level - the two levels the
+    //     rest of the RBAC code treats as privileged (they may view other users'
+    //     permissions, read the audit log and edit the role-permission matrix), or
+    //   - a role named like the super admin (the resolver and requireSuperAdmin
+    //     recognise that name).
+    // This check runs before the duplicate-name lookup so it reveals nothing.
+    const isSuperAdmin = req.userRole === "sb_faculty_advisor";
+    const touchesPrivilegedTier =
+      isSystemRole ||
+      level === "super_admin" ||
+      level === "faculty_advisor" ||
+      normalizedName === "sb_faculty_advisor";
+
+    if (touchesPrivilegedTier && !isSuperAdmin) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: "PERMISSION_DENIED",
+          message:
+            "Only the SB Faculty Advisor (Super Admin) can create system roles, super_admin or faculty_advisor level roles",
+        },
+      });
+    }
+
     const existingRole = await Role.findOne({ name: normalizedName });
     if (existingRole) {
       return res.status(409).json({

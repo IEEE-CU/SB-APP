@@ -2,6 +2,34 @@ const { resolvePermissions } = require("../../services/resolvePermissions");
 const { logAudit } = require("../../services/auditLogger");
 const { isGrantingLevel } = require("../../middleware/rbac");
 const UserRole = require("../../models/UserRole");
+const User = require("../../models/User");
+
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+
+const PERMISSION_DENIED_BODY = {
+  success: false,
+  error: {
+    code: "PERMISSION_DENIED",
+    message:
+      "Only Super Admin and Faculty Advisors can view other users' permissions",
+  },
+};
+
+/**
+ * Inspecting another user's permissions is limited to UserRole levels
+ * super_admin and faculty_advisor. User.role === "ADMIN" alone is not enough.
+ */
+async function canInspectOtherUsers(callerId) {
+  const callerRole = await UserRole.findOne({ user: callerId }).populate(
+    "role",
+  );
+  return Boolean(
+    callerRole &&
+      callerRole.role &&
+      (callerRole.role.level === "super_admin" ||
+        callerRole.role.level === "faculty_advisor"),
+  );
+}
 
 /**
  * GET /api/user/permissions
@@ -13,24 +41,8 @@ const getUserPermissions = async (req, res, next) => {
     const { userId } = req.query;
 
     if (userId) {
-      const currentUserRole = await UserRole.findOne({
-        user: req.user._id,
-      }).populate("role");
-      const isAuthorized =
-        currentUserRole &&
-        currentUserRole.role &&
-        (currentUserRole.role.level === "super_admin" ||
-          currentUserRole.role.level === "faculty_advisor");
-
-      if (!isAuthorized) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: "PERMISSION_DENIED",
-            message:
-              "Only Super Admin and Faculty Advisors can view other users' permissions",
-          },
-        });
+      if (!(await canInspectOtherUsers(req.user._id))) {
+        return res.status(403).json(PERMISSION_DENIED_BODY);
       }
       targetUserId = userId;
     }
@@ -73,7 +85,11 @@ const getUserPermissions = async (req, res, next) => {
  */
 const checkAccess = async (req, res, next) => {
   try {
-    const { userId, module: targetModule, action: targetAction } = req.body;
+    const {
+      userId,
+      module: targetModule,
+      action: targetAction,
+    } = req.body || {};
 
     if (!userId || !targetModule || !targetAction) {
       return res.status(400).json({
@@ -85,7 +101,35 @@ const checkAccess = async (req, res, next) => {
       });
     }
 
-    const resolved = await resolvePermissions(userId);
+    if (typeof userId !== "string" || !OBJECT_ID_PATTERN.test(userId)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "userId must be a valid user id",
+        },
+      });
+    }
+
+    // Normalised so a differently-cased id cannot be told apart from the same id.
+    const targetUserId = userId.toLowerCase();
+    const callerId = String(req.user._id).toLowerCase();
+
+    if (targetUserId !== callerId) {
+      // Checked before any target lookup so an unprivileged caller learns
+      // nothing about whether the target exists.
+      if (!(await canInspectOtherUsers(req.user._id))) {
+        return res.status(403).json(PERMISSION_DENIED_BODY);
+      }
+      if (!(await User.exists({ _id: targetUserId }))) {
+        return res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "User not found" },
+        });
+      }
+    }
+
+    const resolved = await resolvePermissions(targetUserId);
     const permKey = `${targetModule}:${targetAction}`;
     // Same rule as requirePermission: only a recognized granting level counts.
     const resolvedLevel = resolved.permissions[permKey];
@@ -118,7 +162,7 @@ const checkAccess = async (req, res, next) => {
     const route = req.originalUrl || "/api/access/check";
 
     await logAudit({
-      user: userId,
+      user: req.user._id,
       action: "access_check",
       module: targetModule,
       route,
@@ -126,7 +170,7 @@ const checkAccess = async (req, res, next) => {
       result: allowed ? "allowed" : "denied",
       reason,
       ipAddress,
-      metadata: { requestedAction: targetAction },
+      metadata: { requestedAction: targetAction, targetUserId },
     });
 
     return res.status(200).json({

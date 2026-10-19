@@ -226,9 +226,12 @@ async function runCheckAccess(level) {
   const controller = freshLoad(
     "../../src/controllers/rbac/accessCheck.controller.js",
   );
+  // A self-check: these tests are about level reporting, not cross-user
+  // authorization (see access-check-authorization.test.js).
+  const selfId = "64b7f8f2a1b2c3d4e5f6a001";
   const req = {
-    user: { _id: "u1" },
-    body: { userId: "u2", module: "events", action: "edit" },
+    user: { _id: selfId },
+    body: { userId: selfId, module: "events", action: "edit" },
     method: "POST",
     originalUrl: "/api/v1/access/check",
     ip: "127.0.0.1",
