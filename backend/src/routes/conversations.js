@@ -2,7 +2,13 @@ const express = require("express");
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 const Reaction = require("../models/Reaction");
+const Society = require("../models/Society");
+const User = require("../models/User");
 const { authenticate } = require("../middleware/auth");
+
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+const idOf = (ref) => (ref && ref._id ? String(ref._id) : ref ? String(ref) : null);
+const isId = (value) => typeof value === "string" && OBJECT_ID_PATTERN.test(value);
 
 const router = express.Router();
 
@@ -47,32 +53,66 @@ router.get("/", async (req, res, next) => {
  */
 router.post("/", async (req, res, next) => {
   try {
-    const { recipientId, societyId } = req.body;
-    const targetSocietyId = societyId || req.user.societyId?._id || req.user.societyId;
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    // The web client sends { participantIds: [otherUserId] }; direct callers send
+    // { recipientId }. Either way a direct message has exactly one OTHER participant; the
+    // caller is always the authenticated user and is never taken from the request.
+    let recipientId = body.recipientId;
+    if (recipientId === undefined && Array.isArray(body.participantIds)) {
+      if (body.participantIds.length !== 1) {
+        return res.status(400).json({ success: false, message: "Exactly one other participant is required" });
+      }
+      recipientId = body.participantIds[0];
+    }
+    const callerId = String(req.user._id);
 
-    if (!recipientId) {
+    if (recipientId === undefined || recipientId === null || recipientId === "") {
       return res.status(400).json({ success: false, message: "Recipient User ID is required" });
     }
+    if (!isId(recipientId) || (body.societyId !== undefined && !isId(body.societyId))) {
+      return res.status(400).json({ success: false, message: "Invalid ID format." });
+    }
+    if (recipientId.toLowerCase() === callerId.toLowerCase()) {
+      return res.status(400).json({ success: false, message: "You cannot start a conversation with yourself" });
+    }
+
+    const isAdmin = req.user.role === "ADMIN";
+    const callerSocietyId = idOf(req.user.societyId);
+    const targetSocietyId = body.societyId || callerSocietyId;
     if (!targetSocietyId) {
       return res.status(400).json({ success: false, message: "Society ID is required" });
     }
+    // Only administrators may open a conversation in a society that is not their own.
+    if (!isAdmin && targetSocietyId.toLowerCase() !== String(callerSocietyId || "").toLowerCase()) {
+      return res.status(403).json({ success: false, message: "Access restricted to your own society only." });
+    }
+    if (!(await Society.exists({ _id: targetSocietyId }))) {
+      return res.status(404).json({ success: false, message: "Society not found" });
+    }
+    const recipient = await User.findById(recipientId).select("role societyId");
+    if (!recipient) {
+      return res.status(404).json({ success: false, message: "Recipient not found" });
+    }
+    // The other participant must belong to the same society (administrators belong to none
+    // and may be messaged from any society).
+    if (recipient.role !== "ADMIN" && idOf(recipient.societyId) !== String(targetSocietyId)) {
+      return res.status(403).json({ success: false, message: "The recipient is not a member of this society." });
+    }
 
-    const userOneId = req.user._id.toString() < recipientId.toString() ? req.user._id : recipientId;
-    const userTwoId = req.user._id.toString() < recipientId.toString() ? recipientId : req.user._id;
+    const userOneId = callerId < recipientId.toLowerCase() ? callerId : recipientId;
+    const userTwoId = callerId < recipientId.toLowerCase() ? recipientId : callerId;
+    const pair = { societyId: targetSocietyId, userOneId, userTwoId };
 
-    // Find or create conversation
-    let conversation = await Conversation.findOne({
-      societyId: targetSocietyId,
-      userOneId,
-      userTwoId,
-    });
-
+    // Find or create. Two simultaneous requests for the same pair both pass the lookup; the
+    // unique (society, userOne, userTwo) index makes one create fail, which is then read back.
+    let conversation = await Conversation.findOne(pair);
     if (!conversation) {
-      conversation = await Conversation.create({
-        societyId: targetSocietyId,
-        userOneId,
-        userTwoId,
-      });
+      try {
+        conversation = await Conversation.create(pair);
+      } catch (createError) {
+        if (createError.code !== 11000) throw createError;
+        conversation = await Conversation.findOne(pair);
+      }
     }
 
     const populated = await Conversation.findById(conversation._id)
