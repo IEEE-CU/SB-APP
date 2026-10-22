@@ -140,13 +140,8 @@ describe("actions that log their own event", () => {
 describe("event registration", () => {
   let eventId;
   before(async () => {
-    // On a brand-new empty database Mongoose only builds this collection's indexes after the
-    // first write, so a very early repeat registration is not yet refused by the unique
-    // (event, user) index. Create the model's own index up front so the test is deterministic
-    // (same specification as models/EventRegistration.js; disposable harness database only).
-    await withDatabase(target, (db) =>
-      db.collection("eventregistrations").createIndex({ event: 1, user: 1 }, { unique: true }),
-    );
+    // No index set-up here: the server itself makes the unique (event, user) index ready
+    // before it accepts a registration (routes/events.js).
     eventId = await withDatabase(target, async (db, ObjectId) => {
       const now = new Date();
       const inserted = await db.collection("events").insertOne({

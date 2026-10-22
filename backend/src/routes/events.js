@@ -1,5 +1,8 @@
 const express = require("express");
 const Event = require("../models/Event");
+// Loaded at start-up (not inside the handlers) so Mongoose begins building this model's
+// indexes, including the unique (event, user) one, as soon as the database is connected.
+const EventRegistration = require("../models/EventRegistration");
 const { authenticate, societyAccess } = require("../middleware/auth");
 const { requirePermission } = require("../middleware/rbac");
 const { parseLimit } = require("../utils/pagination");
@@ -420,7 +423,6 @@ router.post(
  */
 router.post("/:id/register", async (req, res, next) => {
   try {
-    const EventRegistration = require("../models/EventRegistration");
     const AuditLog = require("../models/AuditLog");
 
     // AUD-020: the event must exist before a registration is created. The
@@ -428,6 +430,21 @@ router.post("/:id/register", async (req, res, next) => {
     if (!OBJECT_ID_PATTERN.test(req.params.id)) return invalidIdResponse(res);
     if (!(await Event.exists({ _id: req.params.id }))) {
       return res.status(404).json({ success: false, message: "Event not found" });
+    }
+
+    // The unique (event, user) index is what makes two concurrent registrations safe, so
+    // no registration is written until it exists. init() resolves once the model's
+    // collection and indexes are ready (additive: it never drops or rebuilds an index) and
+    // rejects if the index cannot be built (for example duplicate legacy rows); in that
+    // case registrations stay closed rather than being accepted unprotected.
+    try {
+      await EventRegistration.init();
+    } catch (indexError) {
+      console.error("Event registration is unavailable: its unique index is not ready:", indexError.message);
+      return res.status(503).json({
+        success: false,
+        message: "Event registration is temporarily unavailable. Please try again later.",
+      });
     }
 
     const registration = await EventRegistration.create({
@@ -465,8 +482,6 @@ router.get(
   requirePermission("events", "edit"),
   async (req, res, next) => {
     try {
-      const EventRegistration = require("../models/EventRegistration");
-
       // AUD-020: the society is taken from the stored event, never from the
       // client. Non-admins must belong to it; a missing society never matches.
       if (!OBJECT_ID_PATTERN.test(req.params.id)) return invalidIdResponse(res);

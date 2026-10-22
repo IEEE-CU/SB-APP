@@ -163,24 +163,76 @@ function createSafeLookup({ resolve = dns.lookup, isBlocked = isBlockedAddress }
   };
 }
 
+const PROXY_VARIABLES = ["http_proxy", "https_proxy", "all_proxy"];
+
+/**
+ * Names (never values: a proxy URL can carry credentials) of the proxy variables set in
+ * the environment. These are exactly the variables the HTTP client (axios, through
+ * proxy-from-env) reads, in either letter case. NO_PROXY is deliberately not consulted:
+ * it only decides which hosts skip the proxy, and a mismatch between its matching rules
+ * and ours must not open a bypass.
+ */
+function configuredProxyVariables(env = process.env) {
+  const names = [];
+  for (const name of PROXY_VARIABLES) {
+    for (const variant of [name, name.toUpperCase()]) {
+      if (typeof env[variant] === "string" && env[variant].trim() !== "") names.push(variant);
+    }
+  }
+  return names;
+}
+
+/**
+ * A proxy resolves host names itself, so the connect-time address check cannot see where
+ * a request really goes. When one is configured the fetch is refused before any request
+ * is made, rather than silently ignoring the proxy (which may be the only route out).
+ */
+function assertNoProxy(env = process.env) {
+  const names = configuredProxyVariables(env);
+  if (names.length > 0) {
+    throw new Error(
+      "Blocked URL: an outbound proxy is configured (" +
+        names.join(", ") +
+        "); destination checks cannot be enforced through a proxy, so scraping is disabled",
+    );
+  }
+}
+
 /**
  * Request options (for axios) that make a server-side GET safe against SSRF:
  *   - the first URL and every redirect hop must pass assertFetchableUrl;
  *   - the address actually connected to must not be blocked (safe lookup);
+ *   - a configured HTTP(S) proxy refuses the fetch (assertNoProxy) and axios is told not
+ *     to use one (proxy: false);
  *   - a bounded number of redirects and a bounded response size.
- * `resolve` and `isBlocked` exist so tests can supply a fake resolver and policy.
+ * `resolve`, `isBlocked` and `env` exist so tests can supply a fake resolver, policy and
+ * environment.
  */
-function createSafeFetchOptions({ resolve, isBlocked = isBlockedAddress, maxRedirects = 3, maxContentLength = 5 * 1024 * 1024 } = {}) {
+function createSafeFetchOptions({
+  resolve,
+  isBlocked = isBlockedAddress,
+  maxRedirects = 3,
+  maxContentLength = 5 * 1024 * 1024,
+  env = process.env,
+} = {}) {
   const lookup = createSafeLookup({ resolve, isBlocked });
   return {
-    assertUrl: (value) => assertFetchableUrl(value, { isBlocked }),
+    assertUrl: (value) => {
+      // The environment is read on every call: it can change after start-up.
+      assertNoProxy(env);
+      assertFetchableUrl(value, { isBlocked });
+    },
     axiosOptions: {
+      // Never let axios pick a proxy from the environment on its own (assertNoProxy
+      // already refuses to start a fetch when one is configured).
+      proxy: false,
       httpAgent: new http.Agent({ lookup }),
       httpsAgent: new https.Agent({ lookup }),
       maxRedirects,
       maxContentLength,
       beforeRedirect: (options) => {
         // follow-redirects hands over the next hop as request options.
+        assertNoProxy(env);
         const next = options.href || `${options.protocol}//${options.hostname}${options.path || ""}`;
         assertFetchableUrl(next, { isBlocked });
       },
@@ -197,4 +249,6 @@ module.exports = {
   assertFetchableUrl,
   createSafeLookup,
   createSafeFetchOptions,
+  configuredProxyVariables,
+  assertNoProxy,
 };

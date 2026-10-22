@@ -29,6 +29,7 @@ let events; // id -> { societyId }
 let calls;
 let resolved;
 let createError;
+let initImpl; // what EventRegistration.init() does (index readiness)
 
 function stubModule(relPath, exportsValue) {
   const file = require.resolve(path.join(__dirname, relPath));
@@ -46,8 +47,9 @@ beforeEach(() => {
     [EVENT_A]: { societyId: SOCIETY_A },
     [EVENT_B]: { societyId: SOCIETY_B },
   };
-  calls = { existsQueries: [], findByIdIds: [], created: [], audits: [], finds: [] };
+  calls = { inits: 0, existsQueries: [], findByIdIds: [], created: [], audits: [], finds: [] };
   createError = null;
+  initImpl = async () => {};
   resolved = {
     role: "society_chair",
     scope: { type: "society", societyId: SOCIETY_A },
@@ -77,6 +79,10 @@ beforeEach(() => {
     },
   });
   stubModule("../../src/models/EventRegistration.js", {
+    init: () => {
+      calls.inits += 1;
+      return initImpl();
+    },
     create: async (doc) => {
       if (createError) throw createError;
       calls.created.push(doc);
@@ -315,4 +321,90 @@ test("both routes keep their handler count (permission guard added to the list o
 
   assert.equal(stackOf("post", "/:id/register"), 1);
   assert.equal(stackOf("get", "/:id/registrations"), 2);
+});
+
+// ---- index readiness and duplicate handling (event registration data integrity) --------------
+//
+// Duplicate registrations were accepted when the first requests arrived before the unique
+// (event, user) index existed: the model used to be loaded lazily inside the handler, so its
+// indexes only started building on the first request. The handler now waits for
+// EventRegistration.init() (collection and indexes ready) before writing, and answers 503
+// without writing if the index cannot be built.
+
+test("no registration is written until the index is ready", async () => {
+  let release;
+  initImpl = () => new Promise((resolve) => (release = resolve));
+
+  const pending = register({ user: { _id: CALLER, role: "OFFICE_BEARER" }, id: EVENT_A });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(calls.created.length, 0, "a registration was written before the index was ready");
+  assert.equal(calls.inits, 1);
+
+  release();
+  const { res } = await pending;
+  assert.equal(res.statusCode, 201);
+  assert.equal(calls.created.length, 1);
+});
+
+test("if the index cannot be built, registration is closed: 503, nothing written, nothing audited", async () => {
+  initImpl = async () => {
+    throw new Error("E11000 duplicate key building unique index");
+  };
+  const realError = console.error;
+  console.error = () => {};
+  let outcome;
+  try {
+    outcome = await register({ user: { _id: CALLER, role: "OFFICE_BEARER" }, id: EVENT_A });
+  } finally {
+    console.error = realError;
+  }
+
+  assert.equal(outcome.res.statusCode, 503);
+  assert.equal(outcome.res.body.success, false);
+  assert.deepEqual(calls.created, []);
+  assert.deepEqual(calls.audits, []);
+});
+
+test("concurrent registrations: one succeeds, the other gets the existing 400, one audit row", async () => {
+  const seen = new Set();
+  const create = require("../../src/models/EventRegistration.js").create;
+  require("../../src/models/EventRegistration.js").create = async (doc) => {
+    await new Promise((resolve) => setImmediate(resolve)); // both requests are in flight together
+    const key = doc.event + ":" + doc.user;
+    if (seen.has(key)) throw Object.assign(new Error("E11000 duplicate key"), { code: 11000 });
+    seen.add(key);
+    return create(doc);
+  };
+  const user = { _id: CALLER, role: "OFFICE_BEARER" };
+
+  const [first, second] = await Promise.all([register({ user, id: EVENT_A }), register({ user, id: EVENT_A })]);
+
+  const statuses = [first.res.statusCode, second.res.statusCode].sort();
+  assert.deepEqual(statuses, [201, 400]);
+  const rejected = first.res.statusCode === 400 ? first : second;
+  assert.equal(rejected.res.body.message, "User already registered for this event");
+  assert.equal(rejected.error, null);
+  assert.equal(calls.audits.length, 1, "a failed registration was audited");
+});
+
+test("a non-duplicate create failure is not mistaken for a duplicate", async () => {
+  createError = new Error("connection lost");
+
+  const { res, error } = await register({ user: { _id: CALLER, role: "OFFICE_BEARER" }, id: EVENT_A });
+
+  assert.equal(res.sent, false);
+  assert.equal(error.message, "connection lost");
+  assert.deepEqual(calls.audits, []);
+});
+
+test("index readiness is only awaited for writes: reads and rejected requests never wait", async () => {
+  initImpl = () => new Promise(() => {}); // never resolves
+
+  await list({ user: { _id: CALLER, role: "OFFICE_BEARER" }, id: EVENT_A });
+  const missing = await register({ user: { _id: CALLER, role: "OFFICE_BEARER" }, id: MISSING_EVENT });
+  const invalid = await register({ user: { _id: CALLER, role: "OFFICE_BEARER" }, id: "not-an-id" });
+
+  assert.equal(calls.inits, 0);
+  assert.equal(missing.res.statusCode, 404);
+  assert.equal(invalid.res.statusCode, 400);
 });
