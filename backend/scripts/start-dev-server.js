@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 const { MongoMemoryServer } = require("mongodb-memory-server");
 const { registerEphemeralTarget } = require("../src/utils/dbSafety");
+const { secretForLocalRun } = require("../src/utils/jwtSecret");
+
+if (process.env.NODE_ENV === "production") {
+  console.error("This development server refuses to run with NODE_ENV=production.");
+  process.exit(1);
+}
 
 async function main() {
   console.log("🚀 Starting MongoDB Memory Server...");
@@ -11,8 +17,11 @@ async function main() {
   // This process owns the disposable in-memory database; it is the only
   // target the seed script may wipe without explicit operator authorization.
   registerEphemeralTarget(uri);
-  process.env.JWT_SECRET =
-    process.env.JWT_SECRET || "your-secret-key-change-in-production";
+  // Never a literal: a configured valid secret is kept, otherwise a random per-run one is
+  // used (tokens do not survive a restart of this disposable local server).
+  const { secret, generated } = secretForLocalRun(process.env);
+  process.env.JWT_SECRET = secret;
+  if (generated) console.log("🔑 Using a random per-run JWT secret (JWT_SECRET not set to a valid value).");
   process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "8h";
   process.env.NODE_ENV = "development";
   process.env.PORT = process.env.PORT || 5000;
@@ -53,7 +62,11 @@ function bootServer() {
   require("../src/server.js");
 }
 
-main().catch((err) => {
-  console.error("❌ Failed to start dev server:", err);
-  process.exit(1);
-});
+module.exports = { main };
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error("❌ Failed to start dev server:", err);
+    process.exit(1);
+  });
+}

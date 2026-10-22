@@ -383,6 +383,7 @@ async function runChild() {
 
     // ---- fixed, test-only configuration for the application -------------
     process.env.NODE_ENV = "test";
+    require("../src/config/testOverrides").enableTestRateLimits();
     process.env.PORT = String(HARNESS_PORT);
     process.env.JWT_SECRET = TEST_JWT_SECRET;
     process.env.JWT_EXPIRES_IN = "1h";

@@ -96,7 +96,11 @@ async function main() {
     console.log(`\nAll RBAC matrix checks passed (${MATRIX.length} routes).`);
 }
 
-main().catch((err) => {
-    console.error('RBAC matrix script crashed:', err);
-    process.exit(1);
-});
+module.exports = { main };
+
+if (require.main === module) {
+    main().catch((err) => {
+        console.error('RBAC matrix script crashed:', err);
+        process.exit(1);
+    });
+}
