@@ -13,15 +13,19 @@ const Role = require('../backend/src/models/Role');
 const UserRole = require('../backend/src/models/UserRole');
 
 const generateToken = (user, roleId, societyId) => {
+  // No default: a guessable fallback secret would make this a token-forging tool for any
+  // server still using the placeholder. The secret must be supplied explicitly.
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET must be set to the target server\'s secret to sign test tokens');
+  }
   return jwt.sign(
     { id: user._id, role: user.role },
-    process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+    process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
 };
 
 const expectedMatrix = require('../docs/rbac-matrix.json');
-process.env.NODE_ENV = 'test';
 
 // Parse command line args
 const args = process.argv.slice(2);
@@ -81,6 +85,7 @@ async function getOrCreateTestUserForRole(roleDoc) {
 }
 
 async function run() {
+  process.env.NODE_ENV = 'test';
   let mongoServer;
   let serverInstance;
 
@@ -107,10 +112,16 @@ async function run() {
     baseUrl = `http://localhost:5001`;
   } else {
     // If baseUrl is provided, connect to the configured DB (for seeding/finding test users)
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ieee_finance_pro';
-    console.log(`Connecting to MongoDB at ${mongoUri}...`);
+    // This mode creates test users and role assignments in the database it connects to, so
+    // the target must be explicit (no default database) and authorized like a seed run. The
+    // URI itself is never printed.
+    const { assertDestructiveTargetAllowed, assertConnectedToValidatedTarget } = require('../backend/src/utils/dbSafety');
+    const target = assertDestructiveTargetAllowed({ operation: 'RBAC matrix verification (creates test users)' });
+    const mongoUri = process.env.MONGODB_URI;
+    console.log('Connecting to the configured MongoDB...');
     try {
       await mongoose.connect(mongoUri);
+      assertConnectedToValidatedTarget(target, mongoose.connection.name);
     } catch (err) {
       console.error('Failed to connect to database:', err.message);
       process.exit(1);
@@ -173,4 +184,8 @@ async function run() {
   process.exit(0);
 }
 
-run();
+module.exports = { run };
+
+if (require.main === module) {
+  run();
+}

@@ -20,7 +20,7 @@ async function main() {
     // Run the connection test
     console.log("\n--- Running testConnection.js ---");
     try {
-      require("./testConnection");
+      require("./testConnection").testConnection();
       // Wait for process.exit inside the script
     } catch (err) {
       console.error(err);
@@ -77,4 +77,8 @@ async function verifyBackupRestore(mongoServer) {
   process.exit(0);
 }
 
-main();
+module.exports = { main };
+
+if (require.main === module) {
+  main();
+}
