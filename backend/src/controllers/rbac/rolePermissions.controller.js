@@ -4,6 +4,7 @@ const Role = require("../../models/Role");
 const Permission = require("../../models/Permission");
 const UserRole = require("../../models/UserRole");
 const { logAudit } = require("../../services/auditLogger");
+const { reauthorizeLiveSockets } = require("../../services/presenceService");
 const { invalidateCache } = require("../../services/resolvePermissions");
 
 /**
@@ -196,6 +197,15 @@ const updateRolePermission = async (req, res, next) => {
       .populate("permission");
 
     invalidateCache();
+
+    // Live sockets keep the rooms they joined; re-check them now so a revoked permission
+    // also stops real-time delivery before this request is answered (AUD-007).
+    try {
+      const io = req.app && typeof req.app.get === "function" ? req.app.get("io") : null;
+      if (io) await reauthorizeLiveSockets(io);
+    } catch (reauthError) {
+      console.error("Could not re-check live sockets after a permission change:", reauthError.message);
+    }
 
     const ipAddress =
       req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;

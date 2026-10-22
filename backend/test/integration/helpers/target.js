@@ -91,7 +91,24 @@ function requireHarnessTarget() {
   const baseUrl = EXPECTED_BASE_URL;
   const api = (route, init = {}) => fetch(`${baseUrl}/api/v1${route}`, init);
 
-  return { baseUrl, api, ready, database: ready.database };
+  // Accounts can only be created by an administrator (POST /auth/register requires an
+  // ADMIN token), so tests that need a disposable account create it as the fixture admin.
+  const registerAccount = async (body) => {
+    const { TEST_PASSWORD, USERS } = require("./fixtures");
+    const login = await api("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: USERS.admin.email, password: TEST_PASSWORD }),
+    });
+    const { data } = await login.json();
+    return api("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.token}` },
+      body: JSON.stringify(body),
+    });
+  };
+
+  return { baseUrl, api, registerAccount, ready, database: ready.database };
 }
 
 /**

@@ -95,15 +95,11 @@ before(async () => {
     }
 
     // A disposable user holding a faculty_advisor-level role.
-    const register = await target.api("/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const register = await target.registerAccount({
         name: "Disposable Faculty Advisor",
         email: ADVISOR_EMAIL,
         password: TEST_PASSWORD,
-      }),
-    });
+      });
     const registered = await register.json();
     assert.equal(register.status, 201, "could not register the disposable advisor");
     const advisorId = registered.data.user.id;
@@ -142,15 +138,11 @@ before(async () => {
     advisor = { id: advisorId, token: body.data.token };
 
     // A user that is ADMIN in User.role but holds no UserRole at all.
-    const registerLegacy = await target.api("/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const registerLegacy = await target.registerAccount({
         name: "Disposable Legacy Admin",
         email: LEGACY_ADMIN_EMAIL,
         password: TEST_PASSWORD,
-      }),
-    });
+      });
     const legacy = await registerLegacy.json();
     assert.equal(registerLegacy.status, 201, "could not register the legacy admin");
     await db

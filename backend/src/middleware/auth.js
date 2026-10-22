@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { isTokenRevoked } = require('../utils/authTokens');
 
 /**
  * Authentication middleware - verifies JWT token
@@ -26,6 +27,14 @@ const authenticate = async (req, res, next) => {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid token. User not found.'
+            });
+        }
+
+        // A password change or reset ends every session issued before it
+        if (isTokenRevoked(decoded, user)) {
+            return res.status(401).json({
+                success: false,
+                message: 'Session ended. Please sign in again.'
             });
         }
 

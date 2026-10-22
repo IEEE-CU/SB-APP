@@ -34,6 +34,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // Set (atomically with the new hash) whenever an existing account's password changes -
+    // by the user or by an administrator reset. Tokens issued at or before this moment are
+    // refused (utils/authTokens.js). Absent for accounts whose password never changed.
+    passwordChangedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -44,6 +50,8 @@ const userSchema = new mongoose.Schema(
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 12);
+  // A new account has no earlier sessions to revoke; any later password change does.
+  if (!this.isNew) this.passwordChangedAt = new Date();
   next();
 });
 
@@ -59,6 +67,7 @@ userSchema.set("toJSON", {
     delete ret._id;
     delete ret.__v;
     delete ret.password;
+    delete ret.passwordChangedAt;
     return ret;
   },
 });

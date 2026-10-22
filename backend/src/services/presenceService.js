@@ -18,6 +18,17 @@ const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
 // same 3 s window on the client).
 const TYPING_TTL_MS = 3000;
 
+// A heartbeat is relayed to the whole society room, so what it may say and how often are
+// bounded (AUD-012). Only these statuses are relayed (a missing status means "online");
+// anything else is ignored. A status CHANGE is relayed immediately but spends a token from
+// a small per-socket bucket; repeating the same status is only relayed as a refresh every
+// HEARTBEAT_REFRESH_MS. One socket therefore cannot make the server fan out an unbounded
+// stream of presence events to its society.
+const HEARTBEAT_STATUSES = new Set(["online", "idle", "dnd"]);
+const HEARTBEAT_BURST = 5;
+const HEARTBEAT_REFILL_MS = 1000;
+const HEARTBEAT_REFRESH_MS = 30000;
+
 /**
  * Resolves a typing payload to exactly one delivery room. The payload must
  * carry either a channelId or a conversationId (a well-formed id), never both.
@@ -406,19 +417,29 @@ function setupPresenceHandlers(io) {
 
     // Heartbeat for status updates (online / idle / dnd)
 
+    const beat = { status: null, emittedAt: 0, tokens: HEARTBEAT_BURST, refilledAt: Date.now() };
     onEvent("presence:heartbeat", (payload) => {
-      const status =
-        payload && typeof payload === "object" && typeof payload.status === "string"
-          ? payload.status
-          : undefined;
       const info = socketUserMap.get(socket.id);
       if (info) {
         info.lastSeen = new Date();
       }
-      emitPresence({
-        userId,
-        status: status || "online",
-      });
+
+      const requested =
+        payload && typeof payload === "object" && !Array.isArray(payload) ? payload.status : undefined;
+      let status;
+      if (requested === undefined || requested === null) status = "online";
+      else if (typeof requested === "string" && HEARTBEAT_STATUSES.has(requested)) status = requested;
+      else return; // not a status this server relays
+
+      const now = Date.now();
+      beat.tokens = Math.min(HEARTBEAT_BURST, beat.tokens + (now - beat.refilledAt) / HEARTBEAT_REFILL_MS);
+      beat.refilledAt = now;
+      if (status === beat.status && now - beat.emittedAt < HEARTBEAT_REFRESH_MS) return;
+      if (beat.tokens < 1) return;
+      beat.tokens -= 1;
+      beat.status = status;
+      beat.emittedAt = now;
+      emitPresence({ userId, status });
     });
 
     // Handle Disconnect
@@ -464,6 +485,94 @@ function setupPresenceHandlers(io) {
   });
 }
 
+/**
+ * Re-checks the live sockets after the permission matrix changed (AUD-007).
+ *
+ * Joining a channel room is authorized once, at join time, and a joined room keeps delivering
+ * messages. Without this, a user whose community_hub:view was just revoked kept receiving
+ * every message of the channels they had already joined until they disconnected, although
+ * every HTTP request of theirs was already refused. After a matrix edit, each live socket's
+ * channel rooms (message delivery `channel_<id>` and the typing/canvas relay `channel:<id>`)
+ * are authorized again with the same rule as joining (canAccessChannel, fresh permissions)
+ * and the ones no longer allowed are left. A socket whose user no longer exists is
+ * disconnected. Direct-message rooms are untouched: they depend on participation, not on the
+ * matrix. Only this process's sockets are visible (state is per process).
+ *
+ * @returns {Promise<{ checked: number, left: number, disconnected: number }>}
+ */
+async function reauthorizeLiveSockets(io) {
+  const summary = { checked: 0, left: 0, disconnected: 0 };
+  const sockets = io && io.sockets && io.sockets.sockets;
+  if (!sockets || typeof sockets.values !== "function") return summary;
+
+  await Promise.allSettled(
+    [...sockets.values()].map(async (socket) => {
+      const userId = socket.user && (socket.user.id || socket.user._id);
+      if (!userId) return;
+      summary.checked += 1;
+
+      let exists = true;
+      try {
+        exists = Boolean(await User.findById(userId).select("_id").lean());
+      } catch {
+        exists = true; // a lookup failure is not evidence that the user is gone
+      }
+      if (!exists) {
+        summary.disconnected += 1;
+        socket.disconnect(true);
+        return;
+      }
+
+      for (const room of [...socket.rooms]) {
+        const match = /^channel[_:]([0-9a-fA-F]{24})$/.exec(room);
+        if (!match) continue;
+        let allowed = false;
+        try {
+          allowed = await canAccessChannel(userId, match[1]);
+        } catch {
+          allowed = false; // fail closed
+        }
+        if (!allowed) {
+          socket.leave(room);
+          summary.left += 1;
+        }
+      }
+    }),
+  );
+  return summary;
+}
+
+/**
+ * Disconnects every live socket that belongs to `userId` (all devices), after the account's
+ * password changed (AUD-007B). Ownership comes from the authenticated socket's own identity,
+ * never from anything a client sent. The socket's normal `disconnect` handler then releases its
+ * rooms, typing state and presence, and tells the society the user went offline if it was the
+ * last one. Only this process's sockets are visible (state is per process). A socket that fails
+ * to close is logged (socket id and error message only) and does not stop the others.
+ *
+ * @returns {{ matched: number, disconnected: number, failed: number }}
+ */
+function disconnectUserSockets(io, userId) {
+  const summary = { matched: 0, disconnected: 0, failed: 0 };
+  const sockets = io && io.sockets && io.sockets.sockets;
+  if (!sockets || typeof sockets.values !== "function" || !userId) return summary;
+
+  const target = String(userId);
+  for (const socket of [...sockets.values()]) {
+    const id = socket.user && (socket.user.id || socket.user._id);
+    if (!id || String(id) !== target) continue;
+    summary.matched += 1;
+    try {
+      socket.disconnect(true);
+      summary.disconnected += 1;
+    } catch (error) {
+      summary.failed += 1;
+      console.error(`Could not disconnect socket ${socket.id} after a password change: ${error.message}`);
+    }
+  }
+  return summary;
+}
+
 function getOnlineUsers() {
   const online = [];
   for (const [userId, sockets] of userSockets.entries()) {
@@ -485,6 +594,8 @@ function sendNotificationToUser(io, userId, notification) {
 
 module.exports = {
   setupPresenceHandlers,
+  reauthorizeLiveSockets,
+  disconnectUserSockets,
   getOnlineUsers,
   sendNotificationToUser,
   userSockets,

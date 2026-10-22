@@ -83,15 +83,11 @@ const slackPayload = (name, extra = {}) => ({ channels: [{ name }], messages: []
 before(async () => {
   await withDatabase(target, async (db, ObjectId) => {
     const now = new Date();
-    const register = await target.api("/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const register = await target.registerAccount({
         name: "Disposable No Permission",
         email: NO_PERMISSION_EMAIL,
         password: TEST_PASSWORD,
-      }),
-    });
+      });
     const registered = await register.json();
     assert.equal(register.status, 201, "could not register the disposable user");
     const id = registered.data.user.id;

@@ -66,11 +66,7 @@ describe("handshake rejection", () => {
 
   test("a validly signed token for a deleted user is rejected", async () => {
     const email = `socket-deleted-${Date.now()}@integration.test`;
-    const registration = await target.api("/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Disposable Socket User", email, password: TEST_PASSWORD }),
-    });
+    const registration = await target.registerAccount({ name: "Disposable Socket User", email, password: TEST_PASSWORD });
     const registered = await registration.json();
     assert.equal(registration.status, 201);
     const userId = registered.data.user.id;

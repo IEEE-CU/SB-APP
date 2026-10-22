@@ -103,15 +103,11 @@ before(async () => {
     const b = await db.collection("events").insertOne(event(societies.B.id, `Event B ${RUN}`));
     events = { A: String(a.insertedId), B: String(b.insertedId) };
 
-    const register = await target.api("/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const register = await target.registerAccount({
         name: "Disposable Organizer Without Society",
         email: ORGANIZER_EMAIL,
         password: TEST_PASSWORD,
-      }),
-    });
+      });
     const registered = await register.json();
     assert.equal(register.status, 201, "could not register the disposable organizer");
     const id = registered.data.user.id;

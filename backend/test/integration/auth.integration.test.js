@@ -110,7 +110,7 @@ describe("login", () => {
 
     assert.equal(res.status, 401);
     assert.equal(body.success, false);
-    assert.equal(body.message, "Incorrect password");
+    assert.equal(body.message, "Invalid email or password");
     assert.equal("data" in body, false, "a failed login returned data");
     noSecrets(body);
     assert.equal(JSON.stringify(body).includes("token"), false);
@@ -132,21 +132,16 @@ describe("login", () => {
     assert.equal(body.success, false);
   });
 
-  // KNOWN ISSUE (recorded, not changed): the two failure messages differ
-  // ("Invalid email address" vs "Incorrect password"), so the endpoint reveals
-  // whether an account exists. This test states the desired behavior and is a
-  // `todo`, so it documents the gap without failing the run or changing login.
-  test(
-    "B. unknown e-mail and wrong password are indistinguishable (account enumeration)",
-    { todo: "login reveals whether an e-mail has an account" },
-    async () => {
-      const wrongPassword = await login(USERS.chairA.email, `${TEST_PASSWORD}-wrong`);
-      const unknownEmail = await login("nobody@integration.test", TEST_PASSWORD);
+  // AUTH-CLOSE-01 (AUD-008): this was a `todo` while the two failure messages differed
+  // ("Invalid email address" vs "Incorrect password"). Both now return the same status and
+  // body; the full matrix is in login-hardening.integration.test.js.
+  test("B. unknown e-mail and wrong password are indistinguishable (account enumeration)", async () => {
+    const wrongPassword = await login(USERS.chairA.email, `${TEST_PASSWORD}-wrong`);
+    const unknownEmail = await login("nobody@integration.test", TEST_PASSWORD);
 
-      assert.equal(unknownEmail.res.status, wrongPassword.res.status);
-      assert.equal(unknownEmail.body.message, wrongPassword.body.message);
-    },
-  );
+    assert.equal(unknownEmail.res.status, wrongPassword.res.status);
+    assert.deepEqual(unknownEmail.body, wrongPassword.body);
+  });
 });
 
 describe("GET /auth/me", () => {
@@ -258,11 +253,7 @@ describe("token lifetime and account existence", () => {
   test("E. a valid token for a deleted user is rejected with 401", async () => {
     // Disposable user created through the public registration endpoint.
     const email = `deleted-user-${Date.now()}@integration.test`;
-    const registration = await api("/auth/register", {
-      method: "POST",
-      headers: jsonHeaders,
-      body: JSON.stringify({ name: "Disposable User", email, password: TEST_PASSWORD }),
-    });
+    const registration = await target.registerAccount({ name: "Disposable User", email, password: TEST_PASSWORD });
     const registered = await registration.json();
     assert.equal(registration.status, 201, "could not create the disposable user");
     const userId = registered.data.user.id;

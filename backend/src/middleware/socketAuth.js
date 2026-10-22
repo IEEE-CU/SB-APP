@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { isTokenRevoked } = require("../utils/authTokens");
 
 /**
  * Socket.IO handshake authentication.
@@ -23,9 +24,12 @@ const authenticateSocket = async (socket, next) => {
     if (!decoded || typeof decoded !== "object" || !decoded.id) {
       throw new Error("Token has no subject");
     }
-    const user = await User.findById(decoded.id).select("_id").lean();
+    const user = await User.findById(decoded.id).select("_id passwordChangedAt").lean();
     if (!user) {
       throw new Error("User not found");
+    }
+    if (isTokenRevoked(decoded, user)) {
+      throw new Error("Session ended");
     }
   } catch {
     // Same message for a bad token and a missing user, and for lookup
