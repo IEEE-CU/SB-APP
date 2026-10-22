@@ -16,7 +16,7 @@ export const authService = {
       password,
     }),
   changePassword: (currentPassword: string, newPassword: string) =>
-    api.post<ApiResponse<null>>('/auth/change-password', {
+    api.post<ApiResponse<{ token?: string } | null>>('/auth/change-password', {
       currentPassword,
       newPassword,
     }),

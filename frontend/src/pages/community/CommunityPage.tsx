@@ -7,6 +7,8 @@ import { Button, LoadingSpinner } from '@/components/ui';
 import { PageTransition } from '@/components/ui/WatermelonMotion';
 import { useAuthStore } from '@/store/authStore';
 import { getSocket, connectSocket } from '@/lib/socket';
+import { rejoinOnConnect } from '@/lib/socketRejoin';
+import { groupReactions, normalizeMessage, normalizeMessages } from '@/lib/messageContract';
 import type { Channel, Conversation, Message, User } from '@/types/models';
 import toast from 'react-hot-toast';
 import { Hash, Lock, MessageSquare, Send, Plus, Reply } from 'lucide-react';
@@ -55,10 +57,13 @@ export default function CommunityPage() {
   useEffect(() => {
     const initData = async () => {
       try {
-        const [chanRes, convRes, userRes] = await Promise.all([
+        // Channels and conversations are what every member can read. The user directory
+        // (GET /users) is administrator-only and used to be part of this Promise.all, so for
+        // anyone else the whole load failed and no channel appeared; it is requested separately
+        // below, and only for an administrator.
+        const [chanRes, convRes] = await Promise.all([
           channelsService.getChannels(),
           conversationsService.getConversations(),
-          userService.getUsers(1, 100),
         ]);
         setChannels(Array.isArray(chanRes.data.data) ? chanRes.data.data : []);
         const rawConvs = Array.isArray(convRes.data.data) ? convRes.data.data : [];
@@ -70,8 +75,7 @@ export default function CommunityPage() {
           return { ...c, participants };
         });
         setConversations(formattedConvs);
-        setAllUsers(Array.isArray((userRes.data as any).data) ? (userRes.data as any).data : []);
-        
+
         // Auto-select first channel if exists
         const firstChan = chanRes.data.data?.[0];
         if (firstChan) {
@@ -83,26 +87,44 @@ export default function CommunityPage() {
       } finally {
         setLoading(false);
       }
+
+      // Only an administrator can read the user directory, so only an administrator is offered
+      // the "pick anyone" direct-message list; nobody else requests it.
+      if ((user as { role?: string } | null)?.role === 'ADMIN') {
+        try {
+          const userRes = await userService.getUsers(1, 100);
+          setAllUsers(Array.isArray((userRes.data as any).data) ? (userRes.data as any).data : []);
+        } catch {
+          setAllUsers([]);
+        }
+      }
     };
     initData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loads once on mount; the signed-in user does not change here
   }, []);
 
   // Socket setup for real-time events
   useEffect(() => {
     if (!token) return;
-    connectSocket(token);
+    connectSocket();
     const socket = getSocket();
 
-    // Joint channel / DM rooms
-    if (selectedChannel) {
-      socket.emit('channel:join', selectedChannel.id);
-    }
-    if (selectedConversation) {
-      socket.emit('conversation:join', selectedConversation.id);
-    }
+    // Join the channel / DM room now and again after every reconnect: rooms live on the server
+    // and are gone with the old connection. The server authorizes each join.
+    const stopRejoin = rejoinOnConnect(socket, () => {
+      if (selectedChannel) {
+        socket.emit('channel:join', selectedChannel.id);
+      }
+      if (selectedConversation) {
+        socket.emit('conversation:join', selectedConversation.id);
+      }
+    });
 
     // Handlers
-    const handleNewMessage = (msg: Message) => {
+    // Real-time payloads are in the server's shape; convert (and ignore anything malformed).
+    const handleNewMessage = (raw: unknown) => {
+      const msg = normalizeMessage(raw);
+      if (!msg) return;
       if (selectedChannel && msg.channelId === selectedChannel.id) {
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
@@ -118,7 +140,7 @@ export default function CommunityPage() {
 
     const handleReactionUpdate = ({ messageId, reactions }: { messageId: string; reactions: any[] }) => {
       setMessages((prev) =>
-        prev.map((msg) => (msg.id === messageId ? { ...msg, reactions } : msg))
+        prev.map((msg) => (msg.id === messageId ? { ...msg, reactions: groupReactions(reactions) } : msg))
       );
     };
 
@@ -154,7 +176,9 @@ export default function CommunityPage() {
       });
     };
 
-    const handlePollUpdate = (updatedMsg: Message) => {
+    const handlePollUpdate = (raw: unknown) => {
+      const updatedMsg = normalizeMessage(raw);
+      if (!updatedMsg) return;
       setMessages((prev) =>
         prev.map((msg) => (msg.id === updatedMsg.id ? updatedMsg : msg))
       );
@@ -168,6 +192,7 @@ export default function CommunityPage() {
     socket.on('typing:stop', handleTypingStop);
 
     return () => {
+      stopRejoin();
       if (selectedChannel) {
         socket.emit('channel:leave', selectedChannel.id);
       }
@@ -192,14 +217,14 @@ export default function CommunityPage() {
       if (selectedChannel) {
         try {
           const res = await channelsService.getChannelMessages(selectedChannel.id);
-          setMessages(Array.isArray(res.data.data) ? res.data.data : []);
+          setMessages(normalizeMessages(res.data.data));
         } catch {
           toast.error('Failed to load messages');
         }
       } else if (selectedConversation) {
         try {
           const res = await conversationsService.getConversationMessages(selectedConversation.id);
-          setMessages(Array.isArray(res.data.data) ? res.data.data : []);
+          setMessages(normalizeMessages(res.data.data));
         } catch {
           toast.error('Failed to load messages');
         }
@@ -288,8 +313,9 @@ export default function CommunityPage() {
         );
       }
 
-      if (res?.data.data) {
-        setMessages((prev) => [...prev, res.data.data]);
+      const sent = normalizeMessage(res?.data.data);
+      if (sent) {
+        setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
       }
       setNewMessage('');
       setReplyTo(null);
@@ -302,9 +328,9 @@ export default function CommunityPage() {
 
   const handleAddReaction = async (messageId: string, emoji: string) => {
     try {
-      await channelsService.addReaction(messageId, emoji);
+      await channelsService.toggleReaction(messageId, emoji);
     } catch {
-      toast.error('Failed to add reaction');
+      toast.error('Failed to update reaction');
     }
   };
 
@@ -335,9 +361,10 @@ export default function CommunityPage() {
   const handleCastVote = async (messageId: string, optionIndex: number) => {
     try {
       const res = await channelsService.castVote(messageId, optionIndex);
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === messageId ? res.data.data : msg))
-      );
+      const updated = normalizeMessage(res.data.data);
+      if (updated) {
+        setMessages((prev) => prev.map((msg) => (msg.id === messageId ? updated : msg)));
+      }
     } catch {
       toast.error('Failed to cast vote');
     }
@@ -366,8 +393,9 @@ export default function CommunityPage() {
         );
       }
 
-      if (res?.data.data) {
-        setMessages((prev) => [...prev, res.data.data]);
+      const created = normalizeMessage(res?.data.data);
+      if (created) {
+        setMessages((prev) => (prev.some((m) => m.id === created.id) ? prev : [...prev, created]));
       }
       setShowCreatePoll(false);
       setPollQuestion('');

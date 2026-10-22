@@ -1,6 +1,7 @@
 import api from "@/lib/api";
 import type { ApiResponse } from "@/types/api";
 import type { Channel, Message } from "@/types/models";
+import { reactionRequest } from "@/lib/reactionRequest";
 
 export const channelsService = {
   /**
@@ -47,15 +48,13 @@ export const channelsService = {
       poll,
     }),
 
-  addReaction: (messageId: string, emoji: string) =>
-    api.post<ApiResponse<Message>>(`/messages/${messageId}/reactions`, {
-      emoji,
-    }),
-
-  removeReaction: (messageId: string, emoji: string) =>
-    api.delete<ApiResponse<Message>>(`/messages/${messageId}/reactions`, {
-      data: { emoji },
-    }),
+  // Adds the reaction, or removes it if this user already has it: the server has one toggling
+  // endpoint and no DELETE route (see lib/reactionRequest.ts). The response is the message's
+  // list of reaction records; convert it with groupReactions before showing it.
+  toggleReaction: (messageId: string, emoji: string) => {
+    const { url, body } = reactionRequest(messageId, emoji);
+    return api.post<ApiResponse<unknown>>(url, body);
+  },
 
   addMember: (channelId: string, userId: string) =>
     api.post<ApiResponse<Channel>>(`/channels/${channelId}/members`, {

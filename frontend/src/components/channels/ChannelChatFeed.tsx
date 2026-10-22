@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Message } from "@/types/models";
-import { getSocket } from "@/lib/socket";
+import { connectSocket, getSocket } from "@/lib/socket";
+import { useAuthStore } from "@/store/authStore";
+import { normalizeMessage, normalizeMessages } from "@/lib/messageContract";
+import { rejoinOnConnect } from "@/lib/socketRejoin";
 import { channelsService } from "@/services/channels";
 import { Send, CornerDownRight, MessageSquare } from "lucide-react";
 import EmojiReactionPicker from "@/components/messaging/EmojiReactionPicker";
@@ -17,13 +20,14 @@ export default function ChannelChatFeed({ channelId, channelName }: ChannelChatF
   const [activeThreadParent, setActiveThreadParent] = useState<Message | null>(null);
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const token = useAuthStore((state) => state.token);
 
   useEffect(() => {
     const fetchMessages = async () => {
       try {
         setLoading(true);
         const res = await channelsService.getChannelMessages(channelId);
-        setMessages(res.data?.data || []);
+        setMessages(normalizeMessages(res.data?.data));
       } catch {
         setMessages([]);
       } finally {
@@ -33,23 +37,29 @@ export default function ChannelChatFeed({ channelId, channelName }: ChannelChatF
 
     fetchMessages();
 
-    // Socket Room Subscriptions
+    // Socket Room Subscriptions. This feed can be the first thing a user opens (a direct visit to
+    // the channel page), so it connects the shared socket itself, with the stored token, exactly
+    // as the Community page does; connecting is a no-op when the socket is already up.
+    if (!token) return undefined;
+    connectSocket();
     const socket = getSocket();
-    socket.emit("channel:join", { channelId });
+    const stopRejoin = rejoinOnConnect(socket, () => socket.emit("channel:join", { channelId }));
 
-    const handleNewMessage = (msg: Message) => {
-      if (msg.channelId === channelId) {
-        setMessages((prev) => [...prev, msg]);
+    const handleNewMessage = (raw: unknown) => {
+      const msg = normalizeMessage(raw);
+      if (msg && msg.channelId === channelId) {
+        setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
       }
     };
 
     socket.on("message:new", handleNewMessage);
 
     return () => {
+      stopRejoin();
       socket.emit("channel:leave", { channelId });
       socket.off("message:new", handleNewMessage);
     };
-  }, [channelId]);
+  }, [channelId, token]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -67,8 +77,9 @@ export default function ChannelChatFeed({ channelId, channelName }: ChannelChatF
         text,
         activeThreadParent?.id
       );
-      if (res.data?.data) {
-        setMessages((prev) => [...prev, res.data.data]);
+      const sent = normalizeMessage(res.data?.data);
+      if (sent) {
+        setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
       }
     } catch (err) {
       console.error("Failed to send message", err);
