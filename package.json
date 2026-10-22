@@ -2,7 +2,7 @@
   "name": "ieee-finance-pro-db",
   "version": "1.0.0",
   "description": "Database & Storage layer (Team 3) with pre-commit hooks",
-  "main": "server/app.js",
+  "main": "backend/src/server.js",
   "scripts": {
     "prepare": "husky",
     "start": "node backend/src/server.js",
