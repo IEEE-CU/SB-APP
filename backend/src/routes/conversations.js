@@ -5,6 +5,7 @@ const Reaction = require("../models/Reaction");
 const Society = require("../models/Society");
 const User = require("../models/User");
 const { authenticate } = require("../middleware/auth");
+const { requirePermission } = require("../middleware/rbac");
 
 const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
 const idOf = (ref) => (ref && ref._id ? String(ref._id) : ref ? String(ref) : null);
@@ -14,6 +15,50 @@ const router = express.Router();
 
 // Apply JWT verification using authenticate middleware
 router.use(authenticate);
+
+const MAX_RECIPIENTS = 100;
+const MAX_SEARCH_LENGTH = 50;
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * @route   GET /api/conversations/recipients[?q=<name fragment>]
+ * @desc    The people the caller may start a direct message with: the members of the caller's
+ *          OWN society, never the caller. This is not the user directory (GET /users stays
+ *          administrator-only); it returns only { id, name }.
+ * @access  community_hub:view
+ *
+ * The society comes from the authenticated user's own record (loaded by `authenticate`),
+ * never from the request: a societyId in the query string or body is not read at all. A caller
+ * with no society gets an empty list rather than a wider one. This is the same rule POST
+ * /conversations enforces for the recipient, so everyone listed here can actually be messaged.
+ */
+router.get(
+  "/recipients",
+  requirePermission("community_hub", "view"),
+  async (req, res, next) => {
+    try {
+      const { q } = req.query;
+      if (q !== undefined && (typeof q !== "string" || q.length > MAX_SEARCH_LENGTH)) {
+        return res.status(400).json({ success: false, message: "Invalid search text" });
+      }
+
+      const societyId = idOf(req.user.societyId);
+      if (!societyId) {
+        return res.json({ success: true, count: 0, data: [] });
+      }
+
+      const filter = { societyId, _id: { $ne: req.user._id } };
+      const term = typeof q === "string" ? q.trim() : "";
+      if (term) filter.name = new RegExp(escapeRegex(term), "i");
+
+      const members = await User.find(filter).select("name").sort({ name: 1 }).limit(MAX_RECIPIENTS).lean();
+      const data = members.map((member) => ({ id: String(member._id), name: member.name }));
+      res.json({ success: true, count: data.length, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 /**
  * @route   GET /api/conversations

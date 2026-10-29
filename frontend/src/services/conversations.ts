@@ -9,6 +9,10 @@ export const conversationsService = {
   getConversation: (conversationId: string) =>
     api.get<ApiResponse<Conversation>>(`/conversations/${conversationId}`),
 
+  // The members of the caller's own society, as { id, name } only (GET /users is admin-only).
+  getRecipients: () =>
+    api.get<ApiResponse<Array<{ id: string; name: string }>>>('/conversations/recipients'),
+
   createConversation: (participantIds: string[]) =>
     api.post<ApiResponse<Conversation>>('/conversations', { participantIds }),
 

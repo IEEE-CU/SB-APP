@@ -13,6 +13,15 @@ import type { Channel, Conversation, Message, User } from '@/types/models';
 import toast from 'react-hot-toast';
 import { Hash, Lock, MessageSquare, Send, Plus, Reply } from 'lucide-react';
 
+// Conversation rows from the API carry userOneId/userTwoId; the page works with a participants list.
+const withParticipants = (c: any): Conversation => {
+  if (c.participants) return c;
+  const participants = [];
+  if (c.userOneId) participants.push(typeof c.userOneId === 'object' ? { id: c.userOneId._id || c.userOneId.id, name: c.userOneId.name || 'User' } : { id: c.userOneId, name: 'User' });
+  if (c.userTwoId) participants.push(typeof c.userTwoId === 'object' ? { id: c.userTwoId._id || c.userTwoId.id, name: c.userTwoId.name || 'User' } : { id: c.userTwoId, name: 'User' });
+  return { ...c, participants };
+};
+
 export default function CommunityPage() {
   const { token, user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -45,6 +54,11 @@ export default function CommunityPage() {
   const [newChannelCategory, setNewChannelCategory] = useState('');
 
   const [showCreateDm, setShowCreateDm] = useState(false);
+  // Non-administrators pick from the scoped recipient lookup, fetched each time the picker opens
+  // so a stale list from another session or society is never shown.
+  const [recipients, setRecipients] = useState<Array<{ id: string; name: string }>>([]);
+  const [recipientsStatus, setRecipientsStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const isAdmin = (user as { role?: string } | null)?.role === 'ADMIN';
 
   // Poll creation states
   const [showCreatePoll, setShowCreatePoll] = useState(false);
@@ -67,14 +81,7 @@ export default function CommunityPage() {
         ]);
         setChannels(Array.isArray(chanRes.data.data) ? chanRes.data.data : []);
         const rawConvs = Array.isArray(convRes.data.data) ? convRes.data.data : [];
-        const formattedConvs = rawConvs.map((c: any) => {
-          if (c.participants) return c;
-          const participants = [];
-          if (c.userOneId) participants.push(typeof c.userOneId === 'object' ? { id: c.userOneId._id || c.userOneId.id, name: c.userOneId.name || 'User' } : { id: c.userOneId, name: 'User' });
-          if (c.userTwoId) participants.push(typeof c.userTwoId === 'object' ? { id: c.userTwoId._id || c.userTwoId.id, name: c.userTwoId.name || 'User' } : { id: c.userTwoId, name: 'User' });
-          return { ...c, participants };
-        });
-        setConversations(formattedConvs);
+        setConversations(rawConvs.map(withParticipants));
 
         // Auto-select first channel if exists
         const firstChan = chanRes.data.data?.[0];
@@ -408,14 +415,40 @@ export default function CommunityPage() {
     }
   };
 
-  const handleStartDm = async (targetUser: User) => {
+  useEffect(() => {
+    if (!showCreateDm || isAdmin) return;
+    let cancelled = false;
+    setRecipients([]);
+    setRecipientsStatus('loading');
+    conversationsService
+      .getRecipients()
+      .then((res) => {
+        if (cancelled) return;
+        const data = res.data?.data;
+        setRecipients(Array.isArray(data) ? data : []);
+        setRecipientsStatus('ready');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRecipients([]);
+        setRecipientsStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showCreateDm, isAdmin, user?.id]);
+
+  const handleStartDm = async (targetUser: { id: string }) => {
     try {
       const res = await conversationsService.createConversation([targetUser.id]);
+      // The create response has the same shape as the list rows, so it needs the same
+      // participants mapping; selecting the raw row crashed the page.
+      const created = withParticipants(res.data.data);
       setConversations((prev) => {
-        if (prev.some((c) => c.id === res.data.data.id)) return prev;
-        return [...prev, res.data.data];
+        if (prev.some((c) => c.id === created.id)) return prev;
+        return [...prev, created];
       });
-      setSelectedConversation(res.data.data);
+      setSelectedConversation(created);
       setSelectedChannel(null);
       setShowCreateDm(false);
     } catch {
@@ -855,7 +888,16 @@ export default function CommunityPage() {
             <h3 className="text-body-lg font-bold text-ink">New Direct Message</h3>
             <p className="text-caption text-ink-muted">Select a member to start chatting with:</p>
             <div className="max-h-60 overflow-y-auto border border-hairline rounded-lg divide-y divide-hairline">
-              {allUsers
+              {!isAdmin && recipientsStatus === 'loading' && (
+                <p className="px-4 py-3 text-caption text-ink-muted">Loading members…</p>
+              )}
+              {!isAdmin && recipientsStatus === 'error' && (
+                <p className="px-4 py-3 text-caption text-ink-muted">Could not load members. Close and try again.</p>
+              )}
+              {!isAdmin && recipientsStatus === 'ready' && recipients.length === 0 && (
+                <p className="px-4 py-3 text-caption text-ink-muted">No other members are available to message.</p>
+              )}
+              {(isAdmin ? allUsers : recipients)
                 .filter((u) => u.id !== user?.id)
                 .map((target) => (
                   <button
