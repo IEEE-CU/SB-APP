@@ -56,16 +56,6 @@ export const channelsService = {
     return api.post<ApiResponse<unknown>>(url, body);
   },
 
-  addMember: (channelId: string, userId: string) =>
-    api.post<ApiResponse<Channel>>(`/channels/${channelId}/members`, {
-      userId,
-    }),
-
-  removeMember: (channelId: string, userId: string) =>
-    api.delete<ApiResponse<Channel>>(`/channels/${channelId}/members`, {
-      data: { userId },
-    }),
-
   castVote: (messageId: string, optionIndex: number) =>
     api.post<ApiResponse<Message>>(
       `/channels/messages/${messageId}/poll/vote`,
