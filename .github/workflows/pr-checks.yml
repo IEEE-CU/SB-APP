@@ -32,6 +32,8 @@ jobs:
           npm run lint
           npm run typecheck
           npm run test:unit
+          npm run build
+          node --test tests/unit/*.node-test.mjs
 
       # --- Backend Checks ---
       - name: Backend - Install and Checks
@@ -46,6 +48,64 @@ jobs:
           npx wait-on --timeout 60000 http://localhost:5000/api/v1/health "file:${RUNNER_TEMP}/sb-app-test-server.ready"
           npm run test:contract
           node scripts/verify-rbac-matrix.js --baseUrl=http://localhost:5000
+
+      # Integration suite: every file against its own isolated in-memory harness on 127.0.0.1:5057
+      # (no secrets, no persistent database, nothing on localhost:5000).
+      - name: Backend - Integration tests (isolated harness)
+        if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
+        timeout-minutes: 30
+        run: |
+          cd backend
+          node scripts/run-integration-tests.js
+
+  # Browser (Playwright) session specs, one spec per fresh isolated harness. Separate job so the
+  # browser download and the long run do not delay the fast checks above.
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - 'frontend/**'
+              - 'backend/**'
+
+      - uses: actions/setup-node@v4
+        if: steps.filter.outputs.changed == 'true'
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install backend and frontend dependencies
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: Install Chromium for Playwright
+        if: steps.filter.outputs.changed == 'true'
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Browser session specs (isolated harness)
+        if: steps.filter.outputs.changed == 'true'
+        run: cd frontend && node scripts/run-session-tests.cjs
+
+      - name: Keep Playwright traces of failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-session-traces
+          path: frontend/test-results/session
+          retention-days: 7
+          if-no-files-found: ignore
 
   security:
     runs-on: ubuntu-latest
