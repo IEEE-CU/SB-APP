@@ -244,8 +244,9 @@ describe("creation", () => {
     assert.equal(all.status, 403);
     assert.equal(foreign.status, 403);
     assert.equal(invalid.status, 400);
-    assert.equal(leadership.status, 201, leadership.text.slice(0, 200));
-    assert.equal(await announcementCount(), count + 1);
+    // D-A2: a non-administrator may announce only to their own society.
+    assert.equal(leadership.status, 403, leadership.text.slice(0, 200));
+    assert.equal(await announcementCount(), count);
   });
 });
 
@@ -394,11 +395,19 @@ describe("society boundaries", () => {
     assert.equal(snapshot(await stored(id)), before);
   });
 
-  test("allowed retargeting still works, and an administrator may use ALL", async () => {
+  test("D-A2: a creator cannot retarget to LEADERSHIP, own-society edits work, and an administrator may use LEADERSHIP and ALL", async () => {
     const id = await createAs("chairA");
+    const before = snapshot(await stored(id));
 
     const leadership = await call("chairA", "PATCH", `/announcements/${id}`, { targetAudience: "LEADERSHIP" });
-    assert.equal(leadership.status, 200, leadership.text.slice(0, 200));
+    assert.equal(leadership.status, 403, leadership.text.slice(0, 200));
+    assert.equal(snapshot(await stored(id)), before);
+
+    const own = await call("chairA", "PATCH", `/announcements/${id}`, { targetAudience: "SOCIETY", societyId: A });
+    assert.equal(own.status, 200, own.text.slice(0, 200));
+
+    const adminLeadership = await call("admin", "PATCH", `/announcements/${id}`, { targetAudience: "LEADERSHIP" });
+    assert.equal(adminLeadership.status, 200, adminLeadership.text.slice(0, 200));
     assert.equal((await stored(id)).targetAudience, "LEADERSHIP");
 
     const everyone = await call("admin", "PATCH", `/announcements/${id}`, { targetAudience: "ALL" });

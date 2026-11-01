@@ -90,7 +90,8 @@ export interface Announcement {
   id: string;
   title: string;
   content: string;
-  societyId?: string;
+  societyId?: string | { id?: string; _id?: string; name?: string; shortName?: string } | null;
+  targetAudience?: "ALL" | "SOCIETY" | "LEADERSHIP";
   authorId?: string;
   priority: "low" | "medium" | "high";
   createdAt: string;

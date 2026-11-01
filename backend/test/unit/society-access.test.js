@@ -54,8 +54,9 @@ const SOCIETY_ID_ROUTES = [
 
 // Routes that, after the society guard, also carry the existing RBAC permission
 // check (requirePermission): [guard, requirePermission, handler]. PATCH /:id
-// needs settings:edit in addition to the society scope.
-const WITH_PERMISSION_CHECK = new Set(["patch /:id"]);
+// needs settings:edit in addition to the society scope; so does the term handover
+// PATCH (D-23), through an administrator-or-permission wrapper around requirePermission.
+const WITH_PERMISSION_CHECK = new Set(["patch /:id", "patch /:id/terms/:termId/handover"]);
 
 // Returns the guard (first handler) of a route in the real societies router,
 // asserting the exact shape of the route: the guard comes first and is followed

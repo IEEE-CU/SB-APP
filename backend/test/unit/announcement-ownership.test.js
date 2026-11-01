@@ -176,7 +176,7 @@ const admin = () => ({ _id: OTHER, role: "ADMIN", name: "Admin", societyId: null
 
 test("create, edit and delete still need their announcements permission", async () => {
   for (const [fn, key] of [
-    [() => post({ user: owner(), body: { title: "t", message: "m", targetAudience: "LEADERSHIP" } }), "announcements:create"],
+    [() => post({ user: owner(), body: { title: "t", message: "m", targetAudience: "SOCIETY", societyId: SOCIETY_A } }), "announcements:create"],
     [() => patch({ user: owner(), body: { title: "x" } }), "announcements:edit"],
     [() => del({ user: owner() }), "announcements:delete"],
   ]) {
@@ -199,7 +199,7 @@ test("create: createdBy is the authenticated caller and a body createdBy is igno
 
   const { res } = await post({
     user: owner(),
-    body: { title: "t", message: "m", targetAudience: "LEADERSHIP", createdBy: OTHER, ownerId: OTHER, userId: OTHER },
+    body: { title: "t", message: "m", targetAudience: "SOCIETY", societyId: SOCIETY_A, createdBy: OTHER, ownerId: OTHER, userId: OTHER },
   });
 
   assert.equal(res.statusCode, 201);
@@ -210,7 +210,7 @@ test("create: createdBy is the authenticated caller and a body createdBy is igno
 test("create: a non-administrator cannot choose the sender name; an administrator can", async () => {
   grant("announcements:create");
 
-  await post({ user: owner(), body: { title: "t", message: "m", targetAudience: "LEADERSHIP", senderName: "Dean of Engineering" } });
+  await post({ user: owner(), body: { title: "t", message: "m", targetAudience: "SOCIETY", societyId: SOCIETY_A, senderName: "Dean of Engineering" } });
   await post({ user: admin(), body: { title: "t", message: "m", targetAudience: "ALL", senderName: "Dean of Engineering" } });
   await post({ user: admin(), body: { title: "t", message: "m", targetAudience: "ALL" } });
 
@@ -363,11 +363,16 @@ test("update: a creator cannot retarget their announcement to everyone or to ano
   assert.equal(calls.saves, 0);
 });
 
-test("update: allowed retargeting still works (leadership, own society) and administrators may use ALL", async () => {
+test("update: D-A2 - a creator cannot retarget to LEADERSHIP; own society still works and administrators may use ALL or LEADERSHIP", async () => {
   grant("announcements:edit");
 
   const leadership = await patch({ user: owner(), body: { targetAudience: "LEADERSHIP" } });
-  assert.equal(leadership.res.statusCode, 200);
+  assert.equal(leadership.res.statusCode, 403);
+  assert.equal(calls.saves, 0, "a refused retarget must not be saved");
+
+  doc = hydrate();
+  const adminLeadership = await patch({ user: admin(), body: { targetAudience: "LEADERSHIP" } });
+  assert.equal(adminLeadership.res.statusCode, 200);
   assert.equal(doc.targetAudience, "LEADERSHIP");
 
   doc = hydrate();
@@ -378,6 +383,31 @@ test("update: allowed retargeting still works (leadership, own society) and admi
   const everyone = await patch({ user: admin(), body: { targetAudience: "ALL" } });
   assert.equal(everyone.res.statusCode, 200);
   assert.equal(doc.targetAudience, "ALL");
+});
+
+test("update: a creator's legacy LEADERSHIP post stays editable while its audience is unchanged; changing the audience is refused", async () => {
+  grant("announcements:edit");
+  doc = hydrate({ targetAudience: "LEADERSHIP", societyId: null });
+
+  const retitle = await patch({ user: owner(), body: { title: "Edited legacy" } });
+  assert.equal(retitle.res.statusCode, 200);
+  assert.equal(doc.title, "Edited legacy");
+  assert.equal(doc.targetAudience, "LEADERSHIP");
+
+  const toAll = await patch({ user: owner(), body: { targetAudience: "ALL" } });
+  assert.equal(toAll.res.statusCode, 403);
+  doc = hydrate({ targetAudience: "LEADERSHIP", societyId: null });
+  const toForeign = await patch({ user: owner(), body: { targetAudience: "SOCIETY", societyId: SOCIETY_B } });
+  assert.equal(toForeign.res.statusCode, 403);
+});
+
+test("create: D-A2 - a non-administrator cannot create a LEADERSHIP announcement", async () => {
+  grant("announcements:create");
+
+  const { res } = await post({ user: owner(), body: { title: "t", message: "m", targetAudience: "LEADERSHIP" } });
+
+  assert.equal(res.statusCode, 403);
+  assert.equal(calls.creates.length, 0);
 });
 
 test("update: invalid input keeps the established errors", async () => {

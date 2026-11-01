@@ -50,6 +50,21 @@ const visibilityFilter = (user) => {
   return { $or: clauses };
 };
 
+/*
+ * D-A2: a non-administrator may announce only to their own society. Returns the
+ * refusal message, or null when the audience is allowed. societyId is compared as
+ * given, so a non-string value never equals the caller's society id.
+ */
+const nonAdminAudienceError = (user, targetAudience, societyId) => {
+  if (targetAudience === "ALL") return "Only admins can send announcements to all members";
+  if (targetAudience === "LEADERSHIP") return "Only admins can send announcements to leadership";
+  const userSocietyId = user.societyId?._id?.toString() || user.societyId?.toString();
+  if (!userSocietyId || societyId !== userSocietyId) {
+    return "You can only send announcements to your own society";
+  }
+  return null;
+};
+
 const notOwner = (res, verb, announcement) =>
   res.status(403).json({
     success: false,
@@ -140,25 +155,11 @@ router.post(
         });
       }
 
-      // Office bearers can only send to their own society or leadership
-      if (req.user.role === "OFFICE_BEARER") {
-        if (targetAudience === "ALL") {
-          return res.status(403).json({
-            success: false,
-            message: "Only admins can send announcements to all members",
-          });
-        }
-        if (targetAudience === "SOCIETY") {
-          const userSocietyId =
-            req.user.societyId?._id?.toString() ||
-            req.user.societyId?.toString();
-          if (societyId !== userSocietyId) {
-            return res.status(403).json({
-              success: false,
-              message: "You can only send announcements to your own society",
-            });
-          }
-        }
+      // D-A2: administrators may choose ALL, SOCIETY or LEADERSHIP; everyone else may
+      // announce only to their own society.
+      if (!isAdmin(req.user)) {
+        const denied = nonAdminAudienceError(req.user, targetAudience, societyId);
+        if (denied) return res.status(403).json({ success: false, message: denied });
       }
 
       // createdBy is always the authenticated caller. A custom sender name (for an
@@ -252,6 +253,8 @@ router.patch(
         return notOwner(res, "update", announcement);
       }
 
+      const previousAudience = announcement.targetAudience;
+
       // Update fields if provided
       if (title !== undefined) announcement.title = title;
       if (message !== undefined) announcement.message = message;
@@ -279,26 +282,20 @@ router.patch(
       // society. They are checked on the resulting values, so an edit cannot
       // retarget an announcement the creator could not have posted.
       if (!isAdmin(req.user)) {
-        if (announcement.targetAudience === "ALL") {
-          return res.status(403).json({
-            success: false,
-            message: "Only admins can send announcements to all members",
-          });
-        }
-        if (announcement.targetAudience === "SOCIETY") {
-          const userSocietyId =
-            req.user.societyId?._id?.toString() ||
-            req.user.societyId?.toString();
-          const targetSocietyId =
-            announcement.societyId?._id?.toString() ||
-            announcement.societyId?.toString();
-          if (!userSocietyId || targetSocietyId !== userSocietyId) {
-            return res.status(403).json({
-              success: false,
-              message: "You can only send announcements to your own society",
-            });
-          }
-        }
+        const targetSocietyId =
+          announcement.societyId?._id?.toString() ||
+          announcement.societyId?.toString();
+        // D-A2 applies to the audience a non-administrator ends up with. One
+        // exception keeps people able to edit their own posts: a legacy post that
+        // already has audience LEADERSHIP (created before the policy) may have its
+        // title/content edited while the audience stays LEADERSHIP. Changing the
+        // audience TO LEADERSHIP (or ALL, or a foreign society) is always refused.
+        const keepsLegacyLeadership =
+          previousAudience === "LEADERSHIP" && announcement.targetAudience === "LEADERSHIP";
+        const denied = keepsLegacyLeadership
+          ? null
+          : nonAdminAudienceError(req.user, announcement.targetAudience, targetSocietyId);
+        if (denied) return res.status(403).json({ success: false, message: denied });
       }
 
       await announcement.save();
