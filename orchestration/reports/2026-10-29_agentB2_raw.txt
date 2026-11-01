@@ -1,0 +1,68 @@
+**1. Task and outcome.** Agent B second pass: done. PATCH now enforces D-A2 for non-administrators, and the affected tests are updated.
+
+**2. Files changed in this pass** (all inside the follow-up scope; no frontend file touched):
+- `backend/src/routes/announcements.js`: PATCH now captures `previousAudience` before applying the body. The LEADERSHIP exception from the first pass is replaced by the legacy rule below.
+- `backend/test/unit/announcement-ownership.test.js`
+- `backend/test/integration/announcement-ownership.integration.test.js`
+- `backend/test/integration/announcement-create.integration.test.js`: new PATCH describe block.
+
+**3. Root cause and before/after.** The first-pass PATCH skipped the audience check whenever the resulting audience was LEADERSHIP. A non-administrator could therefore retarget a post to LEADERSHIP. The three unit tests that used LEADERSHIP as a non-admin create audience failed against the already-tightened POST.
+- **Before:** a non-admin PATCH to LEADERSHIP returned 200.
+- **After:** it returns 403 and nothing is saved.
+- ALL and a foreign society were already refused on PATCH, and still are.
+- I did not reproduce the old PATCH behaviour with a failing test before the fix. The old behaviour was visible in the code, in the first-pass comment and in the old test expectations.
+
+**Legacy-LEADERSHIP rule (also in a code comment).** The check applies to the audience the non-administrator ends up with. One exception: if the post's audience was already LEADERSHIP and stays LEADERSHIP, the edit passes.
+- A legacy creator can edit the title or content without changing the audience, including re-sending `targetAudience: "LEADERSHIP"`.
+- Changing the audience to LEADERSHIP, ALL or a foreign society is always refused.
+- Ownership via `createdBy`, the permission checks and visibility are unchanged.
+
+**Changed tests and why:**
+- Unit "create, edit and delete still need their announcements permission": the create probe used LEADERSHIP. Now `SOCIETY` with `SOCIETY_A`, because LEADERSHIP is now a 403 and the test only needs an arbitrary allowed audience.
+- Unit "create: createdBy is the authenticated caller…": LEADERSHIP changed to `SOCIETY` with `SOCIETY_A`, same reason.
+- Unit "create: a non-administrator cannot choose the sender name…": the non-admin call changed to `SOCIETY` with `SOCIETY_A`, same reason.
+- Unit "update: allowed retargeting still works (leadership, …)": it asserted that a non-admin PATCH to LEADERSHIP gives 200. It is renamed, and now asserts 403 with no save. It also asserts that an admin may set LEADERSHIP, and the own-society and admin-ALL assertions are kept.
+- Integration "allowed retargeting still works…": the same old assertion became 403 with the DB snapshot unchanged. The own-society edit is kept. Admin LEADERSHIP and ALL are asserted as 200.
+- Added to the unit file: a legacy-LEADERSHIP test (retitle gives 200; ALL and foreign society give 403) and a non-admin LEADERSHIP create gives 403 test.
+- Nothing was deleted, skipped or weakened.
+
+**Added to the create integration file** (6 PATCH cases):
+- Non-admin to LEADERSHIP gives 403, DB unchanged.
+- Non-admin to ALL gives 403, DB unchanged.
+- Non-admin to a foreign society gives 403, DB unchanged.
+- Non-admin text edit that keeps their own society gives 200.
+- Legacy LEADERSHIP post, inserted directly with `withDatabase`: title edit gives 200, re-sending LEADERSHIP gives 200, change to ALL or a foreign society gives 403 with the DB unchanged.
+- Admin may set ALL, SOCIETY and LEADERSHIP.
+
+**4. Commands and results** (all run):
+- `node --test test/unit/announcement-ownership.test.js test/unit/announcement-visibility.test.js`: 32 tests, 32 pass, 0 fail.
+  - The first run had 1 failure, caused by my own new assertion: the mock document is mutated in memory before the 403, with no save. I corrected the assertion to check `saves == 0` and reran.
+- The runner, one invocation per file, sequentially. Harness cleanup was clean in all three.
+
+| Integration file | Tests | Pass | Fail |
+|---|---|---|---|
+| `announcement-create` | 18 | 18 | 0 |
+| `announcement-ownership` | 21 | 21 | 0 |
+| `announcement-visibility` | 26 | 26 | 0 |
+
+- Not run: the browser spec, because no frontend file changed. Lint, typecheck and build are left to the coordinator.
+
+**5. Red check.** Not run. I did not revert the PATCH logic and rerun. The old behaviour is confirmed only by code inspection and by the old test assertions that I replaced.
+
+**6. Remaining risks.**
+- A legacy post whose audience is already ALL, or SOCIETY for another society, still can't be edited by a non-admin. This was already the case before this pass, because the check runs on the resulting values. Only legacy LEADERSHIP gets the exception, as instructed. Whether legacy ALL or foreign-society posts should get the same treatment is a policy decision for the coordinator.
+- The route mutates the in-memory document before the 403 but never saves, so the DB is safe.
+
+**7. Git** (`git status --short`, `git rev-parse --short HEAD`): HEAD is `70ff8bd`, nothing staged or committed.
+```
+ M backend/src/routes/announcements.js
+ M backend/test/integration/announcement-ownership.integration.test.js
+ M backend/test/unit/announcement-ownership.test.js
+ M frontend/src/pages/announcements/AnnouncementFormPage.tsx
+ M frontend/src/services/announcements.ts
+ M frontend/src/types/models.ts
+?? backend/test/integration/announcement-create.integration.test.js
+?? frontend/test-results/session/
+?? frontend/tests/session/announcement-create.spec.ts
+```
+[launch] agent B exited with 0 at 15:02:54

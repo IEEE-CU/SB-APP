@@ -1,0 +1,48 @@
+✔ the real server payload becomes a UI message: sender, content, ids and times (3.192ms)
+✔ the author's e-mail is not carried into the sender the UI renders (0.3722ms)
+✔ a reply keeps its parent, a conversation message keeps its conversation (0.2811ms)
+✔ fields the UI reads beyond the mapped ones (poll) are passed through unchanged (0.4068ms)
+✔ a deleted author (null authorId) is shown as 'Unknown member' with an empty id, not dropped and not a crash (0.4224ms)
+✔ payloads that do not match the contract are rejected, never half-converted (0.3994ms)
+✔ an empty message body is valid; a list drops only the malformed entries (0.2781ms)
+✔ per-user reaction records are grouped by emoji, once per user (0.2416ms)
+✔ malformed reaction entries are skipped and a non-list gives no reactions (0.2711ms)
+✔ a message carrying server reaction records renders with grouped reactions (0.3861ms)
+✔ the URL is the mounted channels route and the body carries `value` (not `emoji`) (2.1341ms)
+✔ it is not the path the client used before (/messages/:id/reactions) (0.1998ms)
+✔ the message id is encoded as one path segment (0.468ms)
+✔ multi-codepoint emoji are sent unchanged (0.1305ms)
+✔ the channels service builds every reaction request with this helper and uses POST only (1.9745ms)
+✔ a JWT-shaped string in data.token is accepted unchanged (0.7685ms)
+✔ an absent response field never produces a token (0.1671ms)
+✔ a non-string, empty or malformed token is rejected (0.1479ms)
+✔ plain http(s) URLs are returned normalized (1.3623ms)
+✔ script and other non-web schemes are rejected, including obfuscated spellings (0.5178ms)
+✔ credentials, relative, malformed, empty, oversized and non-string values are rejected (0.4686ms)
+✔ joins once on the first connection, not twice (nothing is sent before it connects) (1.6553ms)
+✔ an already-connected socket joins immediately, once (0.4412ms)
+✔ every reconnect joins again exactly once, without remounting (0.4904ms)
+✔ the cleanup removes the listener: no join after unmount, and nothing leaks across many mounts (0.5556ms)
+✔ re-running with new rooms (a dependency change) replaces the old join instead of stacking (1.8371ms)
+✔ two mounted components each rejoin their own room once per reconnect (0.4533ms)
+✔ a non-admin defaults to their own society even when it is not alphabetically first (1.2985ms)
+✔ a non-admin cannot select another society for tasks (0.1911ms)
+✔ a non-admin does not depend on the society list having loaded (0.1046ms)
+✔ a non-admin with no society cannot create tasks and is never given a default (0.1291ms)
+✔ a role other than ADMIN is treated as a non-admin (0.1416ms)
+✔ an administrator may select any existing society (0.1516ms)
+✔ an administrator with no selection is not silently given the first society (0.1164ms)
+✔ an administrator's selection must be a society that exists in the list (0.1256ms)
+✔ an administrator is told to wait while the society list is empty or loading (0.1351ms)
+✔ an administrator's own society, if any, is not used in place of a selection (2.9792ms)
+✔ no user means no society (0.2529ms)
+✔ notices explain every blocked state and the non-admin override, and are silent otherwise (0.2557ms)
+✔ only the ready state exposes a society id (0.164ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 233.2179

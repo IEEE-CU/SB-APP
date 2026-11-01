@@ -1,0 +1,15 @@
+
+[session] ===== tests/session/dm-recipients.spec.ts
+(node:9520) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+  ✓  1 tests\session\dm-recipients.spec.ts:22:3 › direct-message recipients for a non-administrator › lists same-society members only, never calls GET /users, and starts a conversation (15.6s)
+  ✓  2 tests\session\dm-recipients.spec.ts:47:3 › direct-message recipients for a non-administrator › a member alone in their society sees an empty-state message, not a crash (8.2s)
+  ✓  3 tests\session\dm-recipients.spec.ts:60:3 › direct-message recipients for a non-administrator › a failed lookup is reported without a crash and without falling back to the user directory (10.0s)
+
+  3 passed (50.2s)
+[session] tests/session/dm-recipients.spec.ts: playwright exit=0; harness exit=0; ready file removed=true
+
+[session] 1/1 specs passed

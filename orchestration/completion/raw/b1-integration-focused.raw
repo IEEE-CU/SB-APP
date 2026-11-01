@@ -1,0 +1,319 @@
+
+[runner] ===== test/integration/announcement-create.integration.test.js
+[runner] fresh harness ready (pid 22780)
+▶ administrators
+  ✔ may create ALL, SOCIETY and LEADERSHIP announcements (463.9832ms)
+  ✔ a societyId sent with ALL or LEADERSHIP is not stored (13.1535ms)
+✔ administrators (477.9962ms)
+▶ the legacy payload the UI used to send
+  ✔ { title, content, priority } without targetAudience is still refused (400) and stores nothing (11.1267ms)
+  ✔ an unknown audience and a SOCIETY announcement with no society are 400 (22.0051ms)
+✔ the legacy payload the UI used to send (33.4046ms)
+▶ a non-administrator (society chair)
+  ✔ may create a SOCIETY announcement for their own society, owned by them (251.243ms)
+  ✔ cannot create ALL (403) (11.4857ms)
+  ✔ cannot create LEADERSHIP (403) (10.7534ms)
+  ✔ cannot target another society (403), and a chair of B cannot target A (239.7604ms)
+  ✔ a malformed societyId (object, array) is refused and stores nothing (22.0889ms)
+  ✔ cannot set the sender name or the owner (12.8951ms)
+✔ a non-administrator (society chair) (548.7718ms)
+▶ PATCH audience (D-A2)
+  ✔ a non-administrator cannot retarget to LEADERSHIP (403) and the stored post is unchanged (24.8382ms)
+  ✔ a non-administrator cannot retarget to ALL (403) and the stored post is unchanged (26.3408ms)
+  ✔ a non-administrator cannot retarget to another society (403) and the stored post is unchanged (29.9587ms)
+  ✔ a non-administrator may still edit text and keep their own society (25.1454ms)
+  ✔ legacy: the creator of an old LEADERSHIP post can edit its title while the audience stays LEADERSHIP, but cannot change the audience (54.2283ms)
+  ✔ an administrator may set ALL, SOCIETY and LEADERSHIP (53.0857ms)
+✔ PATCH audience (D-A2) (214.0546ms)
+▶ authorization that is unchanged
+  ✔ a member without announcements:create gets 403 for every audience, and no token gets 401 (241.493ms)
+  ✔ visibility follows the audience: the chair of A sees their own SOCIETY post, the chair of B does not; LEADERSHIP is seen by both (40.8426ms)
+✔ authorization that is unchanged (282.5237ms)
+ℹ tests 18
+ℹ suites 5
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1660.1238
+[runner] test/integration/announcement-create.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/announcement-ownership.integration.test.js
+[runner] fresh harness ready (pid 3932)
+▶ authentication and permissions
+  ✔ anonymous callers cannot create, update or delete (340.9939ms)
+  ✔ users without announcement permissions cannot mutate (490.9966ms)
+✔ authentication and permissions (863.6349ms)
+▶ creation
+  ✔ createdBy is the caller and the sender name is the caller's own, whatever the body says (13.7024ms)
+  ✔ impersonating another user's name on create does not work for a non-administrator (230.1909ms)
+  ✔ an administrator may post under an institutional sender name and is still the recorded creator (222.1357ms)
+  ✔ the audience rules for office bearers are unchanged (28.1145ms)
+✔ creation (494.5376ms)
+▶ the creator and administrators
+  ✔ the creator can update and delete their announcement (37.1009ms)
+  ✔ an administrator can update and delete any announcement, in any society, without taking over ownership (31.8705ms)
+✔ the creator and administrators (69.2744ms)
+▶ a matching display name does not give ownership
+  ✔ a user who renames themselves to the creator's name cannot update or delete (end to end) (49.9759ms)
+  ✔ a user in the same society with an identical name cannot update or delete either (48.3882ms)
+  ✔ the creator keeps their access after renaming themselves (38.835ms)
+  ✔ changing senderName does not transfer ownership, and only an administrator can change it (44.1728ms)
+  ✔ forged owner or creator identifiers in the body cannot take over an announcement (45.8364ms)
+✔ a matching display name does not give ownership (227.5803ms)
+▶ society boundaries
+  ✔ another society's office bearer cannot update or delete, whatever they are called (30.8448ms)
+  ✔ a creator cannot retarget their announcement to everyone or to another society (45.3621ms)
+  ✔ D-A2: a creator cannot retarget to LEADERSHIP, own-society edits work, and an administrator may use LEADERSHIP and ALL (62.8439ms)
+✔ society boundaries (139.3261ms)
+▶ legacy announcements without a recorded owner
+  ✔ do not become writable through a matching display name (93.4629ms)
+  ✔ remain readable, and an administrator can still manage them without inventing an owner (57.8469ms)
+✔ legacy announcements without a recorded owner (151.5402ms)
+▶ ids and existing behavior
+  ✔ malformed and unknown ids keep their established responses and change nothing (38.9559ms)
+  ✔ the list and detail responses keep their shapes (26.0327ms)
+  ✔ the server stays healthy (1.3866ms)
+✔ ids and existing behavior (66.6223ms)
+ℹ tests 21
+ℹ suites 7
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2200.6118
+[runner] test/integration/announcement-ownership.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/announcement-visibility.integration.test.js
+[runner] fresh harness ready (pid 25532)
+▶ who can read which announcement by id
+  ✔ chairA can read all, leadership, societyA and nothing restricted for others (281.8988ms)
+  ✔ memberA can read all, leadership, societyA and nothing restricted for others (238.6814ms)
+  ✔ chairB can read all, leadership, societyB and nothing restricted for others (227.6561ms)
+  ✔ loner can read all, leadership and nothing restricted for others (220.6807ms)
+  ✔ an administrator can read every announcement, in every society (247.9338ms)
+  ✔ another society's announcement cannot be read by id, and nothing of it leaks (5.0606ms)
+  ✔ a society-less user cannot read a society's announcement by id (5.9918ms)
+✔ who can read which announcement by id (1252.898ms)
+▶ announcements with incomplete audience metadata
+  ✔ a missing or unknown audience is visible only to administrators (36.0799ms)
+  ✔ a SOCIETY announcement with no society is hidden from users who have a society (28.7003ms)
+✔ announcements with incomplete audience metadata (65.0526ms)
+▶ users without a society
+  ✔ the list shows ALL and LEADERSHIP only, and no orphaned SOCIETY announcement (5.5792ms)
+  ✔ a SOCIETY announcement with a null or missing society is the same 404 as a nonexistent one (9.9626ms)
+  ✔ they can still read ALL and LEADERSHIP announcements by id (6.5044ms)
+  ✔ every other record with a society or an incomplete audience stays hidden from them (12.2468ms)
+  ✔ administrators still see the orphaned records, and users with a society still do not (42.5403ms)
+✔ users without a society (77.1194ms)
+▶ the detail and the list apply the same rule
+  ✔ admin: an announcement is readable by id exactly when the list shows it (36.0483ms)
+  ✔ chairA: an announcement is readable by id exactly when the list shows it (41.9363ms)
+  ✔ memberA: an announcement is readable by id exactly when the list shows it (40.7442ms)
+  ✔ chairB: an announcement is readable by id exactly when the list shows it (40.8657ms)
+  ✔ loner: an announcement is readable by id exactly when the list shows it (26.0031ms)
+  ✔ the list's filtering is unchanged for users who have a society (31.5124ms)
+✔ the detail and the list apply the same rule (217.5907ms)
+▶ ids, authentication and the response
+  ✔ a malformed id is a clean 400 and a nonexistent id is a 404 identical to a hidden one (12.0771ms)
+  ✔ anonymous callers get 401 on the detail and the list (1.933ms)
+  ✔ an authorized caller gets the unchanged response shape (5.4701ms)
+✔ ids, authentication and the response (19.6793ms)
+▶ ownership and visibility are separate
+  ✔ a creator who is no longer in the announcement's society cannot read it by id (44.1519ms)
+  ✔ the AUD-022 mutation rules still apply (58.0741ms)
+  ✔ the server stays healthy (1.1816ms)
+✔ ownership and visibility are separate (103.6045ms)
+ℹ tests 26
+ℹ suites 6
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1896.5364
+[runner] test/integration/announcement-visibility.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/society-authorization.integration.test.js
+[runner] fresh harness ready (pid 21904)
+▶ AUD-018: PATCH /societies/:id/* is authorized against the URL's society
+  ✔ an office bearer of A cannot change B's logo, and B is unchanged (349.3617ms)
+  ✔ an office bearer of A cannot change B's advisor signature (84.4646ms)
+  ✔ an office bearer of A cannot add a member to B (state unchanged) (66.0593ms)
+  ✔ an office bearer of A cannot patch B's profile or replace its office bearers (103.1507ms)
+  ✔ body or query society ids of the caller do not rescue a foreign :id (96.0745ms)
+  ✔ the same office bearer can perform the equivalent change on society A (83.537ms)
+  ✔ an administrator keeps cross-society capability (and changes persist) (552.0299ms)
+  ✔ an unauthenticated caller is rejected with 401 (8.6725ms)
+✔ AUD-018: PATCH /societies/:id/* is authorized against the URL's society (1365.0576ms)
+▶ AUD-018: missing or malformed society identifiers fail safely
+  ✔ a malformed id is denied (not a 500) for an office bearer (14.0419ms)
+  ✔ a malformed id gives a clean 400 for an administrator (13.3264ms)
+  ✔ a well-formed id of a society that does not exist is denied for an office bearer and 404 for an administrator (20.4997ms)
+  ✔ an absent id matches no society route (404) and changes nothing (41.5487ms)
+  ✔ an empty id segment is evaluated as the next segment, never as the caller's society (81.7548ms)
+✔ AUD-018: missing or malformed society identifiers fail safely (172.2454ms)
+▶ AUD-018: routes where :id is a resource id are not treated as society routes
+  ✔ an office bearer can edit their own event whose id is not their society id (287.6341ms)
+✔ AUD-018: routes where :id is a resource id are not treated as society routes (287.8933ms)
+ℹ tests 14
+ℹ suites 3
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2026.938
+[runner] test/integration/society-authorization.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/society-patch.integration.test.js
+[runner] fresh harness ready (pid 10304)
+▶ a permitted update is persisted
+  ✔ an office bearer's name, description and type are stored and read back (304.1013ms)
+  ✔ the response envelope is unchanged (8.8607ms)
+  ✔ a partial update changes only the fields sent (21.3337ms)
+  ✔ an administrator can update any society (462.7508ms)
+  ✔ an invalid roster entry elsewhere in the document does not block a rename (13.6604ms)
+✔ a permitted update is persisted (832.1282ms)
+▶ protected fields cannot be overwritten
+  ✔ only the permitted fields change, whatever else the body carries (26.4792ms)
+✔ protected fields cannot be overwritten (26.6516ms)
+▶ budget follows the existing policy (no new policy)
+  ✔ an administrator's budget change through this route is stored (18.4515ms)
+  ✔ an office bearer's budget value is ignored: not stored, not echoed, other fields still saved (19.2787ms)
+  ✔ a body claiming administrator rights does not unlock the budget (18.1627ms)
+  ✔ the dedicated admin-only budget route is unchanged (15.0777ms)
+✔ budget follows the existing policy (no new policy) (71.3342ms)
+▶ rejected updates change nothing
+  ✔ an invalid value is a 400 and nothing, including the valid fields sent with it, is stored (56.5348ms)
+  ✔ a negative administrator budget is a 400 and the same request's other fields are not stored (17.2138ms)
+  ✔ the validation error keeps the application's error contract (7.6523ms)
+  ✔ the server stays healthy after the rejected requests (1.3867ms)
+✔ rejected updates change nothing (83.1067ms)
+▶ authorization is unchanged and denied callers change nothing
+  ✔ another society's office bearer is 403 and the society is untouched (21.2539ms)
+  ✔ a caller with no society is 403 (232.2071ms)
+  ✔ anonymous and invalid-token requests are 401 (12.2063ms)
+  ✔ a malformed id is 403 for an office bearer and a clean 400 for an administrator (8.9333ms)
+  ✔ a nonexistent society is 403 for an office bearer and 404 for an administrator, with nothing created (21.8296ms)
+✔ authorization is unchanged and denied callers change nothing (296.7981ms)
+▶ RBAC: settings:edit on top of the society scope
+  ✔ a same-society member without settings:edit is 403 PERMISSION_DENIED and nothing changes (239.439ms)
+  ✔ the permission is checked before the payload: invalid input from a member is 403, not 400 (9.3115ms)
+  ✔ a foreign society's chair holds settings:edit but is still denied by the society scope (20.6226ms)
+  ✔ a society-less user is denied, and so is one with no role (12.5289ms)
+  ✔ the authorized chair can update the metadata (the permission is what unlocks it) (12.2165ms)
+  ✔ the authorized chair's metadata is stored while a budget in the same request is not (19.9912ms)
+  ✔ an administrator keeps cross-society access through the RBAC model (13.0093ms)
+  ✔ the dedicated budget route stays administrator-only, even for a chair holding settings:edit (29.3871ms)
+  ✔ malformed ids and invalid payloads keep their established behavior for an authorized chair (12.6338ms)
+✔ RBAC: settings:edit on top of the society scope (369.7239ms)
+ℹ tests 28
+ℹ suites 6
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1839.5067
+[runner] test/integration/society-patch.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/society-pii.integration.test.js
+[runner] fresh harness ready (pid 7300)
+▶ AUD-025: office bearer of A inspecting society B
+  ✔ the list omits B's roster and phones but keeps its public bearer data (294.3938ms)
+  ✔ the detail omits B's roster and phones (15.472ms)
+  ✔ GET /:id/members is denied with 403 and returns no PII (9.9904ms)
+  ✔ GET /:id/office-bearers keeps names, positions and e-mails but omits phones (7.3598ms)
+  ✔ the combined list response never contains any of B's restricted values (15.0009ms)
+✔ AUD-025: office bearer of A inspecting society B (343.3911ms)
+▶ AUD-025: a caller inspecting their own society
+  ✔ the list entry keeps the roster and phones (15.4335ms)
+  ✔ detail, members and office-bearers endpoints return full data (25.1788ms)
+  ✔ the symmetric case holds: office bearer of B sees B's roster and not A's (224.1868ms)
+  ✔ a non-officer user with a society (member A) sees A's roster but not B's (224.4867ms)
+✔ AUD-025: a caller inspecting their own society (489.7305ms)
+▶ AUD-025: administrator
+  ✔ keeps cross-society access to rosters and phones (232.16ms)
+✔ AUD-025: administrator (232.2972ms)
+▶ AUD-025: fail closed without a valid society scope
+  ✔ a user with no society cannot read any roster or phone (230.1964ms)
+  ✔ an unauthenticated caller is rejected with 401 on every endpoint (3.2276ms)
+✔ AUD-025: fail closed without a valid society scope (233.5735ms)
+ℹ tests 12
+ℹ suites 4
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1367.8849
+[runner] test/integration/society-pii.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/society-terms-authorization.integration.test.js
+[runner] fresh harness ready (pid 23272)
+▶ D-23: who may change a term's handover
+  ✔ a holder of settings:edit in the society (the chair) can; only the sent fields change and an audit row is written (73.6439ms)
+  ✔ administrators can: the fixture administrator and a legacy ADMIN with no RBAC role (44.206ms)
+  ✔ an ordinary member of the society (no settings:edit) is 403: nothing is written or audited (89.756ms)
+  ✔ a user with no society and no role is 403, and no token is 401 (30.9225ms)
+  ✔ another society's chair (who does hold settings:edit) is refused on this society (43.0971ms)
+  ✔ a term id cannot be used across societies: the term is looked up inside the society of the URL (104.2361ms)
+  ✔ malformed society or term ids are refused without a write or a server error (69.6032ms)
+✔ D-23: who may change a term's handover (2283.6985ms)
+▶ D-21: terms need an existing society
+  ✔ a nonexistent society is 404 and nothing is created or audited (37.8104ms)
+  ✔ a malformed society id is 400 (3.9724ms)
+  ✔ the route is still administrator-only: a chair gets 403 whether or not the society exists (10.5113ms)
+  ✔ an existing society still creates a term, and a repeated year is still refused with no extra row (29.5006ms)
+✔ D-21: terms need an existing society (82.4218ms)
+ℹ tests 11
+ℹ suites 2
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2488.7336
+[runner] test/integration/society-terms-authorization.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/society-terms.integration.test.js
+[runner] fresh harness ready (pid 24676)
+▶ NEW-11: the first term writes ever made on a fresh database
+  ✔ eight simultaneous creations of one term create exactly one (41.2884ms)
+  ✔ the unique (society, academicYear) index exists (12.6537ms)
+  ✔ a later repeat is rejected and adds nothing (12.0609ms)
+✔ NEW-11: the first term writes ever made on a fresh database (1739.3134ms)
+▶ terms fixtures
+  ✔ terms for both societies are created (17.1067ms)
+✔ terms fixtures (17.3141ms)
+▶ NEW-07: cross-society and unauthenticated reads are denied
+  ✔ an office bearer of A reading B's terms gets 403 and none of B's data (5.7998ms)
+  ✔ the symmetric case: B's chair reading A's terms is 403 (4.5128ms)
+  ✔ a caller with no society is 403, even with an office-bearer role (3.2051ms)
+  ✔ no token is 401 (1.4433ms)
+✔ NEW-07: cross-society and unauthenticated reads are denied (15.4073ms)
+▶ NEW-07: same-society reads
+  ✔ a member without finance:view sees the term and the chair and treasurer names, but no budgets and no e-mails (16.0162ms)
+  ✔ an office bearer with finance:view sees the budgets but still no e-mails (15.4718ms)
+  ✔ a user with finance:view of another society still gets nothing from this one (3.3891ms)
+  ✔ an administrator reads any society's terms with budgets and e-mails (12.7502ms)
+  ✔ the response never contains password material for the populated users (19.8986ms)
+✔ NEW-07: same-society reads (67.8971ms)
+▶ NEW-07: other term responses honour the same field protection
+  ✔ handover updates return the term without budgets to a caller who may not see them (7.3238ms)
+  ✔ a settings:edit holder without finance:view updates the handover and gets the term without budgets or e-mails (13.671ms)
+  ✔ handover updates keep working for an office bearer, with budgets only because finance:view is held (8.215ms)
+  ✔ another society's chair cannot update the handover (5.1278ms)
+✔ NEW-07: other term responses honour the same field protection (34.7093ms)
+ℹ tests 17
+ℹ suites 5
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2018.3892
+[runner] test/integration/society-terms.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0

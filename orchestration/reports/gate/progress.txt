@@ -1,0 +1,26 @@
+== backend unit (all files)
+unit exit=0
+== backend eslint (all)
+backend-eslint exit=0
+== integration batch 1 (files 1-20 of 41)
+integ1 exit=0
+== integration batch 2 (files 21-41)
+integ2 exit=1
+== frontend static
+typecheck exit=0
+lint exit=0
+build exit=0
+fe-node exit=0
+== browser announcement-create
+browser announcement-create exit=0
+== browser community-and-channel
+browser community-and-channel exit=0
+== browser dm-recipients
+browser dm-recipients exit=0
+== browser password-session
+browser password-session exit=0
+== browser reactions-and-community-access
+browser reactions-and-community-access exit=0
+== browser socket-reconnect
+browser socket-reconnect exit=1
+FIN

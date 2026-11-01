@@ -1,0 +1,11 @@
+[runner] harness ready (pid 8392)
+(node:14716) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+  ✓  1 tests\session\announcement-create.spec.ts:31:3 › announcement creation › an administrator can publish to all members, to a society and to leadership (18.9s)
+  ✓  2 tests\session\announcement-create.spec.ts:66:3 › announcement creation › a society chair is offered only their own society and can publish to it (5.7s)
+
+  2 passed (36.6s)
+[runner] tests/session/announcement-create.spec.ts --trace retain-on-failure: playwright exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, port5174 busy=false, temp artifacts=0

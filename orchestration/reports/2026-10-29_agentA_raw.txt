@@ -1,0 +1,62 @@
+**NEW-07/AUD-035 and NEW-11: partially done.** The terms read restriction and the first-write index fix are in and tested. One subtask is BLOCKED and needs your decision: whether non-admins may see chair and treasurer emails. Until you decide, they are admin-only.
+
+## 2. Files
+- `backend/src/routes/societies.js` (modified): the terms read restriction, field-level protection and the index guard.
+- `backend/test/unit/society-terms.test.js` (new): stubbed unit tests.
+- `backend/test/integration/society-terms.integration.test.js` (new): harness tests.
+- Nothing outside my ownership changed. `models/SocietyTerm.js` and `models/index.js` did not need edits. No helpers, manifests, `digest.txt`, or frontend files were touched.
+
+## 3. Root cause and behavior
+**NEW-07/AUD-035.**
+- **Before:** `GET /societies/:id/terms` had no scope check. Any authenticated user got any society's terms, including chair and treasurer emails and all budget fields.
+- **After:**
+  - Only administrators and users of that society can read terms. Everyone else gets 403 ("Access restricted to your own society", the same rule as the member roster). A malformed id is 400, and no token is 401.
+  - **Budgets:** `allocatedBudget`, `openingBalance` and `closingBalance` are returned only if the caller holds the existing `finance:view` permission for that society. The legacy `ADMIN` role alone grants nothing. A society-scoped grant for another society doesn't count.
+  - **Emails:** chair and treasurer emails are returned to administrators only. The query doesn't even select them for anyone else. Names stay visible to same-society users.
+  - **Handover response:** the `PATCH .../handover` response goes through the same shaping. Its route stack is unchanged, so `society-access.test.js` still holds.
+  - **Create route:** `POST /terms` is unchanged apart from the index guard below.
+
+**NEW-11.** I reproduced it before fixing, on a fresh harness database.
+- The `SocietyTerm` model was only loaded inside the handlers, so its unique `(society, academicYear)` index was never built before the first write.
+- Eight simultaneous `POST /terms` for one society and year all returned 201, giving 8 duplicate rows. The index was then missing for good, because the duplicates block it from being built.
+- **Fix:** the model is now loaded at start-up, and the create route awaits `SocietyTerm.init()` before writing. `init()` only adds the index, it never drops or rebuilds one. If it fails (for example, existing duplicate rows), creation returns 503 and writes nothing. Reads never wait for it.
+- **After:** exactly one 201, the others are 4xx, and the unique index exists.
+
+## 4. Commands run and results
+| Command | Result |
+|---|---|
+| `node --test` on `society-terms`, `society-access`, `society-pii` and `society-patch-persistence` unit files | 121 pass, 0 fail |
+| `run-integration.js` on `society-terms.integration.test.js`, before the fix | 16 tests: 6 pass, 10 fail |
+| Same file, after the fix | 16 pass |
+| `society-pii` integration | 12 pass |
+| `society-authorization` integration | 14 pass |
+| `society-patch` integration | 28 pass |
+| `npx eslint` on the three touched or new files | clean |
+
+The unit file was not run against unfixed code, only against the fixed code. I did not run `typecheck` or `build`, and I did not run any browser specs. The first runs printed only partial output, so I re-ran the pre-fix file once more to get the summary and the same 10 failures. The first full-output run of the final file went green; there was no intermittent failure.
+
+## 5. Red check
+The integration file against the unfixed code failed 10 of 16 tests. Those 10 cover the race (8 duplicate creations, no unique index, a repeat accepted), cross-society and society-less reads returning 200, emails and budgets leaking to a member, and the handover response leaking budgets. The 6 that passed were:
+- the 401 check;
+- the admin read;
+- the password check;
+- the fixture creation;
+- the two handover tests that don't depend on the changes.
+
+## 6. Open decisions and risks
+1. **BLOCKED: who besides admins may see chair and treasurer emails.**
+   - **Evidence:** user accounts and their emails are readable only through admin-only routes (`GET /users`, `/users/:id`). No permission such as `members:view` governs another user's account email. Office-bearer emails stored on the society record are visible to every authenticated user (AUD-025), but that is a separate field.
+   - **Options:** (a) keep admin-only, which is the current behavior; (b) give same-society callers the emails, matching the already-public office-bearer emails; (c) use an existing permission such as `members:view` as the gate. Option (c) would be a new use of that permission, so it needs your approval.
+2. **Admin budget visibility.** The finance routes require `finance:view` even for administrators, so I followed that. An administrator whose role grants no `finance:view` would see terms without budgets. The harness admin role is the advisor role, which grants everything.
+3. **Not in scope, flagged:** `PATCH .../handover` is documented as "Admin or Society Office Bearer", but its guard only checks society membership. A plain member of the society can update the checklist. I didn't change it because that is a write-authorization decision.
+4. **Not in scope, flagged:** `POST /terms` doesn't check that the society exists or validate the chair and treasurer ids.
+5. **Existing duplicates.** On a database that already has duplicate term rows, creation returns 503 until they are cleaned up. I didn't touch data.
+
+## 7. Git
+```
+ M src/routes/societies.js
+?? test/integration/society-terms.integration.test.js
+?? test/unit/society-terms.test.js
+```
+`HEAD` is `70ff8bd`. Nothing was staged, committed or pushed.
+[launch] agent A exited with 0 at 14:56:47

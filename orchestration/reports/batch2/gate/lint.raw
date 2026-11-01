@@ -1,0 +1,68 @@
+
+> ieee-campus-community-hub@0.0.0 lint
+> eslint .
+
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\components\canvas\CollaborativeCanvasView.tsx
+  48:9  warning  The 'redrawCanvas' function makes the dependencies of useEffect Hook (at line 159) change on every render. To fix this, wrap the definition of 'redrawCanvas' in its own useCallback() Hook  react-hooks/exhaustive-deps
+  48:9  warning  The 'redrawCanvas' function makes the dependencies of useEffect Hook (at line 163) change on every render. To fix this, wrap the definition of 'redrawCanvas' in its own useCallback() Hook  react-hooks/exhaustive-deps
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\announcements\AnnouncementFormPage.tsx
+  53:24  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\announcements\AnnouncementFormPage.tsx:53:24
+  51 |   });
+  52 |
+> 53 |   const contentValue = watch("content");
+     |                        ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  54 |
+  55 |   useEffect(() => {
+  56 |     societyService.getSocieties(1, 100).then((res) => setSocieties(res.data.data)).catch(() => {});  react-hooks/incompatible-library
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\community\CommunityPage.tsx
+  253:38  warning  The ref value 'typingTimeoutRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'typingTimeoutRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\events\EventFormPage.tsx
+  71:22  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\events\EventFormPage.tsx:71:22
+  69 |   });
+  70 |
+> 71 |   const watchTitle = watch("title");
+     |                      ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  72 |   const generatedSlug = slugify(watchTitle || "new-ieee-event");
+  73 |
+  74 |   useEffect(() => {  react-hooks/incompatible-library
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\events\EventListPage.tsx
+  77:6  warning  React Hook useEffect has missing dependencies: 'sortDirection' and 'sortKey'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\projects\ProjectListPage.tsx
+  77:6  warning  React Hook useEffect has missing dependencies: 'sortDirection' and 'sortKey'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\reports\ReportFormPage.tsx
+  46:24  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\reports\ReportFormPage.tsx:46:24
+  44 |   });
+  45 |
+> 46 |   const contentValue = watch('content');
+     |                        ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  47 |
+  48 |   useEffect(() => {
+  49 |     societyService.getSocieties(1, 100).then((res) => setSocieties(res.data.data)).catch(() => {});  react-hooks/incompatible-library
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\reports\ReportListPage.tsx
+  81:6  warning  React Hook useEffect has missing dependencies: 'sortDirection' and 'sortKey'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\SB-APP-worktrees\batch2-integration\frontend\src\pages\societies\SocietyListPage.tsx
+  101:6  warning  React Hook useEffect has missing dependencies: 'sortDirection' and 'sortKey'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 10 problems (0 errors, 10 warnings)
+

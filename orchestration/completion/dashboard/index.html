@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-APP Live Board</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#15181d; --muted:#5b6471; --line:#e1e5ea;
+    --done:#1f9d55; --done-bg:#e6f6ec; --wip:#2563eb; --wip-bg:#e7efff;
+    --wait:#c2410c; --wait-bg:#fff0e6; --todo:#6b7280; --todo-bg:#eef0f3;
+    --bad:#b91c1c; --bad-bg:#fdeaea; --warn:#a16207; --warn-bg:#fff6dc;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1318; --card:#171c23; --ink:#e8ecf1; --muted:#9aa5b3; --line:#2a323c;
+      --done:#4ade80; --done-bg:#12301f; --wip:#7aa7ff; --wip-bg:#15244a;
+      --wait:#fb923c; --wait-bg:#3a2112; --todo:#9aa5b3; --todo-bg:#232a33;
+      --bad:#f87171; --bad-bg:#3b1717; --warn:#facc15; --warn-bg:#35290b;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 16px 56px}
+  h1{font-size:26px;margin:0 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  h2{font-size:18px;margin:34px 0 12px}
+  .sub{color:var(--muted);margin:0 0 20px}
+  .live{font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--done-bg);color:var(--done)}
+  .live.off{background:var(--bad-bg);color:var(--bad)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .stat b{display:block;font-size:30px;line-height:1.1}
+  .stat span{color:var(--muted);font-size:13px}
+  .stat.done b{color:var(--done)} .stat.wip b{color:var(--wip)} .stat.wait b{color:var(--wait)} .stat.todo b{color:var(--todo)} .stat.bad b{color:var(--bad)}
+  .phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .ph{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;border-top:4px solid var(--todo)}
+  .ph.done{border-top-color:var(--done)} .ph.wip{border-top-color:var(--wip)} .ph.part{border-top-color:var(--warn)}
+  .ph small{color:var(--muted);display:block}
+  .ph .tag{font-size:12px;font-weight:600;margin-top:4px;display:inline-block}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;align-items:start}
+  .col{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .col h3{margin:0 0 4px;font-size:15px;display:flex;justify-content:space-between}
+  .col .hint{color:var(--muted);font-size:12px;margin:0 0 10px}
+  .item{border:1px solid var(--line);border-left:5px solid var(--todo);border-radius:8px;padding:8px 10px;margin:8px 0;background:var(--bg)}
+  .item.done{border-left-color:var(--done)} .item.wip{border-left-color:var(--wip)} .item.wait{border-left-color:var(--wait)}
+  .item b{display:block;font-size:14px} .item span{color:var(--muted);font-size:12.5px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;margin-left:4px;vertical-align:1px}
+  .pill.ok{background:var(--done-bg);color:var(--done)} .pill.unv{background:var(--warn-bg);color:var(--warn)}
+  .pill.p1{background:var(--bad-bg);color:var(--bad)} .pill.p2{background:var(--warn-bg);color:var(--warn)} .pill.p3{background:var(--todo-bg);color:var(--todo)}
+  .pill.free{background:var(--wip-bg);color:var(--wip)}
+  .pill.s-done,.pill.s-idle,.pill.s-succeeded{background:var(--done-bg);color:var(--done)}
+  .pill.s-running,.pill.s-in_progress{background:var(--wip-bg);color:var(--wip)}
+  .pill.s-blocked,.pill.s-failed,.pill.s-error{background:var(--bad-bg);color:var(--bad)}
+  .pill.s-todo,.pill.s-paused,.pill.s-pending_approval{background:var(--todo-bg);color:var(--todo)}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
+  th{background:var(--todo-bg);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  tr:last-child td{border-bottom:0}
+  .bar{height:12px;border-radius:999px;background:var(--todo-bg);overflow:hidden;display:flex}
+  .bar i{display:block;height:100%}
+  .meter{height:8px;border-radius:999px;background:var(--todo-bg);overflow:hidden;min-width:70px}
+  .meter i{display:block;height:100%;background:var(--wip)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0 0;font-size:13px;color:var(--muted)}
+  .legend em{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;font-style:normal}
+  .note{background:var(--warn-bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--ink);margin-top:14px;font-size:14px}
+  ol.next{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 14px 14px 38px;margin:0}
+  ol.next li{margin:7px 0}
+  .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+  footer{color:var(--muted);font-size:12.5px;margin-top:34px}
+  code{background:var(--todo-bg);padding:1px 5px;border-radius:5px;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SB-APP live board <span class="live" id="livepill">connecting…</span></h1>
+  <p class="sub" id="sub">Updates itself every 15 seconds from Paperclip, git and the project documents. The checklists below are maintained by hand and may lag a few minutes.</p>
+
+  <h2>Right now (live)</h2>
+  <div class="cards" id="livecards"></div>
+  <div class="two" style="margin-top:14px">
+    <div><h3 style="margin:0 0 8px;font-size:15px">Agents</h3><table id="agents"></table></div>
+    <div><h3 style="margin:0 0 8px;font-size:15px">Tasks given to agents</h3><table id="issues"></table></div>
+  </div>
+  <div class="two" style="margin-top:14px">
+    <div><h3 style="margin:0 0 8px;font-size:15px">Code locations (git, read-only)</h3><table id="trees"></table></div>
+    <div><h3 style="margin:0 0 8px;font-size:15px">Newest documents</h3><table id="docs"></table></div>
+  </div>
+
+  <div class="cards" id="cards" style="margin-top:34px"></div>
+
+  <h2>What to do next, in order</h2>
+  <ol class="next" id="next"></ol>
+
+  <h2>Where the audit register stands (original 64 findings, before Batch 1 and 2)</h2>
+  <div class="bar" id="regbar"></div>
+  <div class="legend" id="reglegend"></div>
+
+  <h2>The 11-phase plan (from your charter)</h2>
+  <div class="phases" id="phases"></div>
+
+  <h2>Task board</h2>
+  <div class="cols" id="cols"></div>
+
+  <h2>Test results on the combined tree (run once, before the agents)</h2>
+  <table id="tests"></table>
+
+  <h2>Biggest risks right now</h2>
+  <table id="risks"></table>
+
+  <footer>Legend: <span class="pill ok">verified</span> = checked with a result seen. <span class="pill unv">unverified</span> = written or code-read, not independently confirmed. Nothing is merged, pushed or deployed. <code>digest.txt</code> is never opened. Loopback only (127.0.0.1).</footer>
+</div>
+
+<script>
+const el = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const pill = p => p==="ok"?'<span class="pill ok">verified</span>':p==="unv"?'<span class="pill unv">unverified</span>':/^P\d$/.test(p||"")?`<span class="pill ${p.toLowerCase()}">${p}</span>`:"";
+const st = s => `<span class="pill s-${esc(s)}">${esc(s)}</span>`;
+const ago = iso => { if(!iso) return "-"; const m = Math.max(0, Math.round((Date.now()-Date.parse(iso))/60000)); return m<1?"just now":m<60?m+" min ago":Math.round(m/60)+" h ago"; };
+
+function renderLive(L){
+  const pp = el("livepill");
+  pp.textContent = L.paperclipUp ? "LIVE · " + new Date(L.at).toLocaleTimeString() : "Paperclip not reachable";
+  pp.className = "live" + (L.paperclipUp ? "" : " off");
+  const running = L.agents.filter(a => a.status === "running").length;
+  const open = L.issues.filter(i => ["todo","in_progress"].includes(i.status)).length;
+  const done = L.issues.filter(i => i.status === "done").length;
+  const blocked = L.issues.filter(i => i.status === "blocked").length;
+  el("livecards").innerHTML = [
+    ["wip", running, "agents running right now"],
+    ["wait", open, "tasks open (todo / in progress)"],
+    ["done", done, "tasks done"],
+    [blocked ? "bad" : "todo", blocked, "tasks blocked"],
+    ["wait", "$" + L.totalSpent.toFixed(2), "spent by agents so far, of a $" + L.companyBudget + " monthly cap"],
+  ].map(c => `<div class="stat ${c[0]}"><b>${c[1]}</b><span>${c[2]}</span></div>`).join("");
+  el("agents").innerHTML = "<tr><th>Agent</th><th>Status</th><th>Spent / cap</th><th>Last run</th></tr>" + L.agents.map(a => {
+    const pct = a.budget ? Math.min(100, a.spent / a.budget * 100) : 0;
+    return `<tr><td><b>${esc(a.name)}</b></td><td>${st(a.status)}</td><td>$${a.spent.toFixed(2)} / $${a.budget.toFixed(0)}<div class="meter"><i style="width:${pct}%"></i></div></td><td>${a.lastRun ? st(a.lastRun.status) + " " + ago(a.lastRun.at) : "-"}</td></tr>`;
+  }).join("");
+  el("issues").innerHTML = "<tr><th>Task</th><th>Who</th><th>Status</th></tr>" + (L.issues.length ? L.issues.map(i => `<tr><td><b>${esc(i.id)}</b> ${esc(i.title)}</td><td>${esc(i.assignee)}</td><td>${st(i.status)}<br><small>${ago(i.updated)}</small></td></tr>`).join("") : "<tr><td colspan=3>No tasks yet</td></tr>");
+  el("trees").innerHTML = "<tr><th>Location</th><th>Branch</th><th>HEAD</th><th>Uncommitted</th></tr>" + L.trees.map(t => `<tr><td>${esc(t.label)}</td><td><code>${esc(t.branch)}</code></td><td><code>${esc(t.head)}</code></td><td>${t.dirty === null ? "?" : t.dirty === 0 ? "clean" : t.dirty + " files"}</td></tr>`).join("");
+  el("docs").innerHTML = "<tr><th>File</th><th>Changed</th></tr>" + L.docs.map(d => `<tr><td><code>${esc(d.f)}</code></td><td>${ago(d.at)}</td></tr>`).join("");
+}
+
+function renderBoard(B){
+  el("cards").innerHTML = B.stats.map(s=>`<div class="stat ${s.cls}"><b>${s.n}</b><span>${esc(s.t)}</span></div>`).join("");
+  el("next").innerHTML = B.nextSteps.map(t=>`<li>${t}</li>`).join("");
+  const total = B.register.reduce((a,r)=>a+r[1],0);
+  el("regbar").innerHTML = B.register.map(r=>`<i style="width:${r[1]/total*100}%;background:${r[2]}" title="${esc(r[0])}: ${r[1]}"></i>`).join("");
+  el("reglegend").innerHTML = B.register.map(r=>`<span><em style="background:${r[2]}"></em>${esc(r[0])}: <b>${r[1]}</b></span>`).join("");
+  el("phases").innerHTML = B.phases.map(p=>`<div class="ph ${p[2]}"><small>Phase ${esc(p[0])}</small><b>${esc(p[1])}</b><br><span class="tag">${esc(p[3])}</span><small>${esc(p[4])}</small></div>`).join("");
+  el("cols").innerHTML = B.cols.map(c=>`<div class="col"><h3>${esc(c.title)}<span>${c.items.length}</span></h3><p class="hint">${esc(c.hint)}</p>`+
+    c.items.map(i=>`<div class="item ${c.cls}"><b>${esc(i[0])}${pill(i[2])}</b>${i[1]?`<span>${esc(i[1])}</span>`:""}</div>`).join("")+`</div>`).join("");
+  el("tests").innerHTML = `<tr><th>Check</th><th>Result</th><th>Status</th><th>Note</th></tr>`+B.tests.map(t=>`<tr><td>${esc(t[0])}</td><td><b>${esc(t[1])}</b></td><td><span class="pill ${t[2]==="pass"?"ok":"unv"}">${t[2]==="pass"?"pass":"gap"}</span></td><td>${esc(t[3])}</td></tr>`).join("");
+  el("risks").innerHTML = `<tr><th>Level</th><th>Risk</th><th>Why</th></tr>`+B.risks.map(r=>`<tr><td><span class="pill ${r[0]==="High"?"p1":"p2"}">${esc(r[0])}</span></td><td><b>${esc(r[1])}</b></td><td>${esc(r[2])}</td></tr>`).join("");
+}
+
+let lastBoard = "";
+async function tick(){
+  try {
+    const r = await fetch("/data.json", {cache: "no-store"});
+    const d = await r.json();
+    renderLive(d.live);
+    const b = JSON.stringify(d.board);
+    if (b !== lastBoard) { lastBoard = b; renderBoard(d.board); }
+  } catch (e) {
+    const pp = el("livepill"); pp.textContent = "board server not reachable"; pp.className = "live off";
+  }
+}
+tick();
+setInterval(tick, 15000);
+</script>
+</body>
+</html>
