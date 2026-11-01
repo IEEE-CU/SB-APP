@@ -19,6 +19,7 @@ export default function ChannelChatFeed({ channelId, channelName }: ChannelChatF
   const [inputText, setInputText] = useState("");
   const [activeThreadParent, setActiveThreadParent] = useState<Message | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const token = useAuthStore((state) => state.token);
 
@@ -67,9 +68,10 @@ export default function ChannelChatFeed({ channelId, channelName }: ChannelChatF
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || sending) return;
     const text = inputText;
     setInputText("");
+    setSending(true);
 
     try {
       const res = await channelsService.sendChannelMessage(
@@ -83,6 +85,8 @@ export default function ChannelChatFeed({ channelId, channelName }: ChannelChatF
       }
     } catch (err) {
       console.error("Failed to send message", err);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -174,7 +178,7 @@ export default function ChannelChatFeed({ channelId, channelName }: ChannelChatF
           />
           <button
             type="submit"
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() || sending}
             className="p-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             <Send size={16} />

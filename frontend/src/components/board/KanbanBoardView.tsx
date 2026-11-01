@@ -50,6 +50,7 @@ export default function KanbanBoardView({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedColumn, setSelectedColumn] =
     useState<BoardCardItem["status"]>("TODO");
+  const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] =
     useState<BoardCardItem["priority"]>("MEDIUM");
@@ -109,8 +110,9 @@ export default function KanbanBoardView({
 
   const handleCreateCard = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !channelId) return;
+    if (!newTitle.trim() || !channelId || creating) return;
 
+    setCreating(true);
     try {
       const res = await api.post(`/boards/${channelId}/cards`, {
         title: newTitle,
@@ -124,6 +126,8 @@ export default function KanbanBoardView({
       setIsAddModalOpen(false);
     } catch (err) {
       console.error("Failed to create card", err);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -271,7 +275,7 @@ export default function KanbanBoardView({
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Create Card</Button>
+                <Button type="submit" loading={creating}>Create Card</Button>
               </div>
             </form>
           </div>
