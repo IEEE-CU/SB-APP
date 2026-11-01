@@ -6,6 +6,7 @@ const Society = require("../models/Society");
 const User = require("../models/User");
 const { authenticate } = require("../middleware/auth");
 const { requirePermission } = require("../middleware/rbac");
+const { withLastMessages } = require("../utils/conversationPreview");
 
 const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
 const idOf = (ref) => (ref && ref._id ? String(ref._id) : ref ? String(ref) : null);
@@ -85,7 +86,9 @@ router.get("/", async (req, res, next) => {
       .populate("userTwoId", "name email")
       .sort({ updatedAt: -1 });
 
-    res.json({ success: true, count: conversations.length, data: conversations });
+    // `conversations` was filtered to the caller's own above; lastMessage is looked up only for those.
+    const data = await withLastMessages(conversations);
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     next(error);
   }
