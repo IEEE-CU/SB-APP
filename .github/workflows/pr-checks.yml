@@ -33,7 +33,7 @@ jobs:
           npm run typecheck
           npm run test:unit
           npm run build
-          node --test tests/unit/*.node-test.mjs
+          node --experimental-transform-types --test tests/unit/*.node-test.mjs
 
       # --- Backend Checks ---
       - name: Backend - Install and Checks
@@ -48,6 +48,12 @@ jobs:
           npx wait-on --timeout 60000 http://localhost:5000/api/v1/health "file:${RUNNER_TEMP}/sb-app-test-server.ready"
           npm run test:contract
           node scripts/verify-rbac-matrix.js --baseUrl=http://localhost:5000
+
+      - name: Backend - Prepare isolated harness MongoDB binary cache
+        if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
+        run: |
+          cd backend
+          node -e "const { MONGOD_VERSION } = require('./test/integration/helpers/fixtures.js'); const { MongoMemoryServer } = require('mongodb-memory-server'); (async () => { const mongod = await MongoMemoryServer.create({ binary: { version: MONGOD_VERSION } }); await mongod.stop(); })().catch((error) => { console.error(error); process.exit(1); });"
 
       # Integration suite: every file against its own isolated in-memory harness on 127.0.0.1:5057
       # (no secrets, no persistent database, nothing on localhost:5000).
@@ -96,7 +102,11 @@ jobs:
 
       - name: Browser session specs (isolated harness)
         if: steps.filter.outputs.changed == 'true'
-        run: cd frontend && node scripts/run-session-tests.cjs
+        run: |
+          cd backend
+          node -e "const { MONGOD_VERSION } = require('./test/integration/helpers/fixtures.js'); const { MongoMemoryServer } = require('mongodb-memory-server'); (async () => { const mongod = await MongoMemoryServer.create({ binary: { version: MONGOD_VERSION } }); await mongod.stop(); })().catch((error) => { console.error(error); process.exit(1); });"
+          cd ../frontend
+          node scripts/run-session-tests.cjs
 
       - name: Keep Playwright traces of failures
         if: failure()
