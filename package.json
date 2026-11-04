@@ -24,7 +24,8 @@
   "devDependencies": {
     "husky": "^9.0.0",
     "lint-staged": "^15.0.0",
-    "mongodb-memory-server": "^9.1.8"
+    "mongodb-memory-server": "^9.1.8",
+    "prettier": "^3.9.8"
   },
   "lint-staged": {
     "frontend/**/*.{js,jsx,ts,tsx}": [
