@@ -420,6 +420,49 @@ describe("authorization: no finance permission", () => {
     assert.deepEqual(await stored(id), before);
   });
 
+  test("D-36: a legacy administrator who chaired a SocietyTerm sees only that society's transactions", async () => {
+    const termId = await withDatabase(target, async (db, ObjectId) => {
+      const { insertedId } = await db.collection("societyterms").insertOne({
+        society: new ObjectId(A),
+        academicYear: `D36-${RUN}`,
+        chair: new ObjectId(idOf("adminNoRole")),
+        allocatedBudget: 0,
+        openingBalance: 0,
+        closingBalance: 0,
+        status: "OPEN",
+        handoverChecklist: { reportsSubmitted: false, balanceReconciled: false, assetsTransferred: false, notes: "" },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return insertedId;
+    });
+    try {
+      const idA = await createPending("chairA", { societyId: A });
+      const idB = await createPending("chairB", { societyId: B });
+
+      const list = await call("adminNoRole", "GET", "/transactions");
+      assert.equal(list.status, 200, list.text.slice(0, 200));
+      assert.ok(list.body.data.every((t) => String(t.societyId?.id ?? t.societyId) === A), "only society A's transactions");
+      assert.ok(list.body.data.some((t) => String(t.id) === String(idA)), "society A's own transaction is included");
+
+      const ownSociety = await call("adminNoRole", "GET", `/transactions/society/${A}`);
+      assert.equal(ownSociety.status, 200);
+      const foreignSociety = await call("adminNoRole", "GET", `/transactions/society/${B}`);
+      assert.equal(foreignSociety.status, 403);
+
+      const ownTx = await call("adminNoRole", "GET", `/transactions/${idA}`);
+      assert.equal(ownTx.status, 200);
+      const foreignTx = await call("adminNoRole", "GET", `/transactions/${idB}`);
+      assert.equal(foreignTx.status, 403);
+
+      // The exception is view-only (D-36): mutating still needs the real permission.
+      const create = await call("adminNoRole", "POST", "/transactions", draft({ societyId: A }));
+      assert.equal(create.status, 403);
+    } finally {
+      await withDatabase(target, (db, ObjectId) => db.collection("societyterms").deleteOne({ _id: new ObjectId(String(termId)) }));
+    }
+  });
+
   test("the all-societies list stays administrator-only, in addition to finance:view", async () => {
     const chair = await call("chairA", "GET", "/transactions");
     const treasurer = await call("treasurerA", "GET", "/transactions");
