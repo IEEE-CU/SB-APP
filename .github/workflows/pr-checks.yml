@@ -60,7 +60,8 @@ jobs:
         if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
         run: |
           cd backend
-          node -e "const {MongoMemoryServer}=require('mongodb-memory-server');(async()=>{const s=await MongoMemoryServer.create({binary:{version:'7.0.24'}});await s.stop();})();"
+          MONGOMS_DEBUG=1 node -e "const {MongoMemoryServer}=require('mongodb-memory-server');(async()=>{try{const s=await MongoMemoryServer.create({binary:{version:'7.0.24'}});console.log('[seed] STARTED OK, binary at', s.state.instanceInfo && s.state.instanceInfo.launchUri);await s.stop();}catch(e){console.error('[seed] FAILED:', e && e.stack);process.exitCode=1;}})();"
+          ls -la ~/.cache/mongodb-binaries || echo "[seed] cache dir missing after seed"
 
       # Integration suite: every file against its own isolated in-memory harness on 127.0.0.1:5057
       # (no secrets, no persistent database, nothing on localhost:5000).
@@ -118,7 +119,8 @@ jobs:
         if: steps.filter.outputs.changed == 'true'
         run: |
           cd backend
-          node -e "const {MongoMemoryServer}=require('mongodb-memory-server');(async()=>{const s=await MongoMemoryServer.create({binary:{version:'7.0.24'}});await s.stop();})();"
+          MONGOMS_DEBUG=1 node -e "const {MongoMemoryServer}=require('mongodb-memory-server');(async()=>{try{const s=await MongoMemoryServer.create({binary:{version:'7.0.24'}});console.log('[seed] STARTED OK, binary at', s.state.instanceInfo && s.state.instanceInfo.launchUri);await s.stop();}catch(e){console.error('[seed] FAILED:', e && e.stack);process.exitCode=1;}})();"
+          ls -la ~/.cache/mongodb-binaries || echo "[seed] cache dir missing after seed"
 
       - name: Browser session specs (isolated harness)
         if: steps.filter.outputs.changed == 'true'
