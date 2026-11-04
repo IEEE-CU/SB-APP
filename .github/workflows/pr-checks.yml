@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       # --- Frontend Checks ---
@@ -38,6 +38,11 @@ jobs:
       # --- Backend Checks ---
       - name: Backend - Install and Checks
         if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
+        env:
+          # Without this, mongodb-memory-server's own postinstall download pre-populates
+          # node_modules/.cache, which the library then prefers over ~/.cache/mongodb-binaries -
+          # silently defeating the seed step below and the cache action's whole point.
+          MONGOMS_DISABLE_POSTINSTALL: "1"
         run: |
           cd backend
           npm ci
@@ -48,6 +53,21 @@ jobs:
           npx wait-on --timeout 60000 http://localhost:5000/api/v1/health "file:${RUNNER_TEMP}/sb-app-test-server.ready"
           npm run test:contract
           node scripts/verify-rbac-matrix.js --baseUrl=http://localhost:5000
+
+      - name: Cache MongoDB test binary
+        if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binary-7.0.24-${{ runner.os }}
+
+      - name: Seed MongoDB test binary (if not cached)
+        if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
+        run: |
+          cd backend
+          MONGOMS_DEBUG=1 node scripts/seed-mongo-test-binary.js
+          echo "--- ~/.cache/mongodb-binaries after seed ---"
+          ls -la ~/.cache/mongodb-binaries || true
 
       # Integration suite: every file against its own isolated in-memory harness on 127.0.0.1:5057
       # (no secrets, no persistent database, nothing on localhost:5000).
@@ -81,11 +101,16 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.filter.outputs.changed == 'true'
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       - name: Install backend and frontend dependencies
         if: steps.filter.outputs.changed == 'true'
+        env:
+          # See the matching comment in the verify job: this stops mongodb-memory-server's
+          # postinstall from pre-populating node_modules/.cache, which it would otherwise prefer
+          # over ~/.cache/mongodb-binaries and make the seed step below a silent no-op.
+          MONGOMS_DISABLE_POSTINSTALL: "1"
         run: |
           cd backend && npm ci
           cd ../frontend && npm ci
@@ -93,6 +118,21 @@ jobs:
       - name: Install Chromium for Playwright
         if: steps.filter.outputs.changed == 'true'
         run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Cache MongoDB test binary
+        if: steps.filter.outputs.changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binary-7.0.24-${{ runner.os }}
+
+      - name: Seed MongoDB test binary (if not cached)
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          cd backend
+          MONGOMS_DEBUG=1 node scripts/seed-mongo-test-binary.js
+          echo "--- ~/.cache/mongodb-binaries after seed ---"
+          ls -la ~/.cache/mongodb-binaries || true
 
       - name: Browser session specs (isolated harness)
         if: steps.filter.outputs.changed == 'true'
@@ -125,7 +165,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       - name: Check for committed secrets (Repo-wide)

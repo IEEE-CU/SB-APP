@@ -10,7 +10,17 @@ import { Button, LoadingSpinner } from "@/components/ui";
 import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 import type { Society } from "@/types/models";
 import { slugify } from "@/utils/slug";
-import { ArrowLeft, Calendar, MapPin, Users, Sparkles, Link, Plus, Trash2, Tag } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  Users,
+  Sparkles,
+  Link,
+  Plus,
+  Trash2,
+  Tag,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 const eventSchema = z.object({
@@ -25,7 +35,8 @@ const eventSchema = z.object({
   status: z.enum(["upcoming", "ongoing", "completed", "cancelled"]),
 });
 
-type EventForm = z.infer<typeof eventSchema>;
+type EventFormInput = z.input<typeof eventSchema>;
+type EventForm = z.output<typeof eventSchema>;
 
 interface SpeakerField {
   name: string;
@@ -43,7 +54,7 @@ export default function EventFormPage() {
   const [eventId, setEventId] = useState<string | null>(null);
   const [societies, setSocieties] = useState<Society[]>([]);
   const [speakers, setSpeakers] = useState<SpeakerField[]>([
-    { name: "", role: "", organization: "" }
+    { name: "", role: "", organization: "" },
   ]);
 
   const navigate = useNavigate();
@@ -59,7 +70,7 @@ export default function EventFormPage() {
     reset,
     watch,
     formState: { errors },
-  } = useForm<EventForm>({
+  } = useForm<EventFormInput, any, EventForm>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
       status: "upcoming",
@@ -72,7 +83,10 @@ export default function EventFormPage() {
   const generatedSlug = slugify(watchTitle || "new-ieee-event");
 
   useEffect(() => {
-    societyService.getSocieties(1, 100).then((res) => setSocieties(res.data.data)).catch(() => {});
+    societyService
+      .getSocieties(1, 100)
+      .then((res) => setSocieties(res.data.data))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -85,7 +99,10 @@ export default function EventFormPage() {
       .getEvents(1, 100)
       .then((res) => {
         const found = res.data.data.find(
-          (e) => e.id === targetIdentifier || slugify(e.title) === targetIdentifier || e.slug === targetIdentifier,
+          (e) =>
+            e.id === targetIdentifier ||
+            slugify(e.title) === targetIdentifier ||
+            e.slug === targetIdentifier,
         );
         const resolvedId = found ? found.id : targetIdentifier;
         setEventId(resolvedId);
@@ -104,7 +121,13 @@ export default function EventFormPage() {
             status: e.status,
           });
           if (e.speakers && e.speakers.length > 0) {
-            setSpeakers(e.speakers.map(s => ({ name: s.name, role: s.role, organization: s.organization || "" })));
+            setSpeakers(
+              e.speakers.map((s) => ({
+                name: s.name,
+                role: s.role,
+                organization: s.organization || "",
+              })),
+            );
           }
         });
       })
@@ -122,7 +145,11 @@ export default function EventFormPage() {
     setSpeakers((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSpeakerChange = (index: number, field: keyof SpeakerField, value: string) => {
+  const handleSpeakerChange = (
+    index: number,
+    field: keyof SpeakerField,
+    value: string,
+  ) => {
     setSpeakers((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
@@ -132,7 +159,7 @@ export default function EventFormPage() {
 
   const onSubmit = async (data: EventForm) => {
     setSubmitting(true);
-    const validSpeakers = speakers.filter(s => s.name.trim() !== "");
+    const validSpeakers = speakers.filter((s) => s.name.trim() !== "");
     const formattedData = {
       ...data,
       slug: generatedSlug,
@@ -164,7 +191,10 @@ export default function EventFormPage() {
   return (
     <PageTransition>
       <div className="space-y-6 max-w-4xl">
-        <button onClick={() => navigate("/events")} className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink transition-colors">
+        <button
+          onClick={() => navigate("/events")}
+          className="flex items-center gap-2 text-body-sm text-ink-muted hover:text-ink transition-colors"
+        >
           <ArrowLeft size={16} /> Back to Events
         </button>
 
@@ -174,12 +204,17 @@ export default function EventFormPage() {
               {isEdit ? "Edit Event Configuration" : "Create IEEE Event Studio"}
             </h1>
             <p className="text-body-sm text-ink-muted mt-1">
-              Configure event schedules, venue, target society, speaker line-ups, and custom URL slugs.
+              Configure event schedules, venue, target society, speaker
+              line-ups, and custom URL slugs.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button type="button" variant="secondary" onClick={() => navigate("/events")}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate("/events")}
+            >
               Cancel
             </Button>
             <Button type="submit" form="event-form" loading={submitting}>
@@ -188,13 +223,18 @@ export default function EventFormPage() {
           </div>
         </div>
 
-        <form id="event-form" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <form
+          id="event-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
           {/* Main 2-column form */}
           <div className="md:col-span-2 space-y-6">
             {/* General Information */}
             <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-xl p-6 space-y-4 shadow-sm">
               <h3 className="text-heading-3 font-bold text-ink flex items-center gap-2">
-                <Sparkles className="text-primary" size={18} /> General Information
+                <Sparkles className="text-primary" size={18} /> General
+                Information
               </h3>
 
               <div>
@@ -264,7 +304,11 @@ export default function EventFormPage() {
             {/* Logistics & Venue */}
             <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-xl p-6 space-y-4 shadow-sm">
               <h3 className="text-heading-3 font-bold text-ink flex items-center gap-2">
-                <MapPin className="text-emerald-600 dark:text-emerald-400" size={18} /> Date, Time & Venue
+                <MapPin
+                  className="text-emerald-600 dark:text-emerald-400"
+                  size={18}
+                />{" "}
+                Date, Time & Venue
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -319,7 +363,11 @@ export default function EventFormPage() {
             <AnimatedCard className="bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-xl p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h3 className="text-heading-3 font-bold text-ink flex items-center gap-2">
-                  <Users className="text-indigo-600 dark:text-indigo-400" size={18} /> Key Speakers & Mentors
+                  <Users
+                    className="text-indigo-600 dark:text-indigo-400"
+                    size={18}
+                  />{" "}
+                  Key Speakers & Mentors
                 </h3>
                 <button
                   type="button"
@@ -332,24 +380,33 @@ export default function EventFormPage() {
 
               <div className="space-y-3">
                 {speakers.map((sp, i) => (
-                  <div key={i} className="p-3.5 bg-canvas-soft/50 rounded-lg border border-white/20 dark:border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                  <div
+                    key={i}
+                    className="p-3.5 bg-canvas-soft/50 rounded-lg border border-white/20 dark:border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center"
+                  >
                     <input
                       placeholder="Speaker Name"
                       value={sp.name}
-                      onChange={(e) => handleSpeakerChange(i, "name", e.target.value)}
+                      onChange={(e) =>
+                        handleSpeakerChange(i, "name", e.target.value)
+                      }
                       className="px-3 py-1.5 bg-surface/50 border border-white/20 dark:border-white/5 rounded text-body-sm text-ink focus:outline-none"
                     />
                     <input
                       placeholder="Designation / Role"
                       value={sp.role}
-                      onChange={(e) => handleSpeakerChange(i, "role", e.target.value)}
+                      onChange={(e) =>
+                        handleSpeakerChange(i, "role", e.target.value)
+                      }
                       className="px-3 py-1.5 bg-surface/50 border border-white/20 dark:border-white/5 rounded text-body-sm text-ink focus:outline-none"
                     />
                     <div className="flex items-center gap-2">
                       <input
                         placeholder="Organization"
                         value={sp.organization}
-                        onChange={(e) => handleSpeakerChange(i, "organization", e.target.value)}
+                        onChange={(e) =>
+                          handleSpeakerChange(i, "organization", e.target.value)
+                        }
                         className="w-full px-3 py-1.5 bg-surface/50 border border-white/20 dark:border-white/5 rounded text-body-sm text-ink focus:outline-none"
                       />
                       {speakers.length > 1 && (
@@ -380,7 +437,8 @@ export default function EventFormPage() {
                 <span className="text-primary font-bold">{generatedSlug}</span>
               </div>
               <p className="text-body-xs text-ink-muted">
-                Auto-generated clean URL endpoint for sharing, calendars, and SEO indexing.
+                Auto-generated clean URL endpoint for sharing, calendars, and
+                SEO indexing.
               </p>
             </AnimatedCard>
 
