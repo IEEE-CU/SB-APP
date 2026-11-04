@@ -1,8 +1,17 @@
+const mongoose = require("mongoose");
 const AuditLog = require("../models/AuditLog");
 
 /**
  * Utility function to create an audit log entry.
  * Can be imported and called anywhere in the application.
+ *
+ * Persistence: the AuditLog schema stores the actor as `userId` and free-form
+ * context in `details`. `user` is saved as `userId`; route, method, result,
+ * reason and metadata are saved under `details`. Fields outside the schema
+ * are never passed to the model, because Mongoose would silently drop them.
+ *
+ * `user` must be the authenticated actor. Describe anyone the action was
+ * performed on in `metadata` (for example `metadata.targetUserId`).
  *
  * @param {Object} params - Audit log parameters
  * @param {string} params.user - User ID
@@ -27,16 +36,17 @@ async function logAudit({
   metadata = {},
 }) {
   try {
+    const actorIsObjectId = Boolean(user) && mongoose.isValidObjectId(user);
+    const details = { route, method, result, reason, metadata };
+    // An actor that cannot be stored as an ObjectId is kept as text, not lost.
+    if (user && !actorIsObjectId) details.actor = String(user).slice(0, 100);
+
     const auditEntry = new AuditLog({
-      user: user || null,
+      userId: actorIsObjectId ? user : null,
       action,
       module,
-      route,
-      method,
-      result,
-      reason,
+      details,
       ipAddress,
-      metadata,
     });
 
     await auditEntry.save();

@@ -4,9 +4,20 @@ const Transaction = require("../models/Transaction");
 const {
   authenticate,
   adminOnly,
-  societyAccess,
+  societyAccessByParam,
 } = require("../middleware/auth");
 const { parseLimit } = require("../utils/pagination");
+const { requirePermission, isGrantingLevel } = require("../middleware/rbac");
+const { resolvePermissions } = require("../services/resolvePermissions");
+// Loaded at start-up (not inside the handlers) so Mongoose starts building the model's
+// indexes with the application, not on the first term request (NEW-11).
+const SocietyTerm = require("../models/SocietyTerm");
+
+// Every society-guarded route in this router declares the target society as
+// `:id`. The shared `societyAccess` guard only reads `:societyId` and falls
+// back to the caller's own society, which let any office bearer act on any
+// society (AUD-018), so authorize against `:id` explicitly.
+const societyAccess = societyAccessByParam("id");
 
 const router = express.Router();
 
@@ -14,11 +25,12 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
- * Helper: Calculate society balance from transactions
+ * Helper: Calculate society balance from transactions. Only APPROVED
+ * transactions count (AUD-005): pending and rejected ones never affect a balance.
  */
 const calculateBalance = async (societyId, budget) => {
   const result = await Transaction.aggregate([
-    { $match: { societyId: societyId } },
+    { $match: { societyId: societyId, approvalStatus: "APPROVED" } },
     {
       $group: {
         _id: "$type",
@@ -38,9 +50,60 @@ const calculateBalance = async (societyId, budget) => {
 };
 
 /**
+ * Normalizes a society reference (id, ObjectId, or populated document) to a
+ * comparable string. Returns null when no usable identifier is present.
+ */
+const societyKey = (ref) => {
+  if (ref === null || ref === undefined) return null;
+  const value = ref._id !== undefined && ref._id !== null ? ref._id : ref;
+  // A plain object without an identifier has no meaningful string form.
+  if (typeof value === "object" && value.toString === Object.prototype.toString) {
+    return null;
+  }
+  const key = String(value);
+  return key === "" ? null : key;
+};
+
+/**
+ * Member rosters and office-bearer phone numbers are visible only to the
+ * target society's own users (User.societyId) and administrators. Fails
+ * closed when either side has no identifier.
+ */
+const canSeeSocietyPii = (user, societyId) => {
+  if (user && user.role === "ADMIN") return true;
+  const own = user ? societyKey(user.societyId) : null;
+  return own !== null && own === societyKey(societyId);
+};
+
+/** Office bearers without their phone numbers (names, positions, emails stay). */
+const withoutPhones = (officeBearers) =>
+  officeBearers.map((ob) => {
+    const plain = typeof ob.toObject === "function" ? ob.toObject() : { ...ob };
+    delete plain.phone;
+    return plain;
+  });
+
+/**
+ * Returns the society as the caller may see it. Authorized callers get the
+ * object unchanged; others get a copy without `members` and without
+ * office-bearer phone numbers. The input is never mutated.
+ */
+const redactSociety = (society, user) => {
+  if (canSeeSocietyPii(user, society._id)) return society;
+
+  const redacted = { ...society };
+  delete redacted.members;
+  if (Array.isArray(society.officeBearers)) {
+    redacted.officeBearers = withoutPhones(society.officeBearers);
+  }
+  return redacted;
+};
+
+/**
  * @route   GET /api/societies
  * @desc    Get all societies with calculated balances
- * @access  All authenticated users
+ * @access  All authenticated users (member rosters and office-bearer phone
+ *          numbers only for the caller's own society and administrators)
  */
 router.get("/", async (req, res, next) => {
   try {
@@ -58,7 +121,7 @@ router.get("/", async (req, res, next) => {
     // Calculate balances for all societies
     const societiesWithBalances = await Promise.all(
       societies.map(async (society) => ({
-        ...society,
+        ...redactSociety(society, req.user),
         id: society._id,
         balance: await calculateBalance(society._id, society.budget),
       })),
@@ -96,12 +159,13 @@ router.get("/:id", async (req, res, next) => {
       });
     }
 
-    society.id = society._id;
-    society.balance = await calculateBalance(society._id, society.budget);
+    const data = redactSociety(society, req.user);
+    data.id = society._id;
+    data.balance = await calculateBalance(society._id, society.budget);
 
     res.json({
       success: true,
-      data: society,
+      data,
     });
   } catch (error) {
     next(error);
@@ -228,9 +292,13 @@ router.get("/:id/office-bearers", async (req, res, next) => {
       });
     }
 
+    // Names, positions and emails are visible to all authenticated users;
+    // phone numbers only to the society's own users and administrators.
     res.json({
       success: true,
-      data: society.officeBearers,
+      data: canSeeSocietyPii(req.user, society._id)
+        ? society.officeBearers
+        : withoutPhones(society.officeBearers || []),
     });
   } catch (error) {
     next(error);
@@ -373,6 +441,15 @@ router.get("/:id/members", async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: "Society not found",
+      });
+    }
+
+    // Member rosters are restricted to the society's own users and
+    // administrators.
+    if (!canSeeSocietyPii(req.user, society._id)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access restricted to your own society",
       });
     }
 
@@ -580,51 +657,122 @@ router.post("/", adminOnly, async (req, res, next) => {
 
 /**
  * @route   PATCH /api/societies/:id
- * @desc    Update society name/description/type/budget
- * @access  Admin or Society Office Bearer
+ * @desc    Update society name/description/type (budget: administrators only)
+ * @access  Society scope (admin, or a user of this society) AND the existing
+ *          RBAC permission settings:edit, which the permission matrix grants to
+ *          sb_faculty_advisor, society_faculty_advisor, society_chair and
+ *          sb_chair. Budget stays administrator-only (PATCH /:id/budget).
  */
-router.patch("/:id", societyAccess, async (req, res, next) => {
-  try {
-    const { name, description, type, budget } = req.body;
+router.patch(
+  "/:id",
+  societyAccess,
+  requirePermission("settings", "edit"),
+  async (req, res, next) => {
+    try {
+      const { name, description, type, budget } = req.body;
 
-    const society = await Society.findById(req.params.id);
-    if (!society) {
-      return res.status(404).json({
-        success: false,
-        message: "Society not found",
+      const society = await Society.findById(req.params.id);
+      if (!society) {
+        return res.status(404).json({
+          success: false,
+          message: "Society not found",
+        });
+      }
+
+      if (name !== undefined) society.name = name;
+      if (description !== undefined) society.description = description;
+      if (type !== undefined) society.type = type;
+      // AUD-026: budget stays an administrator-only change, as on PATCH /:id/budget.
+      // Everyone else's budget value is ignored here (as it always effectively was,
+      // because nothing was ever saved); widening that is a separate decision.
+      if (budget !== undefined && req.user.role === "ADMIN") society.budget = budget;
+
+      // AUD-026: the handler assigned the fields but never saved them, so the
+      // response looked successful while nothing was stored. The editable paths
+      // are validated explicitly (including values that cannot be cast, which
+      // would otherwise be dropped silently) and the rest of the document - for
+      // example a legacy roster entry - is not re-validated, so it cannot block
+      // an unrelated rename.
+      await society.validate(["name", "description", "type", "budget"]);
+      await society.save({ validateBeforeSave: false });
+
+      res.json({
+        success: true,
+        data: society,
       });
+    } catch (error) {
+      next(error);
     }
+  },
+);
 
-    if (name !== undefined) society.name = name;
-    if (description !== undefined) society.description = description;
-    if (type !== undefined) society.type = type;
-    if (budget !== undefined) society.budget = budget;
+const TERM_BUDGET_FIELDS = ["allocatedBudget", "openingBalance", "closingBalance"];
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
 
-    res.json({
-      success: true,
-      data: society,
-    });
-  } catch (error) {
-    next(error);
+/**
+ * What the caller may see of a society's terms (NEW-07 / AUD-035). The caller is already
+ * known to be an administrator or a user of that society.
+ *  - budgets: allocated budget and opening/closing balances need the existing finance:view
+ *    permission, the one the finance routes use, held for this society (a society-scoped
+ *    grant counts only for the society it is scoped to). The legacy User.role grants none.
+ *  - emails: chair and treasurer e-mail addresses are account data. The only established
+ *    authorization for them is the administrator-only user directory (GET /users), so only
+ *    administrators get them. No new permission is introduced.
+ */
+const termViewerFor = async (user, societyId) => {
+  const resolved = await resolvePermissions(user._id);
+  const scope = resolved.scope || {};
+  const inFinanceScope =
+    scope.type !== "society" || (Boolean(scope.societyId) && scope.societyId === String(societyId));
+  return {
+    budgets: inFinanceScope && isGrantingLevel(resolved.permissions && resolved.permissions["finance:view"]),
+    emails: user.role === "ADMIN",
+  };
+};
+
+/** The term as the viewer may see it. The input document is never mutated. */
+const shapeTerm = (term, viewer) => {
+  const plain = typeof term.toJSON === "function" ? term.toJSON() : { ...term };
+  if (!viewer.budgets) {
+    for (const field of TERM_BUDGET_FIELDS) delete plain[field];
   }
-});
+  if (!viewer.emails) {
+    for (const person of [plain.chair, plain.treasurer]) {
+      if (person && typeof person === "object") delete person.email;
+    }
+  }
+  return plain;
+};
 
 /**
  * @route   GET /api/societies/:id/terms
  * @desc    Get all academic terms for a society
- * @access  All authenticated users
+ * @access  Administrators and users of that society. Budget fields additionally need
+ *          finance:view; chair/treasurer e-mails are administrator-only.
  */
 router.get("/:id/terms", async (req, res, next) => {
   try {
-    const SocietyTerm = require("../models/SocietyTerm");
+    if (!OBJECT_ID_PATTERN.test(req.params.id)) {
+      return res.status(400).json({ success: false, message: "Invalid ID format." });
+    }
+    // Same scope rule as the member roster: own society or administrator, fail closed.
+    if (!canSeeSocietyPii(req.user, req.params.id)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access restricted to your own society",
+      });
+    }
+
+    const viewer = await termViewerFor(req.user, req.params.id);
+    const people = viewer.emails ? "name email" : "name";
     const terms = await SocietyTerm.find({ society: req.params.id })
-      .populate("chair", "name email")
-      .populate("treasurer", "name email")
+      .populate("chair", people)
+      .populate("treasurer", people)
       .sort({ academicYear: -1 });
 
     res.json({
       success: true,
-      data: terms,
+      data: terms.map((term) => shapeTerm(term, viewer)),
     });
   } catch (error) {
     next(error);
@@ -638,9 +786,31 @@ router.get("/:id/terms", async (req, res, next) => {
  */
 router.post("/:id/terms", adminOnly, async (req, res, next) => {
   try {
-    const SocietyTerm = require("../models/SocietyTerm");
     const AuditLog = require("../models/AuditLog");
     const { academicYear, allocatedBudget, openingBalance, chairId, treasurerId } = req.body;
+
+    // D-21: a term belongs to an existing society. Checked before the index wait so a request
+    // for a malformed or nonexistent society neither waits for nor depends on the index.
+    if (!OBJECT_ID_PATTERN.test(req.params.id)) {
+      return res.status(400).json({ success: false, message: "Invalid ID format." });
+    }
+    if (!(await Society.exists({ _id: req.params.id }))) {
+      return res.status(404).json({ success: false, message: "Society not found" });
+    }
+
+    // The unique (society, academicYear) index is what makes two concurrent creations safe,
+    // so nothing is written until it exists. init() resolves once the collection and indexes
+    // are ready (additive: it never drops or rebuilds an index) and rejects if the index
+    // cannot be built (for example duplicate legacy rows); creation then stays closed.
+    try {
+      await SocietyTerm.init();
+    } catch (indexError) {
+      console.error("Society terms are unavailable: their unique index is not ready:", indexError.message);
+      return res.status(503).json({
+        success: false,
+        message: "Creating terms is temporarily unavailable. Please try again later.",
+      });
+    }
 
     const term = await SocietyTerm.create({
       society: req.params.id,
@@ -669,13 +839,26 @@ router.post("/:id/terms", adminOnly, async (req, res, next) => {
 });
 
 /**
+ * D-23: administrators (legacy User.role ADMIN) pass; everyone else needs the existing RBAC
+ * permission. Used after the society-scope guard, which has already limited a non-administrator
+ * to their own society.
+ */
+const adminOrPermission = (module, action) => {
+  const permission = requirePermission(module, action);
+  return (req, res, next) => (req.user && req.user.role === "ADMIN" ? next() : permission(req, res, next));
+};
+
+/**
  * @route   PATCH /api/societies/:id/terms/:termId/handover
  * @desc    Update term handover checklist and status
- * @access  Admin or Society Office Bearer
+ * @access  Society scope (admin, or a user of this society) AND, for non-administrators, the
+ *          existing RBAC permission settings:edit - the same rule as PATCH /societies/:id,
+ *          granted by the matrix to sb_faculty_advisor, society_faculty_advisor, society_chair
+ *          and sb_chair. Ordinary members and other societies' users are refused. The term is
+ *          looked up within the society in the URL, so a term id cannot cross societies.
  */
-router.patch("/:id/terms/:termId/handover", societyAccess, async (req, res, next) => {
+router.patch("/:id/terms/:termId/handover", societyAccess, adminOrPermission("settings", "edit"), async (req, res, next) => {
   try {
-    const SocietyTerm = require("../models/SocietyTerm");
     const AuditLog = require("../models/AuditLog");
     const { reportsSubmitted, balanceReconciled, assetsTransferred, notes, status } = req.body;
 
@@ -699,9 +882,10 @@ router.patch("/:id/terms/:termId/handover", societyAccess, async (req, res, next
       details: { societyId: req.params.id, termId: term._id, status: term.status },
     });
 
+    const viewer = await termViewerFor(req.user, req.params.id);
     res.json({
       success: true,
-      data: term,
+      data: shapeTerm(term, viewer),
     });
   } catch (error) {
     next(error);

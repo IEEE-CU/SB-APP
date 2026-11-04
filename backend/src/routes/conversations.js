@@ -2,12 +2,64 @@ const express = require("express");
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 const Reaction = require("../models/Reaction");
+const Society = require("../models/Society");
+const User = require("../models/User");
 const { authenticate } = require("../middleware/auth");
+const { requirePermission } = require("../middleware/rbac");
+const { withLastMessages } = require("../utils/conversationPreview");
+
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+const idOf = (ref) => (ref && ref._id ? String(ref._id) : ref ? String(ref) : null);
+const isId = (value) => typeof value === "string" && OBJECT_ID_PATTERN.test(value);
 
 const router = express.Router();
 
 // Apply JWT verification using authenticate middleware
 router.use(authenticate);
+
+const MAX_RECIPIENTS = 100;
+const MAX_SEARCH_LENGTH = 50;
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * @route   GET /api/conversations/recipients[?q=<name fragment>]
+ * @desc    The people the caller may start a direct message with: the members of the caller's
+ *          OWN society, never the caller. This is not the user directory (GET /users stays
+ *          administrator-only); it returns only { id, name }.
+ * @access  community_hub:view
+ *
+ * The society comes from the authenticated user's own record (loaded by `authenticate`),
+ * never from the request: a societyId in the query string or body is not read at all. A caller
+ * with no society gets an empty list rather than a wider one. This is the same rule POST
+ * /conversations enforces for the recipient, so everyone listed here can actually be messaged.
+ */
+router.get(
+  "/recipients",
+  requirePermission("community_hub", "view"),
+  async (req, res, next) => {
+    try {
+      const { q } = req.query;
+      if (q !== undefined && (typeof q !== "string" || q.length > MAX_SEARCH_LENGTH)) {
+        return res.status(400).json({ success: false, message: "Invalid search text" });
+      }
+
+      const societyId = idOf(req.user.societyId);
+      if (!societyId) {
+        return res.json({ success: true, count: 0, data: [] });
+      }
+
+      const filter = { societyId, _id: { $ne: req.user._id } };
+      const term = typeof q === "string" ? q.trim() : "";
+      if (term) filter.name = new RegExp(escapeRegex(term), "i");
+
+      const members = await User.find(filter).select("name").sort({ name: 1 }).limit(MAX_RECIPIENTS).lean();
+      const data = members.map((member) => ({ id: String(member._id), name: member.name }));
+      res.json({ success: true, count: data.length, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 /**
  * @route   GET /api/conversations
@@ -34,7 +86,9 @@ router.get("/", async (req, res, next) => {
       .populate("userTwoId", "name email")
       .sort({ updatedAt: -1 });
 
-    res.json({ success: true, count: conversations.length, data: conversations });
+    // `conversations` was filtered to the caller's own above; lastMessage is looked up only for those.
+    const data = await withLastMessages(conversations);
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     next(error);
   }
@@ -47,32 +101,66 @@ router.get("/", async (req, res, next) => {
  */
 router.post("/", async (req, res, next) => {
   try {
-    const { recipientId, societyId } = req.body;
-    const targetSocietyId = societyId || req.user.societyId?._id || req.user.societyId;
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    // The web client sends { participantIds: [otherUserId] }; direct callers send
+    // { recipientId }. Either way a direct message has exactly one OTHER participant; the
+    // caller is always the authenticated user and is never taken from the request.
+    let recipientId = body.recipientId;
+    if (recipientId === undefined && Array.isArray(body.participantIds)) {
+      if (body.participantIds.length !== 1) {
+        return res.status(400).json({ success: false, message: "Exactly one other participant is required" });
+      }
+      recipientId = body.participantIds[0];
+    }
+    const callerId = String(req.user._id);
 
-    if (!recipientId) {
+    if (recipientId === undefined || recipientId === null || recipientId === "") {
       return res.status(400).json({ success: false, message: "Recipient User ID is required" });
     }
+    if (!isId(recipientId) || (body.societyId !== undefined && !isId(body.societyId))) {
+      return res.status(400).json({ success: false, message: "Invalid ID format." });
+    }
+    if (recipientId.toLowerCase() === callerId.toLowerCase()) {
+      return res.status(400).json({ success: false, message: "You cannot start a conversation with yourself" });
+    }
+
+    const isAdmin = req.user.role === "ADMIN";
+    const callerSocietyId = idOf(req.user.societyId);
+    const targetSocietyId = body.societyId || callerSocietyId;
     if (!targetSocietyId) {
       return res.status(400).json({ success: false, message: "Society ID is required" });
     }
+    // Only administrators may open a conversation in a society that is not their own.
+    if (!isAdmin && targetSocietyId.toLowerCase() !== String(callerSocietyId || "").toLowerCase()) {
+      return res.status(403).json({ success: false, message: "Access restricted to your own society only." });
+    }
+    if (!(await Society.exists({ _id: targetSocietyId }))) {
+      return res.status(404).json({ success: false, message: "Society not found" });
+    }
+    const recipient = await User.findById(recipientId).select("role societyId");
+    if (!recipient) {
+      return res.status(404).json({ success: false, message: "Recipient not found" });
+    }
+    // The other participant must belong to the same society (administrators belong to none
+    // and may be messaged from any society).
+    if (recipient.role !== "ADMIN" && idOf(recipient.societyId) !== String(targetSocietyId)) {
+      return res.status(403).json({ success: false, message: "The recipient is not a member of this society." });
+    }
 
-    const userOneId = req.user._id.toString() < recipientId.toString() ? req.user._id : recipientId;
-    const userTwoId = req.user._id.toString() < recipientId.toString() ? recipientId : req.user._id;
+    const userOneId = callerId < recipientId.toLowerCase() ? callerId : recipientId;
+    const userTwoId = callerId < recipientId.toLowerCase() ? recipientId : callerId;
+    const pair = { societyId: targetSocietyId, userOneId, userTwoId };
 
-    // Find or create conversation
-    let conversation = await Conversation.findOne({
-      societyId: targetSocietyId,
-      userOneId,
-      userTwoId,
-    });
-
+    // Find or create. Two simultaneous requests for the same pair both pass the lookup; the
+    // unique (society, userOne, userTwo) index makes one create fail, which is then read back.
+    let conversation = await Conversation.findOne(pair);
     if (!conversation) {
-      conversation = await Conversation.create({
-        societyId: targetSocietyId,
-        userOneId,
-        userTwoId,
-      });
+      try {
+        conversation = await Conversation.create(pair);
+      } catch (createError) {
+        if (createError.code !== 11000) throw createError;
+        conversation = await Conversation.findOne(pair);
+      }
     }
 
     const populated = await Conversation.findById(conversation._id)

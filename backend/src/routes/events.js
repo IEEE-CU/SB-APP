@@ -1,10 +1,17 @@
 const express = require("express");
 const Event = require("../models/Event");
+// Loaded at start-up (not inside the handlers) so Mongoose begins building this model's
+// indexes, including the unique (event, user) one, as soon as the database is connected.
+const EventRegistration = require("../models/EventRegistration");
 const { authenticate, societyAccess } = require("../middleware/auth");
 const { requirePermission } = require("../middleware/rbac");
 const { parseLimit } = require("../utils/pagination");
 
 const router = express.Router();
+
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+const invalidIdResponse = (res) =>
+  res.status(400).json({ success: false, message: "Invalid ID format." });
 
 // All routes require authentication
 router.use(authenticate);
@@ -416,8 +423,29 @@ router.post(
  */
 router.post("/:id/register", async (req, res, next) => {
   try {
-    const EventRegistration = require("../models/EventRegistration");
     const AuditLog = require("../models/AuditLog");
+
+    // AUD-020: the event must exist before a registration is created. The
+    // registrant is always the authenticated user; nothing in the body is used.
+    if (!OBJECT_ID_PATTERN.test(req.params.id)) return invalidIdResponse(res);
+    if (!(await Event.exists({ _id: req.params.id }))) {
+      return res.status(404).json({ success: false, message: "Event not found" });
+    }
+
+    // The unique (event, user) index is what makes two concurrent registrations safe, so
+    // no registration is written until it exists. init() resolves once the model's
+    // collection and indexes are ready (additive: it never drops or rebuilds an index) and
+    // rejects if the index cannot be built (for example duplicate legacy rows); in that
+    // case registrations stay closed rather than being accepted unprotected.
+    try {
+      await EventRegistration.init();
+    } catch (indexError) {
+      console.error("Event registration is unavailable: its unique index is not ready:", indexError.message);
+      return res.status(503).json({
+        success: false,
+        message: "Event registration is temporarily unavailable. Please try again later.",
+      });
+    }
 
     const registration = await EventRegistration.create({
       event: req.params.id,
@@ -447,23 +475,44 @@ router.post("/:id/register", async (req, res, next) => {
 /**
  * @route   GET /api/events/:id/registrations
  * @desc    Get all registered attendees for an event
- * @access  All authenticated users
+ * @access  Admin or an office bearer of the event's own society
  */
-router.get("/:id/registrations", async (req, res, next) => {
-  try {
-    const EventRegistration = require("../models/EventRegistration");
-    const registrations = await EventRegistration.find({ event: req.params.id })
-      .populate("user", "name email ieeeId")
-      .sort({ registeredAt: -1 });
+router.get(
+  "/:id/registrations",
+  requirePermission("events", "edit"),
+  async (req, res, next) => {
+    try {
+      // AUD-020: the society is taken from the stored event, never from the
+      // client. Non-admins must belong to it; a missing society never matches.
+      if (!OBJECT_ID_PATTERN.test(req.params.id)) return invalidIdResponse(res);
+      const event = await Event.findById(req.params.id).select("societyId").lean();
+      if (!event) {
+        return res.status(404).json({ success: false, message: "Event not found" });
+      }
+      if (req.user.role !== "ADMIN") {
+        const userSocietyId =
+          req.user.societyId?._id?.toString() || req.user.societyId?.toString();
+        if (!userSocietyId || event.societyId.toString() !== userSocietyId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
+      }
 
-    res.json({
-      success: true,
-      count: registrations.length,
-      data: registrations,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+      const registrations = await EventRegistration.find({ event: req.params.id })
+        .populate("user", "name email ieeeId")
+        .sort({ registeredAt: -1 });
+
+      res.json({
+        success: true,
+        count: registrations.length,
+        data: registrations,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 module.exports = router;

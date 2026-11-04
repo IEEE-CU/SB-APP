@@ -2,6 +2,7 @@ const express = require("express");
 const Opportunity = require("../models/Opportunity");
 const sources = require("../config/opportunitySources");
 const { authenticate } = require("../middleware/auth");
+const { isSafeWebUrl } = require("../utils/urlSafety");
 
 const router = express.Router();
 
@@ -36,9 +37,14 @@ router.get("/", async (req, res, next) => {
       });
     }
 
-    const opportunities = await Opportunity.find({ society }).sort({
-      scrapedAt: -1,
-    });
+    // AUD-030: a stored link that is not a plain http(s) URL (for example one scraped
+    // before links were validated) is never served. Nothing is rewritten; the next
+    // successful scrape drops such rows.
+    const opportunities = (
+      await Opportunity.find({ society }).sort({
+        scrapedAt: -1,
+      })
+    ).filter((item) => isSafeWebUrl(item.link));
 
     const source = sources.find((s) => s.society === society);
 

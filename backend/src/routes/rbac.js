@@ -1,5 +1,6 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
+const { accessCheckLimit } = require("../config/testOverrides");
 
 const { authenticate } = require("../middleware/auth");
 const { requirePermission, requireSuperAdmin } = require("../middleware/rbac");
@@ -15,10 +16,10 @@ const router = express.Router();
 // Rate limiter for access check endpoint to prevent abuse
 const accessCheckLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
-  max:
-    process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development"
-      ? 1000
-      : 100, // Higher limit in dev/test
+  // 100 per minute in every environment. Only the isolated test harness / CI test server
+  // (which call enableTestRateLimits() in their own process) get more; an environment
+  // variable can no longer relax it. Evaluated per request.
+  limit: () => accessCheckLimit(),
   standardHeaders: true,
   legacyHeaders: false,
   message: {

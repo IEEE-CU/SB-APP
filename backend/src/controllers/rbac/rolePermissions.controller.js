@@ -4,6 +4,7 @@ const Role = require("../../models/Role");
 const Permission = require("../../models/Permission");
 const UserRole = require("../../models/UserRole");
 const { logAudit } = require("../../services/auditLogger");
+const { reauthorizeLiveSockets } = require("../../services/presenceService");
 const { invalidateCache } = require("../../services/resolvePermissions");
 
 /**
@@ -79,6 +80,22 @@ const updateRolePermission = async (req, res, next) => {
       });
     }
 
+    // A role or permission is named by an id or a name/key string; anything else (an
+    // object or array in the body) cannot be resolved and is a client error.
+    if (
+      typeof roleInput !== "string" ||
+      typeof permissionInput !== "string" ||
+      typeof accessLevel !== "string"
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "role, permission and accessLevel must be strings",
+        },
+      });
+    }
+
     const validLevels = ["full", "limited_own_scope", "approval", "none"];
     if (!validLevels.includes(accessLevel)) {
       return res.status(400).json({
@@ -110,9 +127,22 @@ const updateRolePermission = async (req, res, next) => {
       });
     }
 
+    // AUD-027: whether given as an id or as a name/key, the role and the permission
+    // must exist before anything is written; an id that references nothing used to
+    // be upserted as-is, leaving a dangling document and then a 500.
     let roleId;
     if (mongoose.isValidObjectId(roleInput)) {
-      roleId = roleInput;
+      const roleDoc = await Role.findById(roleInput).select("_id");
+      if (!roleDoc) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: `Role "${roleInput}" not found`,
+          },
+        });
+      }
+      roleId = roleDoc._id;
     } else {
       const roleDoc = await Role.findOne({
         name: roleInput.toLowerCase().trim(),
@@ -131,7 +161,17 @@ const updateRolePermission = async (req, res, next) => {
 
     let permissionId;
     if (mongoose.isValidObjectId(permissionInput)) {
-      permissionId = permissionInput;
+      const permissionDoc = await Permission.findById(permissionInput).select("_id");
+      if (!permissionDoc) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: `Permission "${permissionInput}" not found`,
+          },
+        });
+      }
+      permissionId = permissionDoc._id;
     } else {
       const permissionDoc = await Permission.findOne({
         key: permissionInput.trim(),
@@ -157,6 +197,15 @@ const updateRolePermission = async (req, res, next) => {
       .populate("permission");
 
     invalidateCache();
+
+    // Live sockets keep the rooms they joined; re-check them now so a revoked permission
+    // also stops real-time delivery before this request is answered (AUD-007).
+    try {
+      const io = req.app && typeof req.app.get === "function" ? req.app.get("io") : null;
+      if (io) await reauthorizeLiveSockets(io);
+    } catch (reauthError) {
+      console.error("Could not re-check live sockets after a permission change:", reauthError.message);
+    }
 
     const ipAddress =
       req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;

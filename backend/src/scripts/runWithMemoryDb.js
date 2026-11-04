@@ -1,5 +1,5 @@
 const { MongoMemoryServer } = require("mongodb-memory-server");
-const mongoose = require("mongoose");
+const { registerEphemeralTarget } = require("../utils/dbSafety");
 
 async function main() {
   console.log("🚀 Starting MongoDB Memory Server...");
@@ -9,6 +9,10 @@ async function main() {
   console.log(`📡 In-Memory MongoDB running at: ${uri}`);
   require("dotenv").config({ path: require("path").join(__dirname, "../../.env") });
   process.env.MONGODB_URI = uri;
+  // This process created and owns the disposable in-memory database, so it is
+  // the only target the destructive scripts may modify without an explicit
+  // operator authorization.
+  registerEphemeralTarget(uri);
 
   const action = process.argv[2];
 
@@ -16,7 +20,7 @@ async function main() {
     // Run the connection test
     console.log("\n--- Running testConnection.js ---");
     try {
-      require("./testConnection");
+      require("./testConnection").testConnection();
       // Wait for process.exit inside the script
     } catch (err) {
       console.error(err);
@@ -27,18 +31,12 @@ async function main() {
     // Run the seed test and then verify backup/restore
     console.log("\n--- Running seed.js ---");
     try {
-      // Monkey patch process.exit to prevent the seed script from exiting early
-      const originalExit = process.exit;
-      process.exit = (code) => {
-        if (code !== 0) {
-          console.error(`Seed exited with code ${code}`);
-          originalExit(code);
-        }
-        console.log("Seed completed. Proceeding to verify Backup & Restore...");
-        verifyBackupRestore(mongoServer, originalExit);
-      };
-
-      require("./seed");
+      // seed.js, backup.js and restore.js no longer execute on import, so the
+      // runner calls them explicitly.
+      const seed = require("./seed");
+      await seed();
+      console.log("Seed completed. Proceeding to verify Backup & Restore...");
+      await verifyBackupRestore(mongoServer);
     } catch (err) {
       console.error(err);
       await mongoServer.stop();
@@ -61,54 +59,26 @@ async function main() {
   }
 }
 
-async function verifyBackupRestore(mongoServer, originalExit) {
-  try {
-    // 1. Run backup
-    console.log("\n--- Running backup.js ---");
-    // Ensure we are connected
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI);
-    }
+async function verifyBackupRestore(mongoServer) {
+  // 1. Run backup
+  console.log("\n--- Running backup.js ---");
+  const { performBackup } = require("./backup");
+  await performBackup();
+  console.log("Backup verified. Proceeding to Restore check...");
 
-    // Require backup script (which executes immediately)
-    // Monkey patch process.exit for backup
-    process.exit = (code) => {
-      if (code !== 0) {
-        console.error(`Backup exited with code ${code}`);
-        originalExit(code);
-      }
-      console.log("Backup verified. Proceeding to Restore check...");
-      verifyRestore(mongoServer, originalExit);
-    };
+  // 2. Restore the backup that was just taken (latest file in backups/)
+  console.log("\n--- Running restore.js ---");
+  const { performRestore } = require("./restore");
+  await performRestore();
+  console.log("Restore completed with code 0");
 
-    // Clear require cache for backup if it was loaded before
-    delete require.cache[require.resolve("./backup")];
-    require("./backup");
-  } catch (err) {
-    console.error("Backup verification failed:", err);
-    await mongoServer.stop();
-    originalExit(1);
-  }
+  await mongoServer.stop();
+  console.log("👋 All database verification checks passed successfully!");
+  process.exit(0);
 }
 
-async function verifyRestore(mongoServer, originalExit) {
-  try {
-    console.log("\n--- Running restore.js ---");
-    // Monkey patch process.exit for restore
-    process.exit = async (code) => {
-      console.log(`Restore completed with code ${code}`);
-      await mongoServer.stop();
-      console.log("👋 All database verification checks passed successfully!");
-      originalExit(code);
-    };
+module.exports = { main };
 
-    delete require.cache[require.resolve("./restore")];
-    require("./restore");
-  } catch (err) {
-    console.error("Restore verification failed:", err);
-    await mongoServer.stop();
-    originalExit(1);
-  }
+if (require.main === module) {
+  main();
 }
-
-main();

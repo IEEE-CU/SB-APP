@@ -1,9 +1,37 @@
 const express = require("express");
 const Task = require("../models/Task");
+const Society = require("../models/Society");
 const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
 router.use(authenticate);
+
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+
+// Id of a society reference that may be a bare id or a populated document.
+// A populated document without an _id (for example a deleted society) has no id.
+const societyIdOf = (ref) => {
+  if (!ref) return undefined;
+  const id = ref._id !== undefined ? ref._id : ref;
+  return id ? id.toString() : undefined;
+};
+
+// AUD (task mass assignment): the only fields a caller may change on their own
+// task. userId (ownership) and societyId (scope) are deliberately absent: tasks
+// are personal (every read is filtered by userId) and no workflow reassigns or
+// moves them. Anything else in the body - including _id, timestamps and
+// Mongoose internals - is ignored.
+const UPDATABLE_FIELDS = [
+  "title",
+  "description",
+  "status",
+  "priority",
+  "dueDate",
+  "categoryName",
+  "categoryColor",
+  "blockedBy",
+  "completed",
+];
 
 /**
  * @route   GET /api/tasks
@@ -32,10 +60,52 @@ router.get("/", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   try {
     const { title, description, status, priority, dueDate, categoryName, categoryColor, societyId, blockedBy } = req.body;
-    const targetSocietyId = societyId || req.user.societyId?._id || req.user.societyId;
 
     if (!title) {
       return res.status(400).json({ success: false, message: "Task title is required" });
+    }
+
+    // Society policy for new tasks (Task.societyId is a required Society reference):
+    //   - a society named in the body must be well formed (400) and exist (404);
+    //   - administrators may use any existing society;
+    //   - everyone else may use only their own stored society (403 otherwise),
+    //     and a caller with no society cannot create tasks (403);
+    //   - with no society in the body, the caller's own society is used; an
+    //     administrator with none must name one (400). No default is ever invented.
+    // The caller's society comes from the user record loaded by authenticate,
+    // never from the request.
+    const isAdmin = req.user.role === "ADMIN";
+    const ownSocietyId = societyIdOf(req.user.societyId);
+    const noSociety = () =>
+      res.status(403).json({
+        success: false,
+        message: "You must belong to a society to create tasks",
+      });
+
+    let targetSocietyId;
+    if (societyId) {
+      if (typeof societyId !== "string" || !OBJECT_ID_PATTERN.test(societyId)) {
+        return res.status(400).json({ success: false, message: "Invalid ID format." });
+      }
+      if (!(await Society.exists({ _id: societyId }))) {
+        return res.status(404).json({ success: false, message: "Society not found." });
+      }
+      if (!isAdmin) {
+        if (!ownSocietyId) return noSociety();
+        if (societyId.toLowerCase() !== ownSocietyId.toLowerCase()) {
+          return res.status(403).json({
+            success: false,
+            message: "Access restricted to your own society",
+          });
+        }
+      }
+      targetSocietyId = societyId;
+    } else if (ownSocietyId) {
+      targetSocietyId = ownSocietyId;
+    } else if (isAdmin) {
+      return res.status(400).json({ success: false, message: "Society ID is required" });
+    } else {
+      return noSociety();
     }
 
     const task = await Task.create({
@@ -68,8 +138,13 @@ router.put("/:id", async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Task not found" });
     }
 
-    Object.assign(task, req.body);
-    if (req.body.status === "COMPLETED") {
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    for (const field of UPDATABLE_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(body, field)) {
+        task[field] = body[field];
+      }
+    }
+    if (body.status === "COMPLETED") {
       task.completed = true;
     }
     await task.save();

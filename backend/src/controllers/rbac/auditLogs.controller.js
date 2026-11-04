@@ -1,6 +1,32 @@
 const AuditLog = require("../../models/AuditLog");
 const UserRole = require("../../models/UserRole");
 
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+
+/**
+ * Flat API entry from a stored row. The logger saves the actor as userId and
+ * route/method/result/reason/metadata under details; rows written before that
+ * (userId null, no details) map to nulls and an empty metadata object.
+ */
+function toEntry(row) {
+  const actor = row.userId && row.userId._id ? row.userId : null;
+  const details = row.details || {};
+  return {
+    id: String(row._id),
+    user: actor
+      ? { id: String(actor._id), name: actor.name, email: actor.email }
+      : null,
+    action: row.action,
+    module: row.module,
+    route: details.route ?? null,
+    method: details.method ?? null,
+    result: details.result ?? null,
+    reason: details.reason ?? null,
+    metadata: details.metadata ?? {},
+    timestamp: row.createdAt,
+  };
+}
+
 
 /**
  * GET /api/audit-logs
@@ -28,45 +54,69 @@ const getAuditLogs = async (req, res, next) => {
       });
     }
 
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 20;
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
     const skip = (page - 1) * limit;
 
+    const invalid = (message) =>
+      res.status(400).json({
+        success: false,
+        error: { code: "VALIDATION_ERROR", message },
+      });
+
+    // Filters are applied to the fields the AuditLog schema actually stores:
+    // actor -> userId, result -> details.result, timestamp -> createdAt.
+    // Each must be a plain string so a query-string object cannot become an
+    // operator (for example ?module[$ne]=x).
     const filter = {};
 
-    if (req.query.user) {
-      filter.user = req.query.user;
-    }
-    if (req.query.module) {
-      filter.module = req.query.module;
-    }
-    if (req.query.result) {
-      filter.result = req.query.result;
+    const { user, module: moduleName, result, dateFrom, dateTo } = req.query;
+    for (const [name, value] of Object.entries({ user, module: moduleName, result, dateFrom, dateTo })) {
+      if (value !== undefined && typeof value !== "string") {
+        return invalid(`${name} must be a single value`);
+      }
     }
 
-    if (req.query.dateFrom || req.query.dateTo) {
-      filter.timestamp = {};
-      if (req.query.dateFrom) {
-        filter.timestamp.$gte = new Date(req.query.dateFrom);
+    if (user) {
+      if (!OBJECT_ID_PATTERN.test(user)) return invalid("user must be a valid user id");
+      filter.userId = user;
+    }
+    if (moduleName) {
+      filter.module = moduleName;
+    }
+    if (result) {
+      filter["details.result"] = result;
+    }
+
+    if (dateFrom || dateTo) {
+      filter.createdAt = {};
+      if (dateFrom) {
+        const from = new Date(dateFrom);
+        if (Number.isNaN(from.getTime())) return invalid("dateFrom is not a valid date");
+        filter.createdAt.$gte = from;
       }
-      if (req.query.dateTo) {
-        const endOfDay = new Date(req.query.dateTo);
+      if (dateTo) {
+        const endOfDay = new Date(dateTo);
+        if (Number.isNaN(endOfDay.getTime())) return invalid("dateTo is not a valid date");
         endOfDay.setHours(23, 59, 59, 999);
-        filter.timestamp.$lte = endOfDay;
+        filter.createdAt.$lte = endOfDay;
       }
     }
 
-    const logs = await AuditLog.find(filter)
-      .populate("user", "name email")
-      .sort({ timestamp: -1 })
+    // Only name and email of the actor are populated; nothing else of the user
+    // document (and never its credentials) reaches the response.
+    const rows = await AuditLog.find(filter)
+      .populate("userId", "name email")
+      .sort({ createdAt: -1, _id: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     const total = await AuditLog.countDocuments(filter);
 
     return res.status(200).json({
       success: true,
-      data: logs,
+      data: rows.map(toEntry),
       meta: {
         page,
         limit,

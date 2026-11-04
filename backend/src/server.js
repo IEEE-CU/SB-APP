@@ -12,60 +12,47 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
-const cluster = require("cluster");
-const os = require("os");
-
-// Load-balance across CPU cores using Node's built-in cluster module: the
-// primary process forks one worker per core and the OS round-robins incoming
-// connections across them on the same port. Opt-in via ENABLE_CLUSTER so
-// local dev (nodemon) keeps a single process for fast reloads.
-const ENABLE_CLUSTER = process.env.ENABLE_CLUSTER === "true";
-const WORKER_COUNT =
-  parseInt(process.env.WEB_CONCURRENCY, 10) || os.cpus().length;
-
-let appInstance;
-
-if (ENABLE_CLUSTER && cluster.isPrimary) {
-  console.log(
-    `🧵 Primary ${process.pid} is starting ${WORKER_COUNT} worker(s) for load balancing...`,
-  );
-
-  // Exactly one worker runs scheduled jobs (the daily scrape). The flag is
-  // handed to a replacement if that worker dies, so scheduling survives.
-  let schedulerLeaderId = cluster.fork({ SCHEDULER_LEADER: "1" }).id;
-  for (let i = 1; i < WORKER_COUNT; i++) {
-    cluster.fork();
-  }
-
-  let shuttingDown = false;
-
-  cluster.on("exit", (worker, code, signal) => {
-    if (shuttingDown) return;
-    console.error(
-      `  Worker ${worker.process.pid} exited (code=${code}, signal=${signal}). Forking a replacement...`,
-    );
-    if (worker.id === schedulerLeaderId) {
-      schedulerLeaderId = cluster.fork({ SCHEDULER_LEADER: "1" }).id;
-    } else {
-      cluster.fork();
-    }
-  });
-
-  const shutdownPrimary = (signal) => {
-    shuttingDown = true;
-    console.log(
-      `\n${signal} received on primary. Shutting down all workers...`,
-    );
-    for (const id in cluster.workers) {
-      cluster.workers[id].process.kill(signal);
-    }
-  };
-
-  process.on("SIGTERM", () => shutdownPrimary("SIGTERM"));
-  process.on("SIGINT", () => shutdownPrimary("SIGINT"));
-} else {
-  appInstance = startServer();
+// A blank or published-placeholder secret (for example the value copied from
+// .env.example) is as good as none: anyone can read it and forge tokens. Refuse to start.
+const { jwtSecretProblem } = require("./utils/jwtSecret");
+const secretProblem = jwtSecretProblem(process.env.JWT_SECRET);
+if (secretProblem && !missingEnvVars.includes("JWT_SECRET")) {
+  console.error(` JWT_SECRET ${secretProblem}.`);
+  console.error("   Set JWT_SECRET to a long random value (see .env.example).");
+  process.exit(1);
 }
+
+// Cluster mode is not supported (AUD-012B): Socket.IO rooms and delivery, presence, typing
+// state and every rate-limit counter live in each worker's own memory, with no adapter, shared
+// store or sticky sessions, so several workers behave inconsistently. Refuse to start rather
+// than run that way. Only the exact words true/false are understood; anything else is refused
+// as malformed instead of being read as an opt-out.
+const { parseClusterFlag } = require("./config/clusterMode");
+let clusterRequested;
+try {
+  clusterRequested = parseClusterFlag(process.env.ENABLE_CLUSTER);
+} catch (error) {
+  console.error(` ${error.message}`);
+  process.exit(1);
+}
+if (clusterRequested) {
+  console.error(" ENABLE_CLUSTER=true is not supported: realtime delivery, presence and rate limits are per process.");
+  console.error("   Run a single process (leave ENABLE_CLUSTER unset or false).");
+  process.exit(1);
+}
+
+// Trusted proxies are configured explicitly (see config/trustProxy.js); an invalid value, or a
+// missing one in production, stops the server before it listens or connects.
+const { parseTrustProxy } = require("./config/trustProxy");
+let trustProxy;
+try {
+  trustProxy = parseTrustProxy(process.env.TRUST_PROXY, { production: process.env.NODE_ENV === "production" });
+} catch (error) {
+  console.error(` ${error.message}`);
+  process.exit(1);
+}
+
+const appInstance = startServer();
 
 function startServer() {
   const express = require("express");
@@ -112,9 +99,10 @@ function startServer() {
     }
   });
 
-  // Trust the first proxy hop (Nginx/ELB/etc.) so req.ip and rate limiting
-  // see the real client IP instead of the proxy's address.
-  app.set("trust proxy", 1);
+  // req.ip (the rate-limit key and the audit-log address) only honours X-Forwarded-For for the
+  // proxies named in TRUST_PROXY; by default none are trusted, so a client cannot pick its own
+  // address. Parsed and validated at start-up (config/trustProxy.js).
+  app.set("trust proxy", trustProxy.setting);
 
   app.use(helmet());
   app.use(compression());
@@ -128,6 +116,11 @@ function startServer() {
       credentials: true,
     }),
   );
+  // The general limiter comes BEFORE the body parsers: a request the parser rejects
+  // (malformed JSON, oversized body) never reaches later middleware, so with the limiter
+  // behind them such requests were not counted at all. After CORS so a 429 still carries
+  // the CORS headers the browser needs to read it.
+  app.use(generalLimiter);
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -137,8 +130,6 @@ function startServer() {
   // can't be used to smuggle arrays into code that expects a scalar.
   app.use(mongoSanitize());
   app.use(hpp());
-
-  app.use(generalLimiter);
 
   // Request logging in development
   if (process.env.NODE_ENV === "development") {
@@ -184,7 +175,7 @@ function startServer() {
 
   // Initialize Socket.io
   const { Server } = require("socket.io");
-  const jwt = require("jsonwebtoken");
+  const { authenticateSocket } = require("./middleware/socketAuth");
   const io = new Server(server, {
     cors: {
       origin: process.env.FRONTEND_URL || [
@@ -196,20 +187,9 @@ function startServer() {
     },
   });
 
-  // Socket.io JWT Authentication Middleware
-  io.use((socket, next) => {
-    const token = socket.handshake.auth?.token;
-    if (!token) {
-      return next(new Error("Authentication error: Token required"));
-    }
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.user = decoded;
-      next();
-    } catch (err) {
-      next(new Error("Authentication error: Invalid token"));
-    }
-  });
+  // Socket.io JWT Authentication Middleware (token must verify and the user
+  // must still exist, as in the REST `authenticate` middleware)
+  io.use(authenticateSocket);
 
   // Make io accessible in express application
   app.set("io", io);
@@ -217,11 +197,9 @@ function startServer() {
   const { setupPresenceHandlers } = require("./services/presenceService");
   setupPresenceHandlers(io);
 
-  // Daily scrape of IEEE society award/grant/scholarship pages. In clustered
-  // mode every worker would otherwise run this redundantly, so only the
-  // scheduler-leader worker (or the single process in non-clustered dev)
-  // schedules it.
-  if (!ENABLE_CLUSTER || process.env.SCHEDULER_LEADER === "1") {
+  // Daily scrape of IEEE society award/grant/scholarship pages (single process only:
+  // cluster mode is refused above).
+  {
     const cron = require("node-cron");
     const { scrapeAllSocieties } = require("./services/opportunityScraper");
 

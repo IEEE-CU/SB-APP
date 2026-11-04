@@ -1,0 +1,19 @@
+
+D:\SB-APP-worktrees\batch1-integration\backend\src\services\opportunityScraper.js
+  127:5  warning  Unused eslint-disable directive (no problems were reported from 'no-await-in-loop')
+  135:7  warning  Unused eslint-disable directive (no problems were reported from 'no-await-in-loop')
+
+D:\SB-APP-worktrees\batch1-integration\backend\src\services\storage\StorageService.js
+  113:16  warning  'req' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  113:21  warning  'res' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  113:26  warning  'next' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  143:16  warning  'req' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  143:21  warning  'res' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  143:26  warning  'next' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  147:14  warning  'req' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  147:19  warning  'res' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  147:24  warning  'next' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+✖ 11 problems (0 errors, 11 warnings)
+  0 errors and 2 warnings potentially fixable with the `--fix` option.
+

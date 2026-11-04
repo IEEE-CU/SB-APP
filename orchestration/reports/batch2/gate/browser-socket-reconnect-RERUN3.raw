@@ -1,0 +1,13 @@
+[runner] harness ready (pid 4656)
+(node:7456) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+  ✓  1 tests\session\socket-reconnect.spec.ts:36:3 › a mounted Community page after the connection drops › rejoins its channel on every reconnect without being remounted, once per reconnect (16.6s)
+  ✓  2 tests\session\socket-reconnect.spec.ts:77:3 › a mounted Community page after the connection drops › a reconnect after a password change uses the replacement token, not the old one, and rejoins (14.8s)
+  ✓  3 tests\session\socket-reconnect.spec.ts:113:3 › logout and revoked sessions › logout closes the socket and no later connection uses the previous user's token (14.9s)
+  ✓  4 tests\session\socket-reconnect.spec.ts:138:3 › logout and revoked sessions › a session revoked by a password reset does not get its room back, and the page signs out on its next request (14.3s)
+
+  4 passed (1.1m)
+[runner] tests/session/socket-reconnect.spec.ts --trace retain-on-failure: playwright exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, port5174 busy=false, temp artifacts=0

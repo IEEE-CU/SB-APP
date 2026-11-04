@@ -2,6 +2,12 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const Opportunity = require("../models/Opportunity");
 const sources = require("../config/opportunitySources");
+const { safeWebUrl, isSafeWebUrl, createSafeFetchOptions } = require("../utils/urlSafety");
+
+// AUD-030: everything the scraper fetches goes through these options - the first URL and
+// every redirect hop must be a public http(s) address, and the address actually connected
+// to is checked too. Tests inject their own through scrapeSociety's second argument.
+const defaultSafeFetch = createSafeFetchOptions();
 
 const REQUEST_TIMEOUT_MS = 15000;
 const MAX_ITEMS_PER_SOCIETY = 25;
@@ -26,12 +32,11 @@ function looksLikeOpportunity(text) {
   );
 }
 
+// AUD-030: a scraped href is untrusted. Only plain web links are kept; javascript:, data:,
+// file: and other schemes, links with embedded credentials, and absurdly long ones are
+// dropped here, before anything is stored.
 function resolveUrl(href, base) {
-  try {
-    return new URL(href, base).toString();
-  } catch {
-    return null;
-  }
+  return safeWebUrl(href, base);
 }
 
 const isBareUrl = (text) => /^(https?:\/\/|www\.)/i.test(text.trim());
@@ -61,17 +66,19 @@ function humanizeUrl(url) {
  * award/scholarship/grant listing. Structure of these sites is not standardized,
  * so this is a heuristic, not a precise parser per site.
  */
-async function scrapeSociety(source) {
+async function scrapeSociety(source, { safeFetch = defaultSafeFetch } = {}) {
   const { society, url } = source;
   const found = new Map();
 
   try {
+    safeFetch.assertUrl(url);
     const { data: html } = await axios.get(url, {
       timeout: REQUEST_TIMEOUT_MS,
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; IEEE-SB-APP-Bot/1.0; +https://github.com/IEEE-CU/SB-APP)",
       },
+      ...safeFetch.axiosOptions,
     });
 
     const $ = cheerio.load(html);
@@ -112,14 +119,17 @@ async function scrapeSociety(source) {
   }
 }
 
-async function scrapeAllSocieties() {
+async function scrapeAllSocieties(options) {
   const results = [];
 
   for (const source of sources) {
     // Sequential, not parallel, to stay polite to external sites.
     // eslint-disable-next-line no-await-in-loop
-    const result = await scrapeSociety(source);
+    const result = await scrapeSociety(source, options);
     results.push(result);
+
+    // Belt and braces: never persist a link that is not a plain web URL.
+    result.items = result.items.filter((item) => isSafeWebUrl(item.link));
 
     if (result.ok && result.items.length > 0) {
       // eslint-disable-next-line no-await-in-loop
@@ -134,7 +144,7 @@ async function scrapeAllSocieties() {
               sourceUrl: result.sourceUrl,
               scrapedAt: new Date(),
             },
-            { upsert: true, new: true },
+            { upsert: true, new: true, runValidators: true },
           ),
         ),
       );

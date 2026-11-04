@@ -148,8 +148,8 @@ const listEvents = async (req, res) => {
 
 ## 🗃️ 4. Shared Data Models
 
-* **`User`** (`server/models/User.js`): Shared placeholder model.
-* **`Society`** (`server/models/Society.js`): Shared placeholder model.
+* **`User`** (`backend/src/models/User.js`): Shared model.
+* **`Society`** (`backend/src/models/Society.js`): Shared model.
 * **`Role` / `Permission` / `RolePermission`**: Managed via the RBAC matrices.
 * **`AuditLog`**: Stored in MongoDB. Can be written to using the helper:
   ```js

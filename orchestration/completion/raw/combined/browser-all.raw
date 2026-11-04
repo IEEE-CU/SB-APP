@@ -1,0 +1,131 @@
+
+[session] ===== tests/session/ai-audit.spec.ts
+(node:21584) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+  ✓  1 tests\session\ai-audit.spec.ts:24:3 › AI audit page › a user without finance:view is told so by the real backend, and nothing goes to Google (19.8s)
+  ✓  2 tests\session\ai-audit.spec.ts:39:3 › AI audit page › a generated report is shown; choosing a society sends only its id (20.1s)
+  ✓  3 tests\session\ai-audit.spec.ts:59:3 › AI audit page › "not configured" and "too many requests" are reported without a crash (11.0s)
+
+  3 passed (57.4s)
+[session] tests/session/ai-audit.spec.ts: playwright exit=0; harness exit=0; ready file removed=true
+
+[session] ===== tests/session/announcement-create.spec.ts
+
+Running 2 tests using 1 worker
+
+  ✓  1 tests\session\announcement-create.spec.ts:31:3 › announcement creation › an administrator can publish to all members, to a society and to leadership (18.2s)
+  ✓  2 tests\session\announcement-create.spec.ts:66:3 › announcement creation › a society chair is offered only their own society and can publish to it (7.0s)
+
+  2 passed (31.0s)
+[session] tests/session/announcement-create.spec.ts: playwright exit=0; harness exit=0; ready file removed=true
+
+[session] ===== tests/session/community-and-channel.spec.ts
+
+Running 5 tests using 1 worker
+
+  ✓  1 tests\session\community-and-channel.spec.ts:46:3 › Community renders real-time and loaded messages › a message delivered by a second client renders with its text and sender, without an application error (14.6s)
+  ✓  2 tests\session\community-and-channel.spec.ts:65:3 › Community renders real-time and loaded messages › the signed-in user's own message, sent from the UI, renders as theirs (8.5s)
+  ✓  3 tests\session\community-and-channel.spec.ts:81:3 › Community renders real-time and loaded messages › a message with reactions in the loaded history shows grouped reactions instead of crashing (10.3s)
+  ✓  4 tests\session\community-and-channel.spec.ts:107:3 › ChannelDetailPage opened directly › connects the socket, joins its channel, rejoins after a reconnect, and stops rejoining once left (11.8s)
+  ✓  5 tests\session\community-and-channel.spec.ts:143:3 › ChannelDetailPage opened directly › a channel message arriving on the directly opened page renders with its text and sender (11.8s)
+
+  5 passed (1.0m)
+[session] tests/session/community-and-channel.spec.ts: playwright exit=0; harness exit=0; ready file removed=true
+
+[session] ===== tests/session/dm-recipients.spec.ts
+
+Running 3 tests using 1 worker
+
+  ✓  1 tests\session\dm-recipients.spec.ts:22:3 › direct-message recipients for a non-administrator › lists same-society members only, never calls GET /users, and starts a conversation (14.4s)
+  ✓  2 tests\session\dm-recipients.spec.ts:47:3 › direct-message recipients for a non-administrator › a member alone in their society sees an empty-state message, not a crash (8.5s)
+  ✓  3 tests\session\dm-recipients.spec.ts:60:3 › direct-message recipients for a non-administrator › a failed lookup is reported without a crash and without falling back to the user directory (9.8s)
+
+  3 passed (38.2s)
+[session] tests/session/dm-recipients.spec.ts: playwright exit=0; harness exit=0; ready file removed=true
+
+[session] ===== tests/session/password-session.spec.ts
+
+Running 5 tests using 1 worker
+
+  ✓  1 tests\session\password-session.spec.ts:140:3 › existing session behavior is intact › protected routes redirect, login stores a token, logout clears it (8.9s)
+  ✓  2 tests\session\password-session.spec.ts:157:3 › self-service password change › stores the replacement token, reconnects the socket with it, rejoins the room, and the old token is dead (16.9s)
+  ✓  3 tests\session\password-session.spec.ts:207:3 › self-service password change › an absent or malformed replacement token never overwrites the stored token (15.1s)
+  ✓  4 tests\session\password-session.spec.ts:235:3 › self-service password change › a rejected stored token is handled by the existing 401 handler: signed out and sent to the login page (10.2s)
+  ✓  5 tests\session\password-session.spec.ts:252:3 › administrator password reset › revokes the target, closes their socket, and gives the administrator no token (14.6s)
+
+  5 passed (1.2m)
+[session] tests/session/password-session.spec.ts: playwright exit=0; harness exit=0; ready file removed=true
+
+[session] ===== tests/session/reactions-and-community-access.spec.ts
+
+Running 8 tests using 1 worker
+
+  ✓  1 tests\session\reactions-and-community-access.spec.ts:52:3 › reactions › Community: add and remove use the mounted endpoint; the badge follows; no duplicates (16.9s)
+  ✓  2 tests\session\reactions-and-community-access.spec.ts:94:3 › reactions › the channel page picker uses the same endpoint and shows the server's answer (10.7s)
+  ✓  3 tests\session\reactions-and-community-access.spec.ts:118:3 › reactions › a rejected reaction is reported and no reaction is invented (11.0s)
+  ✓  4 tests\session\reactions-and-community-access.spec.ts:141:3 › Community for a non-administrator › a member loads their society's channel without ever requesting the user directory, and joins it (10.2s)
+  ✓  5 tests\session\reactions-and-community-access.spec.ts:161:3 › Community for a non-administrator › only the member's own society is exposed: the list holds that one channel, other societies are refused (2.0s)
+  ✓  6 tests\session\reactions-and-community-access.spec.ts:174:3 › Community for a non-administrator › an account without the community permission gets the existing error, not a crash (7.6s)
+  ✓  7 tests\session\reactions-and-community-access.spec.ts:188:3 › Community for a non-administrator › a society with no channels shows the empty Community page, not an error (7.9s)
+  ✓  8 tests\session\reactions-and-community-access.spec.ts:202:3 › Community for a non-administrator › an administrator still loads the user directory and can pick a member for a direct message (9.1s)
+
+  8 passed (1.4m)
+[session] tests/session/reactions-and-community-access.spec.ts: playwright exit=0; harness exit=0; ready file removed=true
+
+[session] ===== tests/session/socket-reconnect.spec.ts
+
+Running 4 tests using 1 worker
+
+  ✓  1 tests\session\socket-reconnect.spec.ts:36:3 › a mounted Community page after the connection drops › rejoins its channel on every reconnect without being remounted, once per reconnect (17.2s)
+  ✘  2 tests\session\socket-reconnect.spec.ts:77:3 › a mounted Community page after the connection drops › a reconnect after a password change uses the replacement token, not the old one, and rejoins (33.8s)
+  -  3 tests\session\socket-reconnect.spec.ts:113:3 › logout and revoked sessions › logout closes the socket and no later connection uses the previous user's token
+  -  4 tests\session\socket-reconnect.spec.ts:138:3 › logout and revoked sessions › a session revoked by a password reset does not get its room back, and the page signs out on its next request
+
+
+  1) tests\session\socket-reconnect.spec.ts:77:3 › a mounted Community page after the connection drops › a reconnect after a password change uses the replacement token, not the old one, and rejoins 
+
+    Error: the websocket did not close when offline
+
+    the websocket did not close when offline
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 20000ms exceeded while waiting on the predicate
+
+       at support.ts:217
+
+      215 |     await expect
+      216 |       .poll(() => wire.sockets.at(-1)?.closed, { timeout: 20_000, message: 'the websocket did not close when offline' })
+    > 217 |       .toBe(true);
+          |        ^
+      218 |   } finally {
+      219 |     await page.context().setOffline(false);
+      220 |   }
+        at dropConnection (D:\SB-APP-worktrees\combined\frontend\tests\session\support.ts:217:8)
+        at D:\SB-APP-worktrees\combined\frontend\tests\session\socket-reconnect.spec.ts:103:5
+
+    Error Context: test-results\session\socket-reconnect-a-mounted-784e2-not-the-old-one-and-rejoins\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\session\socket-reconnect-a-mounted-784e2-not-the-old-one-and-rejoins\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\session\socket-reconnect-a-mounted-784e2-not-the-old-one-and-rejoins\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\session\socket-reconnect.spec.ts:77:3 › a mounted Community page after the connection drops › a reconnect after a password change uses the replacement token, not the old one, and rejoins 
+  2 did not run
+  1 passed (59.9s)
+[session] tests/session/socket-reconnect.spec.ts: playwright exit=1; harness exit=0; ready file removed=true
+
+[session] 6/7 specs passed
+[session] FAILED: tests/session/socket-reconnect.spec.ts (playwright exit=1, harness exit=0)

@@ -1,41 +1,70 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const { User, Society, Transaction, Event, Project, CalendarEvent, Announcement } = require('../models');
+/**
+ * Clears the main application collections.
+ *
+ * DESTRUCTIVE. Importing this module does nothing; the wipe only runs when the
+ * file is executed directly (`node src/scripts/clearData.js`) or when
+ * clearAllData() is called explicitly. Before any connection or write the
+ * target database is validated and the operation must be explicitly
+ * authorized (see utils/dbSafety.js).
+ */
+require("dotenv").config();
+const mongoose = require("mongoose");
+const {
+  assertDestructiveTargetAllowed,
+  assertConnectedToValidatedTarget,
+} = require("../utils/dbSafety");
 
-async function clearAllData() {
-    try {
-        // Connect to MongoDB
-        await mongoose.connect(process.env.MONGODB_URI);
-        console.log('Connected to MongoDB Atlas');
+const COLLECTION_LABELS = [
+  ["User", "Users"],
+  ["Society", "Societies"],
+  ["Transaction", "Transactions"],
+  ["Event", "Events"],
+  ["Project", "Projects"],
+  ["CalendarEvent", "CalendarEvents"],
+  ["Announcement", "Announcements"],
+];
 
-        // Clear all collections
-        console.log('\nClearing all collections...\n');
+async function clearAllData({ env = process.env } = {}) {
+  // Validate and authorize BEFORE connecting or touching any collection.
+  const target = assertDestructiveTargetAllowed({
+    operation: "clearData",
+    env,
+  });
 
-        const results = await Promise.all([
-            User.deleteMany({}),
-            Society.deleteMany({}),
-            Transaction.deleteMany({}),
-            Event.deleteMany({}),
-            Project.deleteMany({}),
-            CalendarEvent.deleteMany({}),
-            Announcement.deleteMany({})
-        ]);
+  const models = require("../models");
 
-        const collections = ['Users', 'Societies', 'Transactions', 'Events', 'Projects', 'CalendarEvents', 'Announcements'];
+  try {
+    await mongoose.connect(env.MONGODB_URI);
+    assertConnectedToValidatedTarget(target, mongoose.connection.name);
+    console.log(`Connected to database "${mongoose.connection.name}"`);
 
-        results.forEach((result, index) => {
-            console.log(`✅ ${collections[index]}: ${result.deletedCount} documents deleted`);
-        });
+    console.log("\nClearing all collections...\n");
 
-        console.log('\n✅ All data cleared successfully!');
+    const results = await Promise.all(
+      COLLECTION_LABELS.map(([modelName]) => models[modelName].deleteMany({})),
+    );
 
-    } catch (error) {
-        console.error('❌ Error clearing data:', error.message);
-    } finally {
-        await mongoose.connection.close();
-        console.log('\nDatabase connection closed.');
-        process.exit(0);
-    }
+    results.forEach((result, index) => {
+      console.log(
+        `✅ ${COLLECTION_LABELS[index][1]}: ${result.deletedCount} documents deleted`,
+      );
+    });
+
+    console.log("\n✅ All data cleared successfully!");
+    return results;
+  } finally {
+    await mongoose.connection.close();
+    console.log("\nDatabase connection closed.");
+  }
 }
 
-clearAllData();
+module.exports = { clearAllData };
+
+if (require.main === module) {
+  clearAllData()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error("❌ Error clearing data:", error.message);
+      process.exit(1);
+    });
+}

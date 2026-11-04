@@ -1,0 +1,5 @@
+# Batch 2 plan
+Baseline: committed 70ff8bd (Batch 1 stays uncommitted in integration/batch1; combine only after separate approval).
+Status 2026-10-29: Phase 0 preflight done (reports/batch2/2026-10-29_preflight.md). Phases 2+ wait on the decisions in BATCH2_DECISIONS.md.
+Planned worktrees (not created): D:\SB-APP-worktrees\batch2-channel, batch2-gemini, batch2-ci; branches agent/batch2-channel-contract, agent/batch2-gemini-security, agent/batch2-regression-ci; integration D:\SB-APP-worktrees\batch2-integration.
+File ownership (no overlap): A = backend/src/routes/channels.js (+ model if approved), frontend/src/services/channels.ts, new channel tests. B = frontend/src/services/geminiService.ts, pages/reports/AiAuditPage.tsx, backend routes/ai.js + controllers/aiController.js + services/ai/GeminiService.js + config/gemini.js, routes/index.js mount, new tests. C = read-only until approved; then .github/workflows/pr-checks.yml, frontend/package.json scripts, .gitignore, 7 tracked generated paths.

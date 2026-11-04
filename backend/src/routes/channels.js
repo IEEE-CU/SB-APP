@@ -65,11 +65,29 @@ router.get(
           req.userScope?.societyId ||
           req.user.societyId?._id ||
           req.user.societyId;
+
+        // AUD-029: a society chosen on the caller's behalf is held to the same scope
+        // check as one they name. A role whose scope covers no society (for example
+        // scope "none") used to get its User.societyId's channels here although every
+        // other channel route refuses it.
+        if (societyId && !isSocietyInScope(req, societyId)) {
+          return res.status(403).json({
+            success: false,
+            message:
+              "Access denied. You do not have access to this society's channels.",
+          });
+        }
       }
 
+      // With no society of their own, callers whose scope covers every society (the
+      // global advisor, branch-wide roles) get the first society, as before. For
+      // anyone else it is out of scope, so there is no default and the list is empty
+      // rather than another society's channels.
       if (!societyId) {
         const firstSociety = await require("../models/Society").findOne().sort({ createdAt: 1 });
-        societyId = firstSociety?._id;
+        if (firstSociety && isSocietyInScope(req, firstSociety._id)) {
+          societyId = firstSociety._id;
+        }
       }
 
       if (!societyId) {
@@ -142,6 +160,15 @@ router.post(
           req.userScope?.societyId ||
           req.user.societyId?._id ||
           req.user.societyId;
+
+        // AUD-029: the same scope check as for a society named in the request.
+        if (targetSocietyId && !isSocietyInScope(req, targetSocietyId)) {
+          return res.status(403).json({
+            success: false,
+            message:
+              "Access denied. You cannot create a channel in this society.",
+          });
+        }
       }
 
       if (!name) {

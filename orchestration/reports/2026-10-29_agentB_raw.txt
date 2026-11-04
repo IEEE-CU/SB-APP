@@ -1,0 +1,39 @@
+**1. NEW-06 / AUD-022: partially done.** The form, the service and the backend audience rule now agree, and the new tests pass. Three existing unit tests that I can't edit now fail.
+
+**2. Files**
+- `backend/src/routes/announcements.js`: a shared `nonAdminAudienceError`. POST now lets administrators pick `ALL`, `SOCIETY` or `LEADERSHIP`. Non-administrators get 403 for `ALL` and for `LEADERSHIP`, and for any `SOCIETY` that isn't their own society. A malformed `societyId` and a missing own society are also refused.
+- `frontend/src/services/announcements.ts`: create and update take `targetAudience` and an optional `societyId`.
+- `frontend/src/types/models.ts` (Announcement interface only): added `targetAudience` and allowed a populated `societyId`.
+- `frontend/src/pages/announcements/AnnouncementFormPage.tsx`: an Audience select. Administrators see All members, A specific society (plus a required society picker) and Leadership. Others see only "My society", fixed to their own society. Edit also sends the audience, which fixes edits wiping `societyId` (the PATCH route nulls it when no audience is sent).
+- New `backend/test/integration/announcement-create.integration.test.js` and `frontend/tests/session/announcement-create.spec.ts`.
+- Existing `announcement-ownership.integration.test.js`, one assertion: the office-bearer `LEADERSHIP` create now expects 403 and an unchanged count. I think D-A2 makes this edit directly required.
+- Nothing outside my ownership list changed. `frontend/test-results/session/` is untracked output from the browser runner.
+
+**3. Before and after**
+- Before: the UI sent no `targetAudience`, so every create returned 400 "Invalid target audience".
+- Before: the backend let office bearers create `LEADERSHIP`, which contradicts D-A2.
+- After: the UI sends a valid audience, and non-administrators can create only for their own society.
+- I did not reproduce the original 400 in a browser before the fix. The integration test "legacy payload" case shows the backend still answers 400 to that payload.
+- Ownership (`createdBy`) and the shared visibility filter are untouched.
+
+**4. Commands and results**
+- `run-integration` on `announcement-create`: 12 of 12 pass.
+- `run-integration` on `announcement-ownership`: 21 of 21 pass. This is with my one assertion change.
+- `run-integration` on `announcement-visibility`: 26 of 26 pass.
+- `run-browser` on `announcement-create.spec.ts`: 2 of 2 pass. The administrator publishes ALL, SOCIETY and LEADERSHIP. The society chair is offered only "My society" and can publish to it.
+- `node --test` on the unit files `announcement-ownership` and `announcement-visibility`: 27 of 30 pass, **3 fail**. Each of the three was a failure in the first run.
+  - "create, edit and delete still need their announcements permission"
+  - "create: createdBy is the authenticated caller…"
+  - "create: a non-administrator cannot choose the sender name…"
+  - They use `LEADERSHIP` as an office-bearer create audience, which D-A2 now forbids.
+  - The file is not in my ownership. The fix is to switch those posts to `SOCIETY` with `societyId` set to society A. That also needs coordinator approval.
+- `eslint`: backend files are clean. The frontend form has one `react-hooks/incompatible-library` warning on `watch()`, the same pattern as the existing `contentValue` watch.
+- Not run: typecheck, build, the full lint, and a red check against the unfixed code. The only integration case that would go red there is the society chair creating `LEADERSHIP`.
+
+**5. Decisions for you**
+- **PATCH is not covered.** A non-administrator can still retarget their own announcement to `LEADERSHIP`, which gets around D-A2. I left it because it is outside the creation task and the existing unit test (line 366) and integration test (line 400) require it to work. A decision on D-A2 for PATCH is needed. I added a comment in the code marking it.
+- **Unit test update:** the three failing unit tests need the coordinator's approval to change.
+- **`priority` is ignored by the backend:** the model has no such field. I left it in the form and did not change it.
+
+**6. Git:** `git status --short` is the list in section 2, with `HEAD` at `70ff8bd`. Nothing was staged or committed.
+[launch] agent B exited with 0 at 14:56:24

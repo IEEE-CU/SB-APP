@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getFinancialInsights, FinancialStateSummary } from "@/services/geminiService";
+import { getFinancialInsights } from "@/services/geminiService";
 import { societyService } from "@/services/societies";
 import { Button, LoadingSpinner } from "@/components/ui";
 import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
@@ -20,18 +20,7 @@ export default function AiAuditPage() {
       const socData = res.data.data;
       setSocieties(socData);
 
-      const summaryState: FinancialStateSummary = {
-        societies: socData.map((s: any) => ({
-          id: s.id || s._id,
-          name: s.name,
-          shortName: s.shortName || s.name.substring(0, 4),
-          budget: s.budget || 0,
-          balance: s.balance ?? s.budget ?? 0,
-        })),
-        transactions: [], // backend balances are dynamically aggregated
-      };
-
-      const result = await getFinancialInsights(summaryState, societyId);
+      const result = await getFinancialInsights(societyId);
       setInsights(result);
     } catch (err) {
       console.error(err);

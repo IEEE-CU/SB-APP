@@ -2,6 +2,7 @@ const express = require("express");
 const User = require("../models/User");
 const { authenticate, adminOnly } = require("../middleware/auth");
 const { authLimiter } = require("../middleware/rateLimiter");
+const { disconnectUserSockets } = require("../services/presenceService");
 
 const router = express.Router();
 
@@ -85,8 +86,16 @@ router.post(
         });
       }
 
+      // The save stamps passwordChangedAt: every token issued to this user before now is
+      // refused, and their live sockets are closed (only after the new password is stored).
       user.password = newPassword;
       await user.save();
+      try {
+        const io = req.app && typeof req.app.get === "function" ? req.app.get("io") : null;
+        if (io) disconnectUserSockets(io, user._id);
+      } catch (socketError) {
+        console.error("Could not close the user's sockets after a password reset:", socketError.message);
+      }
 
       res.json({
         success: true,

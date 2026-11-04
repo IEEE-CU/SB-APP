@@ -3,7 +3,10 @@ const CalendarEvent = require("../models/CalendarEvent");
 const Message = require("../models/Message");
 const Event = require("../models/Event");
 const { authenticate, societyAccess } = require("../middleware/auth");
-const { requirePermission } = require("../middleware/rbac");
+const { requirePermission, attachScope, isSocietyInScope, isGrantingLevel } = require("../middleware/rbac");
+const { resolvePermissions } = require("../services/resolvePermissions");
+const Channel = require("../models/Channel");
+const Conversation = require("../models/Conversation");
 const { parseLimit } = require("../utils/pagination");
 
 const router = express.Router();
@@ -16,7 +19,7 @@ router.use(authenticate);
  * @desc    Aggregate CalendarEvent, Message (with calendarEvent populated), and Event collections for a given month range
  * @access  All authenticated users
  */
-router.get("/unified", async (req, res, next) => {
+router.get("/unified", attachScope("societyId"), async (req, res, next) => {
   try {
     const { start, end, societyId } = req.query;
 
@@ -37,22 +40,48 @@ router.get("/unified", async (req, res, next) => {
     // Build filters for each collection
     const calFilter = { date: dateFilter };
     const eventFilter = { date: dateFilter };
-    const messageFilter = { "calendarEvent.date": dateFilter };
 
     if (societyId) {
       calFilter.societyId = societyId;
       eventFilter.societyId = societyId;
-      messageFilter.societyId = societyId;
     }
 
     const BoardCard = require("../models/BoardCard");
     const Task = require("../models/Task");
-    const boardCardFilter = { dueDate: dateFilter };
     const taskFilter = { dueDate: dateFilter, userId: req.user._id };
-    if (societyId) {
-      boardCardFilter.societyId = societyId;
-      taskFilter.societyId = societyId;
+    if (societyId) taskFilter.societyId = societyId;
+
+    // AUD (SEC-CLOSE-01): chat messages and board cards are private to their conversation
+    // or channel, never to "anyone signed in". They are included only where the caller could
+    // read them through the channel / conversation / board APIs themselves:
+    //   - a direct message: the caller is one of its two participants;
+    //   - a channel message or board card: the caller holds community_hub:view AND the
+    //     channel's society is within the caller's society scope (same rule as
+    //     routes/channels.js and routes/boards.js).
+    // Anything else (including messages with neither a channel nor a conversation) is left out.
+    const resolved = await resolvePermissions(req.user._id);
+    const canReadHub = isGrantingLevel(resolved.permissions["community_hub:view"]);
+
+    const myConversations = await Conversation.find({
+      $or: [{ userOneId: req.user._id }, { userTwoId: req.user._id }],
+    }).select("_id");
+    let visibleChannelIds = [];
+    if (canReadHub) {
+      const channels = await Channel.find(req.scopeFilter || {}).select("_id societyId");
+      visibleChannelIds = channels
+        .filter((channel) => isSocietyInScope(req, channel.societyId) && (!societyId || String(channel.societyId) === String(societyId)))
+        .map((channel) => channel._id);
     }
+
+    const messageFilter = {
+      "calendarEvent.date": dateFilter,
+      $or: [
+        { conversationId: { $in: myConversations.map((c) => c._id) } },
+        { channelId: { $in: visibleChannelIds } },
+      ],
+    };
+    const boardCardFilter = { dueDate: dateFilter, channelId: { $in: visibleChannelIds } };
+    if (societyId) messageFilter.societyId = societyId;
 
     // Fetch in parallel across all sources
     const [calendarEvents, events, messages, boardCards, userTasks] = await Promise.all([
@@ -60,8 +89,8 @@ router.get("/unified", async (req, res, next) => {
       Event.find(eventFilter).populate("societyId", "name shortName"),
       Message.find(messageFilter)
         .populate("societyId", "name shortName")
-        .populate("authorId", "name email"),
-      BoardCard.find(boardCardFilter).populate("assignees", "name email"),
+        .populate("authorId", "name"),
+      BoardCard.find(boardCardFilter).populate("assignees", "name"),
       Task.find(taskFilter),
     ]);
 

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { User, Permission, AccessLevel } from "@/types/models";
 import { authService } from "@/services/auth";
 import api from "@/lib/api";
+import { disconnectSocket, reconnectSocket } from "@/lib/socket";
 
 interface AuthState {
   token: string | null;
@@ -13,6 +14,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  replaceToken: (token: string) => void;
   fetchPermissions: () => Promise<void>;
   getAccessLevel: (module: string) => AccessLevel;
   updateUserProfile: (data: Partial<User>) => void;
@@ -57,6 +59,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
+    // End the realtime session with the user: leaving the socket open would keep the previous
+    // user's rooms and let it reconnect on its own.
+    disconnectSocket();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("permissions");
@@ -70,6 +75,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       userScope: null,
       isAuthenticated: false,
     });
+  },
+
+  // The token returned by a password change (the old one is no longer accepted).
+  replaceToken: (token) => {
+    localStorage.setItem("token", token);
+    set({ token, isAuthenticated: true });
+    reconnectSocket();
   },
 
   fetchPermissions: async () => {

@@ -1,0 +1,13 @@
+## terms (HEAD 70ff8bd)
+d6b10675febacb7da71b850417f4b18b8aae6449 backend/src/routes/societies.js
+61c7ab53ace29a31d2f35746ebb7206c2fd1afce backend/test/integration/society-terms.integration.test.js
+b720f7f8ea201b8d1dee513046779883c0cf84f9 backend/test/unit/society-terms.test.js
+## announcements (HEAD 70ff8bd)
+d55d6679432856a50c1646946fdcae41810eec4c backend/src/routes/announcements.js
+8fc39781945f42bfdaaa6f055d565fd485ec3de3 backend/test/integration/announcement-ownership.integration.test.js
+5cda43a082ec0809c087984a3aec052f811c8dc8 backend/test/unit/announcement-ownership.test.js
+349785a65faaa11b85b401b03293cdfa704ba471 frontend/src/pages/announcements/AnnouncementFormPage.tsx
+3fb3b7333383182f84cf8815a09762a5dbb85aa3 frontend/src/services/announcements.ts
+f781d43b2d3388e95ce68648ef0f5e71efa0c392 frontend/src/types/models.ts
+2f68e89c784fa2ac252a0d48ba741bc5abe82650 backend/test/integration/announcement-create.integration.test.js
+cec7a53e3cb4464bdbb31692a4924dd1a0ac829b frontend/tests/session/announcement-create.spec.ts

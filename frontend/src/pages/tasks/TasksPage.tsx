@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { CheckSquare, Plus, Trash2, Clock } from "lucide-react";
 import api from "@/lib/api";
 import { useSocietyStore } from "@/store/societyStore";
+import { useAuthStore } from "@/store/authStore";
+import { resolveTaskSociety, taskSocietyNotice } from "@/lib/taskSociety";
 import { Button } from "@/components/ui";
 import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,7 +22,15 @@ export interface TaskItem {
 }
 
 export default function TasksPage() {
-  const { activeSocietyId } = useSocietyStore();
+  const { activeSocietyId, societies } = useSocietyStore();
+  const user = useAuthStore((state) => state.user);
+  // The society tasks are listed under and created in. Non-admins always use
+  // their own society; administrators use the society they selected. Never the
+  // first society by default (see lib/taskSociety.ts).
+  const taskSociety = resolveTaskSociety({ user, activeSocietyId, societies });
+  const taskSocietyStatus = taskSociety.status;
+  const taskSocietyId = taskSociety.status === "ready" ? taskSociety.societyId : null;
+  const societyNotice = taskSocietyNotice(taskSociety, activeSocietyId);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -31,9 +41,15 @@ export default function TasksPage() {
   const [categoryName, setCategoryName] = useState("General");
 
   const fetchTasks = useCallback(async () => {
+    if (!taskSocietyId) {
+      // No society to list under yet: wait while loading, otherwise show nothing.
+      setTasks([]);
+      setLoading(taskSocietyStatus === "loading");
+      return;
+    }
     try {
       setLoading(true);
-      const res = await api.get("/tasks", { params: { societyId: activeSocietyId } });
+      const res = await api.get("/tasks", { params: { societyId: taskSocietyId } });
       setTasks(res.data?.data || []);
     } catch {
       // Fallback demo tasks
@@ -45,7 +61,7 @@ export default function TasksPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeSocietyId]);
+  }, [taskSocietyId, taskSocietyStatus]);
 
   useEffect(() => {
     fetchTasks();
@@ -82,7 +98,7 @@ export default function TasksPage() {
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !taskSocietyId) return;
 
     try {
       setSubmitting(true);
@@ -91,7 +107,7 @@ export default function TasksPage() {
         description,
         dueDate: dueDate || null,
         categoryName: categoryName || "General",
-        societyId: activeSocietyId,
+        societyId: taskSocietyId,
       });
       if (res.data?.data) {
         setTasks((prev) => [res.data.data, ...prev]);
@@ -133,10 +149,11 @@ export default function TasksPage() {
             <CheckSquare size={22} className="text-primary" />
             <h1 className="text-heading-2 font-bold text-ink">Personal & Team Tasks</h1>
           </div>
-          <Button onClick={() => setIsAddModalOpen(true)}>
+          <Button onClick={() => setIsAddModalOpen(true)} disabled={!taskSocietyId}>
             <Plus size={16} /> New Task
           </Button>
         </div>
+        {societyNotice && <p className="text-body-sm text-ink-muted">{societyNotice}</p>}
 
         {/* Task List */}
         <div className="space-y-3">

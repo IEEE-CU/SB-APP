@@ -1,0 +1,630 @@
+
+[runner] ===== test/integration/presence-heartbeat.integration.test.js
+[runner] fresh harness ready (pid 24080)
+▶ presence heartbeat
+  ✔ a valid status is relayed to the society with the sender's own identity (614.006ms)
+  ✔ markup, oversized text and unknown statuses are not relayed (523.772ms)
+  ✔ a flood of heartbeats is relayed only up to the burst allowance (1532.1737ms)
+  ✔ the same status repeated is relayed once (823.3788ms)
+  ✔ another society still hears nothing (existing isolation unchanged) (1035.6471ms)
+✔ presence heartbeat (4530.1319ms)
+ℹ tests 5
+ℹ suites 1
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4599.0193
+[runner] test/integration/presence-heartbeat.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/project-report-reads.integration.test.js
+[runner] fresh harness ready (pid 19356)
+▶ list
+  ✔ a non-admin sees only their own society's reports, with matching totals (324.3106ms)
+  ✔ the other society sees only its own (238.8769ms)
+  ✔ a society named in the query cannot broaden or redirect the list (40.6038ms)
+  ✔ a project filter cannot reach another society's reports (6.2268ms)
+  ✔ pagination metadata and slices follow the scoped query (26.7465ms)
+  ✔ reports are newest first (9.1479ms)
+  ✔ a caller without a society is 403, whatever the query says (255.6927ms)
+  ✔ an administrator sees every society and can filter by one (231.2712ms)
+  ✔ anonymous and invalid-token requests are 401 (2.5333ms)
+  ✔ the /reports alias is scoped identically (7.2008ms)
+✔ list (1163.2921ms)
+▶ detail
+  ✔ an own-society report is returned with its envelope (10.6326ms)
+  ✔ a report with a project returns the populated project (5.518ms)
+  ✔ a foreign report is 404, identical to a nonexistent one, and leaks nothing (26.8275ms)
+  ✔ a malformed id is still a clean 400 (4.678ms)
+  ✔ a caller without a society gets 404 for every report (7.4317ms)
+  ✔ an administrator reads reports of any society (10.3099ms)
+  ✔ anonymous is 401 (1.005ms)
+✔ detail (66.7506ms)
+▶ reports by project
+  ✔ an own-society project returns only its own society's reports (7.2421ms)
+  ✔ a foreign project is 404, identical to a nonexistent one (7.9776ms)
+  ✔ the other society's chair reads only their own project (10.642ms)
+  ✔ a malformed project id is a clean 400 for a non-admin (3.6655ms)
+  ✔ a caller without a society cannot use project reads to bypass scope (7.0163ms)
+  ✔ an administrator keeps cross-society access (8.3338ms)
+  ✔ anonymous is 401 (1.1211ms)
+✔ reports by project (46.3577ms)
+▶ create: project and society must agree
+  ✔ a valid own-society report for an own-society project is created (19.2231ms)
+  ✔ the society still defaults to the caller's, and a report without a project is unaffected (24.1466ms)
+  ✔ a non-admin cannot attach a report to another society's project (20.043ms)
+  ✔ a mismatch is rejected for an administrator too, in both directions (29.7097ms)
+  ✔ an administrator can still create a matching report in any society (9.8127ms)
+  ✔ a nonexistent project is 404 and a malformed project id is 400, with nothing created (27.6127ms)
+  ✔ request-supplied society values cannot bypass the checks (33.0032ms)
+  ✔ the existing permission and authentication requirements are intact (20.5692ms)
+  ✔ the server stays healthy after the rejected requests (1.7625ms)
+✔ create: project and society must agree (186.5853ms)
+ℹ tests 33
+ℹ suites 4
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1635.1261
+[runner] test/integration/project-report-reads.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/project-report-scope.integration.test.js
+[runner] fresh harness ready (pid 25336)
+▶ AUD-021: office bearer of A against society B's report
+  ✔ PATCH is denied and the stored report is unchanged (403.2171ms)
+  ✔ DELETE is denied and the report still exists (15.5765ms)
+  ✔ the /reports alias of the same router is guarded identically (22.7968ms)
+  ✔ an unauthenticated caller is rejected with 401 (3.3997ms)
+✔ AUD-021: office bearer of A against society B's report (445.9016ms)
+▶ AUD-021: office bearer of A against A's own reports
+  ✔ PATCH succeeds and persists (16.8528ms)
+  ✔ DELETE succeeds on a disposable report of A and removes it (28.1993ms)
+✔ AUD-021: office bearer of A against A's own reports (45.4515ms)
+▶ AUD-021: administrator
+  ✔ PATCH and DELETE another society's disposable report (464.8902ms)
+✔ AUD-021: administrator (465.1988ms)
+▶ AUD-021: missing and malformed report identifiers
+  ✔ an unknown report id returns 404 and nothing is created or removed (24.9393ms)
+  ✔ a malformed id is a clean 400 (not a 500) and changes nothing (30.3318ms)
+✔ AUD-021: missing and malformed report identifiers (55.6023ms)
+ℹ tests 9
+ℹ suites 4
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1082.5518
+[runner] test/integration/project-report-scope.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/rate-limit-budget.integration.test.js
+[runner] fresh harness ready (pid 22856)
+▶ what costs one request
+  ✔ health, anonymous and authenticated requests, and an unknown path (64.1861ms)
+  ✔ a successful login (439.3301ms)
+✔ what costs one request (988.2034ms)
+▶ what costs nothing
+  ✔ a CORS preflight (10.3098ms)
+  ✔ Socket.IO transport requests (the realtime handshake and reconnects) (28.7857ms)
+✔ what costs nothing (39.9532ms)
+▶ whose quota it is
+  ✔ different users on one address spend the same counter (87.4949ms)
+✔ whose quota it is (88.0289ms)
+ℹ tests 5
+ℹ suites 3
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1348.2197
+[runner] test/integration/rate-limit-budget.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/rate-limit-order.integration.test.js
+[runner] fresh harness ready (pid 25132)
+▶ requests rejected by the body parser are rate limited
+  ✔ malformed-JSON requests start returning 429 within the general limit (1048.2382ms)
+  ✔ once limited, valid requests from that address are limited too (one shared counter) (3.1891ms)
+  ✔ a different claimed address does not get a fresh counter (the header is not trusted) (2.6751ms)
+✔ requests rejected by the body parser are rate limited (1055.958ms)
+ℹ tests 3
+ℹ suites 1
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1207.6858
+[runner] test/integration/rate-limit-order.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/reactions.integration.test.js
+[runner] fresh harness ready (pid 14936)
+▶ the mounted route toggles a reaction
+  ✔ an authorized member adds a reaction, and the same request again removes it (290.1669ms)
+  ✔ never more than one record per user and emoji, however often it is requested (131.9177ms)
+  ✔ different users and different emoji are independent records (86.8522ms)
+  ✔ simultaneous identical requests never produce a duplicate record (the unique index holds) (57.7823ms)
+✔ the mounted route toggles a reaction (948.8492ms)
+▶ only the mounted route exists
+  ✔ the path the frontend used before, and a DELETE on the real path, are not routes (12.7424ms)
+  ✔ the body must carry `value`; the old `emoji` key alone is a 400 and creates nothing (22.3222ms)
+✔ only the mounted route exists (35.3075ms)
+▶ authorization
+  ✔ anonymous requests are rejected (6.3204ms)
+  ✔ a user without the community_hub permission is denied, whatever the message (221.6701ms)
+  ✔ a channel message of another society cannot be reacted to, and nothing is written (228.5839ms)
+  ✔ a direct message can be reacted to by its participants only (30.8722ms)
+  ✔ an unknown or malformed message id is a 404/400, not a server error (12.0869ms)
+✔ authorization (499.9939ms)
+ℹ tests 11
+ℹ suites 3
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1567.9745
+[runner] test/integration/reactions.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/registration-policy.integration.test.js
+[runner] fresh harness ready (pid 14520)
+▶ who can create an account
+  ✔ an anonymous request is rejected with 401, creates no user and returns no token (156.6148ms)
+  ✔ an invalid or malformed token is rejected the same way (37.8466ms)
+  ✔ an ordinary authenticated user cannot create accounts (403, nothing created, no token) (937.7081ms)
+  ✔ an administrator can still create an account, which then logs in (624.7872ms)
+✔ who can create an account (1757.941ms)
+▶ the new account's privileges are fixed by the server
+  ✔ forged role, society and approval fields are ignored, even from an administrator (236.1456ms)
+  ✔ an ordinary user cannot escalate by forging the same fields (20.803ms)
+  ✔ the token issued to an administrator-created account carries only OFFICE_BEARER (223.0492ms)
+✔ the new account's privileges are fixed by the server (480.3128ms)
+▶ existing validation is preserved for administrators
+  ✔ short, non-string, missing and duplicate inputs are still rejected and create nothing (247.5895ms)
+✔ existing validation is preserved for administrators (247.7975ms)
+▶ login is unaffected
+  ✔ fixture users still log in, wrong passwords and unknown users are still 401 (412.7078ms)
+  ✔ change-password still works for an authenticated user on its own account (632.1469ms)
+✔ login is unaffected (1045.0159ms)
+▶ no alternate entry point creates an account
+  ✔ aliases and look-alike routes are 401/403/404 for anonymous and ordinary callers and create nothing (127.6067ms)
+  ✔ there is no administrator route besides /auth/register that creates a user (18.2094ms)
+✔ no alternate entry point creates an account (146.0282ms)
+ℹ tests 12
+ℹ suites 5
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3743.9846
+[runner] test/integration/registration-policy.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/role-management.integration.test.js
+[runner] fresh harness ready (pid 4080)
+▶ role creation: authentication and permission
+  ✔ anonymous requests are 401 (48.5185ms)
+  ✔ users without roles_access:create cannot create roles, and create nothing (748.5168ms)
+  ✔ reading roles keeps its permission (roles_access:view) (253.7725ms)
+✔ role creation: authentication and permission (1084.8985ms)
+▶ role creation: the privileged tier is reserved to the SB Faculty Advisor
+  ✔ a delegated holder creates ordinary roles (35.6997ms)
+  ✔ a delegated holder cannot create a faculty_advisor- or super_admin-level role, a system role, or the super admin's name (102.1423ms)
+  ✔ the refusal discloses nothing about existing roles (11.062ms)
+  ✔ a non-string level, name or description is a 400 and cannot slip past the gate (46.457ms)
+  ✔ the SB Faculty Advisor can create every kind of role (existing administrative workflow) (66.6604ms)
+  ✔ invalid levels and missing fields keep their established errors (23.2554ms)
+  ✔ body fields cannot attach permissions or assign the role to anyone (46.8358ms)
+✔ role creation: the privileged tier is reserved to the SB Faculty Advisor (332.8633ms)
+▶ role assignment
+  ✔ there is no role-assignment endpoint, and profile updates ignore role fields (38.6706ms)
+✔ role assignment (38.9168ms)
+▶ role-permission matrix: authorization is unchanged
+  ✔ anonymous requests are 401 (1.9188ms)
+  ✔ callers below the faculty_advisor level cannot edit the matrix, even with roles_access:create (39.5398ms)
+  ✔ faculty_advisor-level and super_admin-level callers can edit the matrix, by id and by name/key (35.032ms)
+  ✔ POST /permissions stays super-admin-only (42.1857ms)
+✔ role-permission matrix: authorization is unchanged (118.9785ms)
+▶ role-permission matrix: what is referenced must exist
+  ✔ a role or permission id that exists nowhere is a 404 and writes nothing (28.5262ms)
+  ✔ unknown role names and permission keys are 404s (22.4889ms)
+  ✔ non-string inputs and bad access levels are 400s, never 500s (35.0103ms)
+  ✔ a valid update creates the pair once and then updates it in place (57.4309ms)
+  ✔ the server stays healthy after the rejected requests (1.9711ms)
+✔ role-permission matrix: what is referenced must exist (145.8853ms)
+ℹ tests 20
+ℹ suites 5
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1904.2182
+[runner] test/integration/role-management.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/session-revocation.integration.test.js
+[runner] fresh harness ready (pid 14240)
+▶ HTTP: which tokens are accepted
+  ✔ a valid token works (274.5224ms)
+  ✔ expired, wrongly signed, malformed, unsigned and subject-less tokens are refused (21.7121ms)
+  ✔ the role claim inside a valid token is ignored: it cannot make a user an administrator (12.3626ms)
+  ✔ an accepted token does not bypass society scope or permissions (22.2071ms)
+✔ HTTP: which tokens are accepted (331.6657ms)
+▶ HTTP: changes to the account or its authorization take effect at once
+  ✔ a deleted user's token is refused on the next request (537.0084ms)
+✔ HTTP: changes to the account or its authorization take effect at once (537.165ms)
+▶ sockets: a revoked permission ends delivery before the API answers
+  ✔ positive control: a joined member receives channel messages (235.3455ms)
+  ✔ after community_hub:view is revoked for the role, the live socket stops receiving, re-join is refused, restoring works (1824.0368ms)
+  ✔ the typing/canvas relay room is released too (1298.9471ms)
+  ✔ a socket whose user was deleted is disconnected at the next matrix change (454.6023ms)
+✔ sockets: a revoked permission ends delivery before the API answers (3813.3247ms)
+ℹ tests 9
+ℹ suites 3
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4777.647
+[runner] test/integration/session-revocation.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/society-authorization.integration.test.js
+[runner] fresh harness ready (pid 22704)
+▶ AUD-018: PATCH /societies/:id/* is authorized against the URL's society
+  ✔ an office bearer of A cannot change B's logo, and B is unchanged (276.0103ms)
+  ✔ an office bearer of A cannot change B's advisor signature (21.8833ms)
+  ✔ an office bearer of A cannot add a member to B (state unchanged) (16.5772ms)
+  ✔ an office bearer of A cannot patch B's profile or replace its office bearers (21.5122ms)
+  ✔ body or query society ids of the caller do not rescue a foreign :id (21.597ms)
+  ✔ the same office bearer can perform the equivalent change on society A (24.3428ms)
+  ✔ an administrator keeps cross-society capability (and changes persist) (216.3628ms)
+  ✔ an unauthenticated caller is rejected with 401 (1.7141ms)
+✔ AUD-018: PATCH /societies/:id/* is authorized against the URL's society (614.1838ms)
+▶ AUD-018: missing or malformed society identifiers fail safely
+  ✔ a malformed id is denied (not a 500) for an office bearer (4.3039ms)
+  ✔ a malformed id gives a clean 400 for an administrator (4.8869ms)
+  ✔ a well-formed id of a society that does not exist is denied for an office bearer and 404 for an administrator (7.3116ms)
+  ✔ an absent id matches no society route (404) and changes nothing (25.3192ms)
+  ✔ an empty id segment is evaluated as the next segment, never as the caller's society (34.3189ms)
+✔ AUD-018: missing or malformed society identifiers fail safely (76.5115ms)
+▶ AUD-018: routes where :id is a resource id are not treated as society routes
+  ✔ an office bearer can edit their own event whose id is not their society id (260.5014ms)
+✔ AUD-018: routes where :id is a resource id are not treated as society routes (260.6325ms)
+ℹ tests 14
+ℹ suites 3
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1117.6285
+[runner] test/integration/society-authorization.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/society-patch.integration.test.js
+[runner] fresh harness ready (pid 10464)
+▶ a permitted update is persisted
+  ✔ an office bearer's name, description and type are stored and read back (299.0089ms)
+  ✔ the response envelope is unchanged (8.2931ms)
+  ✔ a partial update changes only the fields sent (19.7861ms)
+  ✔ an administrator can update any society (440.9383ms)
+  ✔ an invalid roster entry elsewhere in the document does not block a rename (11.5538ms)
+✔ a permitted update is persisted (802.1759ms)
+▶ protected fields cannot be overwritten
+  ✔ only the permitted fields change, whatever else the body carries (25.8641ms)
+✔ protected fields cannot be overwritten (26.03ms)
+▶ budget follows the existing policy (no new policy)
+  ✔ an administrator's budget change through this route is stored (16.1275ms)
+  ✔ an office bearer's budget value is ignored: not stored, not echoed, other fields still saved (17.1128ms)
+  ✔ a body claiming administrator rights does not unlock the budget (19.1462ms)
+  ✔ the dedicated admin-only budget route is unchanged (20.6717ms)
+✔ budget follows the existing policy (no new policy) (73.4323ms)
+▶ rejected updates change nothing
+  ✔ an invalid value is a 400 and nothing, including the valid fields sent with it, is stored (58.1109ms)
+  ✔ a negative administrator budget is a 400 and the same request's other fields are not stored (16.9164ms)
+  ✔ the validation error keeps the application's error contract (7.5586ms)
+  ✔ the server stays healthy after the rejected requests (1.382ms)
+✔ rejected updates change nothing (84.411ms)
+▶ authorization is unchanged and denied callers change nothing
+  ✔ another society's office bearer is 403 and the society is untouched (20.9563ms)
+  ✔ a caller with no society is 403 (218.6511ms)
+  ✔ anonymous and invalid-token requests are 401 (11.8876ms)
+  ✔ a malformed id is 403 for an office bearer and a clean 400 for an administrator (8.6773ms)
+  ✔ a nonexistent society is 403 for an office bearer and 404 for an administrator, with nothing created (21.8756ms)
+✔ authorization is unchanged and denied callers change nothing (282.4191ms)
+▶ RBAC: settings:edit on top of the society scope
+  ✔ a same-society member without settings:edit is 403 PERMISSION_DENIED and nothing changes (238.0179ms)
+  ✔ the permission is checked before the payload: invalid input from a member is 403, not 400 (5.1769ms)
+  ✔ a foreign society's chair holds settings:edit but is still denied by the society scope (13.0505ms)
+  ✔ a society-less user is denied, and so is one with no role (11.2769ms)
+  ✔ the authorized chair can update the metadata (the permission is what unlocks it) (11.1771ms)
+  ✔ the authorized chair's metadata is stored while a budget in the same request is not (18.4923ms)
+  ✔ an administrator keeps cross-society access through the RBAC model (11.9221ms)
+  ✔ the dedicated budget route stays administrator-only, even for a chair holding settings:edit (26.4678ms)
+  ✔ malformed ids and invalid payloads keep their established behavior for an authorized chair (10.6697ms)
+✔ RBAC: settings:edit on top of the society scope (346.784ms)
+ℹ tests 28
+ℹ suites 6
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1783.6769
+[runner] test/integration/society-patch.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/society-pii.integration.test.js
+[runner] fresh harness ready (pid 9032)
+▶ AUD-025: office bearer of A inspecting society B
+  ✔ the list omits B's roster and phones but keeps its public bearer data (272.7604ms)
+  ✔ the detail omits B's roster and phones (11.4871ms)
+  ✔ GET /:id/members is denied with 403 and returns no PII (6.9029ms)
+  ✔ GET /:id/office-bearers keeps names, positions and e-mails but omits phones (6.9105ms)
+  ✔ the combined list response never contains any of B's restricted values (8.1792ms)
+✔ AUD-025: office bearer of A inspecting society B (307.1646ms)
+▶ AUD-025: a caller inspecting their own society
+  ✔ the list entry keeps the roster and phones (8.3325ms)
+  ✔ detail, members and office-bearers endpoints return full data (17.6724ms)
+  ✔ the symmetric case holds: office bearer of B sees B's roster and not A's (223.4804ms)
+  ✔ a non-officer user with a society (member A) sees A's roster but not B's (218.6002ms)
+✔ AUD-025: a caller inspecting their own society (468.4261ms)
+▶ AUD-025: administrator
+  ✔ keeps cross-society access to rosters and phones (231.6609ms)
+✔ AUD-025: administrator (231.7775ms)
+▶ AUD-025: fail closed without a valid society scope
+  ✔ a user with no society cannot read any roster or phone (230.3338ms)
+  ✔ an unauthenticated caller is rejected with 401 on every endpoint (3.0075ms)
+✔ AUD-025: fail closed without a valid society scope (233.465ms)
+ℹ tests 12
+ℹ suites 4
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1302.1898
+[runner] test/integration/society-pii.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/socket-auth.integration.test.js
+[runner] fresh harness ready (pid 18172)
+▶ handshake rejection
+  ✔ no token is rejected (30.5503ms)
+  ✔ an invalid token is rejected (10.92ms)
+  ✔ a token signed with another secret is rejected (8.7821ms)
+  ✔ an already-expired token is rejected (7.0207ms)
+  ✔ a validly signed token for a deleted user is rejected (560.2531ms)
+✔ handshake rejection (618.5273ms)
+▶ handshake acceptance
+  ✔ a valid token for an existing fixture user connects and can use the protocol (232.8906ms)
+  ✔ the server stays healthy after the rejected handshakes (3.4301ms)
+✔ handshake acceptance (236.542ms)
+▶ token expiry on a live socket
+  ✔ the server disconnects the socket when its JWT expires, and refuses further use (2179.3679ms)
+  ✔ an expired socket no longer receives events for rooms it had joined (2011.4597ms)
+✔ token expiry on a live socket (4191.2436ms)
+ℹ tests 9
+ℹ suites 3
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5149.3325
+[runner] test/integration/socket-auth.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/socket-reconnect.integration.test.js
+[runner] fresh harness ready (pid 16748)
+▶ a reconnected socket starts with no rooms
+  ✔ no delivery until it joins again, then delivery resumes; the message sent meanwhile is not replayed (2274.2123ms)
+✔ a reconnected socket starts with no rooms (2275.7048ms)
+▶ every join is authorized again after a reconnect
+  ✔ another society's channel and other users' conversation are refused, however the user was connected before (272.2208ms)
+  ✔ a permission revoked while the user was offline is honoured; restoring it allows the join again (257.1964ms)
+✔ every join is authorized again after a reconnect (529.756ms)
+▶ a revoked session cannot reconnect
+  ✔ after an administrator reset the old token is refused at the handshake and gets no room (856.4085ms)
+✔ a revoked session cannot reconnect (856.5412ms)
+ℹ tests 4
+ℹ suites 3
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3725.9136
+[runner] test/integration/socket-reconnect.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/socket-rooms.integration.test.js
+[runner] fresh harness ready (pid 20508)
+▶ channel rooms: authorized join and end-to-end delivery
+  ✔ HTTP message -> message:new reaches an authorized member of the channel (530.6748ms)
+  ✔ an administrator (branch-wide role) can join channels of either society (228.6497ms)
+✔ channel rooms: authorized join and end-to-end delivery (760.1598ms)
+▶ channel rooms: cross-society isolation
+  ✔ a society A user cannot join B's channel and never receives B's messages (1763.2219ms)
+  ✔ guessing the room name or using the legacy room does not grant membership (1253.8095ms)
+  ✔ a connected socket that never joined a room receives no channel messages (1254.1698ms)
+  ✔ a user without any hub permission or society cannot join a channel (233.7013ms)
+✔ channel rooms: cross-society isolation (4505.8418ms)
+▶ channel rooms: leaving and disconnecting
+  ✔ after channel:leave a socket no longer receives the channel's messages (1230.9678ms)
+  ✔ a disconnected client receives nothing further and others are unaffected (58.6368ms)
+✔ channel rooms: leaving and disconnecting (1290.3362ms)
+▶ malformed join and leave payloads
+  ✔ are refused safely and the server and the socket keep working (50.7486ms)
+✔ malformed join and leave payloads (50.9551ms)
+▶ conversation rooms
+  ✔ participants can join; message:new reaches the other participant only (1540.4944ms)
+  ✔ a non-participant cannot post into the conversation and nothing is delivered (1234.5232ms)
+  ✔ malformed or unknown conversation ids are refused (15.4004ms)
+  ✔ after conversation:leave the participant stops receiving its messages (1248.0395ms)
+✔ conversation rooms (4039.1649ms)
+ℹ tests 13
+ℹ suites 5
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10755.7604
+[runner] test/integration/socket-rooms.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/socket-typing-presence.integration.test.js
+[runner] fresh harness ready (pid 13688)
+▶ typing in a channel
+  ✔ members receive the typer with a server-derived identity; spoofed fields are ignored (1112.8778ms)
+  ✔ a user who is not in the channel room cannot make typing appear (1572.0139ms)
+  ✔ typing:stop removes the typer (28.0514ms)
+  ✔ typing expires after the 3 s inactivity window without a stop (3036.0348ms)
+  ✔ repeating typing:start keeps the typer active past the first window (3642.9704ms)
+  ✔ leaving the channel clears the typer promptly (not via expiry) (25.5317ms)
+  ✔ disconnecting clears the typer promptly (23.0623ms)
+  ✔ malformed typing payloads are ignored; the server and real typing keep working (1353.8371ms)
+✔ typing in a channel (10796.4716ms)
+▶ typing in a conversation
+  ✔ only participants receive typing; identity is server-derived (2175.4388ms)
+✔ typing in a conversation (2175.8689ms)
+▶ society-scoped presence
+  ✔ a society's presence reaches its own members only (1675.8574ms)
+  ✔ heartbeat status stays inside the society and defaults to online (843.1323ms)
+  ✔ with two sockets, closing one keeps the user online; closing the last sends offline (631.5245ms)
+  ✔ a user with no society scope causes no presence at all (1550.8015ms)
+  ✔ a branch-wide administrator (no society room) causes no presence leakage (1272.6128ms)
+  ✔ no presence payload anywhere contains socketCount or lastSeen (18.8457ms)
+✔ society-scoped presence (5993.7554ms)
+ℹ tests 15
+ℹ suites 3
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19041.6966
+[runner] test/integration/socket-typing-presence.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/storage-unmounted.integration.test.js
+[runner] fresh harness ready (pid 4388)
+▶ storage API is unavailable to an anonymous caller
+  ✔ GET /storage/files returns the application's 404 (28.6676ms)
+  ✔ POST /storage/upload returns the application's 404 (11.6371ms)
+  ✔ GET /storage/download/:blobName returns the application's 404 (2.4213ms)
+  ✔ DELETE /storage/:blobName returns the application's 404 (2.2479ms)
+✔ storage API is unavailable to an anonymous caller (46.6113ms)
+▶ storage API is unavailable to an office bearer caller
+  ✔ GET /storage/files returns the application's 404 (232.2764ms)
+  ✔ POST /storage/upload returns the application's 404 (2.6722ms)
+  ✔ GET /storage/download/:blobName returns the application's 404 (1.3588ms)
+  ✔ DELETE /storage/:blobName returns the application's 404 (1.8916ms)
+✔ storage API is unavailable to an office bearer caller (238.4868ms)
+▶ storage API is unavailable to an administrator caller
+  ✔ GET /storage/files returns the application's 404 (220.011ms)
+  ✔ POST /storage/upload returns the application's 404 (1.4861ms)
+  ✔ GET /storage/download/:blobName returns the application's 404 (0.9385ms)
+  ✔ DELETE /storage/:blobName returns the application's 404 (0.9724ms)
+✔ storage API is unavailable to an administrator caller (223.6518ms)
+▶ storage containment side effects
+  ✔ no file metadata was created by the attempted upload (101.956ms)
+  ✔ an unauthenticated request does not reach any storage handler (not 401/500) (1.3796ms)
+  ✔ the standalone test-server mount path /api/storage is not served either (1.1858ms)
+  ✔ control: other routes are still mounted and the app is healthy (8.7426ms)
+✔ storage containment side effects (113.4634ms)
+ℹ tests 16
+ℹ suites 4
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 694.1111
+[runner] test/integration/storage-unmounted.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/task-create.integration.test.js
+[runner] fresh harness ready (pid 16172)
+▶ a user with a society
+  ✔ creates a task under their own society by default (377.1243ms)
+  ✔ creates a task when naming their own existing society (13.9455ms)
+  ✔ naming a different existing society is 403 and creates nothing (465.9333ms)
+  ✔ identity claims in the body cannot unlock another society (16.7959ms)
+  ✔ naming their own society in a different letter case still works (11.81ms)
+  ✔ a userId in the body never changes the owner (25.3354ms)
+  ✔ an empty societyId falls back to their own society, as before (11.28ms)
+✔ a user with a society (923.3984ms)
+▶ an invalid society creates nothing
+  ✔ a nonexistent society is 404 for a user with a society and for one without (441.2789ms)
+  ✔ malformed society ids are 400 (46.8139ms)
+  ✔ a missing title and an invalid enum value are still 400 (18.5894ms)
+  ✔ anonymous and invalid-token requests are 401 (14.4353ms)
+  ✔ the server stays healthy after the rejected requests (1.3359ms)
+✔ an invalid society creates nothing (522.8309ms)
+▶ callers without a society
+  ✔ cannot create a task, whether or not they name an existing society (22.8627ms)
+  ✔ no default society is assigned to them (8.3344ms)
+✔ callers without a society (31.3617ms)
+▶ administrators
+  ✔ can create a task under any existing society, owned by themselves (21.1671ms)
+  ✔ with no society selected are denied (400) and nothing is created (23.0465ms)
+  ✔ still cannot name a malformed or nonexistent society (16.3643ms)
+✔ administrators (60.8331ms)
+ℹ tests 17
+ℹ suites 4
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1610.3644
+[runner] test/integration/task-create.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/task-ownership.integration.test.js
+[runner] fresh harness ready (pid 25140)
+▶ legitimate updates still work
+  ✔ every content field can be updated and persists (391.0574ms)
+  ✔ a status-only update (the frontend's call) works and COMPLETED marks it completed (20.4958ms)
+  ✔ invalid values are still rejected and change nothing (26.6525ms)
+✔ legitimate updates still work (439.7399ms)
+▶ ownership and society cannot be changed by mass assignment
+  ✔ userId and societyId in the body are ignored; the task stays with its owner and society (25.4659ms)
+  ✔ the task is not planted in another user's list (238.1241ms)
+  ✔ a payload with only protected fields changes nothing and succeeds (21.8662ms)
+  ✔ _id, id, timestamps, version and Mongoose internals in the body are ignored (31.2429ms)
+  ✔ other users' tasks and the shared object prototype are untouched (29.026ms)
+✔ ownership and society cannot be changed by mass assignment (346.1505ms)
+▶ existing authorization still prevents unauthorized edits
+  ✔ another user cannot update, or take over, someone else's task (29.3624ms)
+  ✔ an administrator has no special access to a personal task (235.2869ms)
+  ✔ a nonexistent task is 404, a malformed id is 400, and nothing is created (19.6282ms)
+  ✔ anonymous and invalid-token requests are 401 and change nothing (17.3979ms)
+  ✔ delete is still owner-only (22.9041ms)
+✔ existing authorization still prevents unauthorized edits (324.9328ms)
+▶ creation keeps its ownership rule
+  ✔ a userId in the create body is ignored; the task belongs to the caller (16.3673ms)
+✔ creation keeps its ownership rule (16.5026ms)
+ℹ tests 14
+ℹ suites 4
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1193.0446
+[runner] test/integration/task-ownership.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
+
+[runner] ===== test/integration/trusted-proxy.integration.test.js
+[runner] fresh harness ready (pid 19784)
+▶ rotating X-Forwarded-For does not evade the login limiter
+  ✔ ten failures are answered 401 and every later attempt is 429, whatever address it claims (2159.5269ms)
+  ✔ a spoofed address does not reset the counter, and a correct password is limited too (2.3236ms)
+  ✔ the limited response is the unchanged JSON contract (1.361ms)
+✔ rotating X-Forwarded-For does not evade the login limiter (2163.9339ms)
+ℹ tests 3
+ℹ suites 1
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2255.5449
+[runner] test/integration/trusted-proxy.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0

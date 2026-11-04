@@ -1,0 +1,106 @@
+# Agent C report: NEW-11 (SocietyTerm index race) and Batch 1 test coverage
+
+**Outcome:** investigation done. NEW-11 is a probable race by code inspection, not yet reproduced. I ran no tests and no harness, and I changed nothing: no files, no git state.
+
+Everything below comes from reading code. The only things I know by observation are file contents and grep results.
+
+## 1. NEW-11: what the code shows
+
+**Model** (`backend/src/models/SocietyTerm.js:50`): it declares `index({ society: 1, academicYear: 1 }, { unique: true })`. Nothing in the repo disables autoIndex or calls `syncIndexes`, `ensureIndexes` or `createIndexes`. The only `init()` call in the source is the EventRegistration one at `routes/events.js:441`.
+
+**Lazy loading** (`backend/src/routes/societies.js:712, 734, 771`): each of the three handlers does `require("../models/SocietyTerm")` inside the handler. The top of the file loads only Society and Transaction.
+
+**Nothing else loads it at start-up.** `models/index.js` requires it, but its only importer is `scripts/clearData.js:34`. The harness launcher builds fixtures from nine models and SocietyTerm is not among them (`start-integration-server.js:474-485`).
+
+**Consequence.** SocietyTerm is first registered when the first terms request arrives. Mongoose starts the unique-index build then, in parallel with that request's own insert. This is the same shape as the EventRegistration defect, but it is not demonstrated for SocietyTerm.
+
+**Race 1 (the NEW-11 case).** Concurrent `POST /societies/:id/terms` with the same `(society, academicYear)`, as the first terms request on a fresh database. Two inserts can both land before the index exists, giving two OPEN terms for one year and two `CREATE_SOCIETY_TERM` audit rows. Once the index exists, the loser reaches the global `errorHandler.js:18-24` and gets 400 `"society already exists."` The field name is `Object.keys(err.keyValue)[0]`, which is `society`. That message is misleading, and it differs from the explicit 400 that events.js returns.
+
+**Race 2.** If the unique index can't be built because legacy duplicates exist, the failure is silent and writes are accepted unprotected. The events fix handles this by returning 503. SocietyTerm has no such handling.
+
+**Related, not an index race.** `POST /terms` has no existence check on `req.params.id` and no ObjectId validation. A bad id gives a CastError, which is a 400. A non-existent but valid id creates a dangling term. This is out of scope for NEW-11, but Agent A should know about it.
+
+**Also not index-related.** `GET /:id/terms` has only `authenticate`, so any authenticated user can read any society's terms, with chair and treasurer populated as `name email`. That is the D-A1 subject. The `PATCH handover` route uses `societyAccess` and accepts `status` from the body with no enum check, because `term.save()` runs the schema enum validator. Both are Agent A's area.
+
+## 2. Harness and the reference pattern
+
+**Reference fix.** `routes/events.js` loads the model at the top (lines 3-5) and runs `await EventRegistration.init()` before the write. If `init()` throws, it returns 503 (lines 440-448). `Event.exists` and ID validation run first, so reads and rejected requests never wait for `init()`.
+
+**Reference tests.**
+- The integration test has 8 simultaneous requests as the very first on a fresh database. It expects statuses `[201, 400 ×7]`, one DB row, one audit row, and the unique index present in `collection.indexes()`.
+- The unit test (`event-registration-scope.test.js:334-410`) stubs `init`. It checks that no write happens before `init` resolves, that `init` rejecting gives 503 with nothing written or audited, that concurrent creates give 201 plus 400, and that `init` is never awaited for reads or rejected requests.
+
+**Harness properties.** Each integration file gets a fresh MongoMemoryServer with a fresh database, so a "first request on a fresh database" test is deterministic across files.
+
+**Constraints on the new test.** The fixtures are fixed and the helpers are shared and not editable. `withDatabase` exists for direct reads and inserts. There are no society-term fixtures, so a test must create its own data through the API.
+
+## 3. Deterministic regression-test proposal
+
+**File:** `backend/test/integration/society-term-index.integration.test.js`. It is a new file and needs the coordinator or Agent A's ownership.
+
+Mirror the events test:
+1. `before`: log in `admin`, `chairA` and `chairB` (warm the tokens).
+2. **First test, before any other terms call in the file.** Send 8 simultaneous `POST /societies/{A}/terms` with the same `academicYear` and a unique value, for example `RUN-${Date.now()}`. Expect the statuses sorted to be `[201, 400 ×7]`. Check that exactly one `societyterms` row exists via `withDatabase`, that exactly one `CREATE_SOCIETY_TERM` audit row exists (filter `details.societyId` and `academicYear`), and that the loser's message is the intended duplicate wording. Which wording to use is a coordinator decision.
+3. Check that `societyterms.indexes()` contains an entry with `unique && key.society===1 && key.academicYear===1`.
+4. A later repeat gives the same 400 and adds nothing.
+5. Different years for the same society, and the same year for different societies, both succeed (201 each).
+6. Authorization boundaries, if D-A1 is implemented. chairA, memberA and loner cannot POST (403). Non-admins cannot read cross-society terms. Same-society reads are allowed, but the visible fields depend on Agent A's decision. If email and budget visibility is unsettled in the permission model, mark it BLOCKED per D-A1.
+
+**Unit test.** `backend/test/unit/society-term-index.test.js`, in the style of the events unit test:
+- Stub the SocietyTerm module with `init`, `create` and `find`.
+- Hold `init` pending and assert zero creates until it is released.
+- `init` rejecting gives 503, with no create and no audit row.
+- `create` throwing `{code: 11000}` gives the duplicate response, with no audit row.
+- A non-11000 error goes to `next`.
+- `GET` and `PATCH` never await `init`. Whether the PATCH path should wait is open; it is only a risk if the handover write could duplicate, and it can't.
+
+**Why one request is not enough, and what proves the test is real.** The red check is to run the new tests against the current code. They should fail on the "exactly one row" and "exactly one audit" assertions, but only on a fresh database. The first terms request of the file must be the concurrent burst, so no earlier call may compile the model. If the burst passes against unfixed code, the race is not reproducible and NEW-11 should be marked "not reproduced", not claimed fixed. Keep the failing output either way, per rule 3.
+
+**Caveat on determinism.** The race window depends on timing, so a red run on unfixed code is probabilistic. The 8-way burst makes it likely but it is not guaranteed. The unit test (hold `init`) is the deterministic guard. The integration test is the end-to-end proof.
+
+## 4. Announcement coverage for Batch 1, and a conflict to flag
+
+**Current code** (`announcements.js:143-162`): an office bearer is rejected for `ALL` (403) and for a foreign `SOCIETY` (403). `LEADERSHIP` is currently allowed (201).
+
+**D-A2 conflict.** D-A2 says non-admins may choose only `SOCIETY` for their own society. That means the current behavior and the existing tests contradict the approved policy. Agent B must change these, and that is a deliberate change of test expectations, not a weakened assertion:
+- `announcement-ownership.integration.test.js:236-249`, where `leadership.status === 201` and the count is `+1`.
+- `announcement-ownership.integration.test.js:400-402`, a PATCH to LEADERSHIP by chairA that expects it to succeed.
+- Unit `announcement-ownership.test.js:179, 202, 213, 369-371` all use LEADERSHIP.
+- The seed data (`seed.js:933`) and the visibility rule are unaffected. Visibility of existing LEADERSHIP posts is outside D-A2.
+
+**Backend enforcement.** Both POST (line 128) and PATCH (lines 263-290) need the same rule. The PATCH path is easy to miss: check that a non-admin can't switch an existing SOCIETY post to LEADERSHIP or ALL.
+
+**Proposed authorization matrix** for announcement creation and update, to be asserted in the integration suite with DB-unchanged checks:
+
+| Actor | ALL | LEADERSHIP | SOCIETY own | SOCIETY foreign | missing societyId on SOCIETY | invalid audience |
+|---|---|---|---|---|---|---|
+| admin | 201 | 201 | 201 | 201 | 400 | 400 |
+| chairA (OB) | 403 | 403 | 201 | 403 | 400 | 400 |
+| memberA, loner | 403 | 403 | 403 | 403 | 403 | 403 |
+| anonymous | 401 | 401 | 401 | 401 | 401 | 401 |
+
+Add cases for PATCH from SOCIETY to LEADERSHIP or ALL, a PATCH that changes the owner's audience, and a body `societyId` that doesn't match the caller. In each case assert no row was created and no audit was written.
+
+## 5. Ordered validation sequence (for the coordinator)
+
+All of this is "not run" from my side.
+1. `node --test backend/test/unit/society-term-index.test.js` (and the announcement unit tests). It uses no ports.
+2. `node --test backend/test/unit/society-access.test.js`. The handover and terms route shapes are asserted there: a new guard on `POST` or `GET` terms will change handler counts, and `PATCH handover` must stay `[guard, handler]`.
+3. The runner for the new `society-term-index.integration.test.js`, once, on its own.
+4. Red check: same test with Agent A's society-term changes removed. Keep the output.
+5. The runner for `announcement-ownership.integration.test.js` and `announcement-visibility.integration.test.js`, sequentially, not in parallel. The ports are shared.
+6. `society-authorization.integration.test.js` and `society-pii.integration.test.js`, because they touch the societies router. `society-authorization` has no coverage of the terms routes (grep: no matches), so terms regressions are covered only by the new file.
+7. The coordinator runs eslint in `backend`.
+
+## 6. Risks and decisions needed
+
+- **Duplicate wording.** The generic message `"society already exists."` is misleading. Choosing the explicit message is a product wording decision. It is not a security or architecture decision, so I recommend matching the events message style, but the coordinator should confirm.
+- **D-A1 may be BLOCKED for email and budget.** The fixtures give no chair or treasurer role distinct from the society role, so the existing permission model likely doesn't say who may see these fields. I did not find an existing permission that covers it. If so, Agent A should stop and return it as a decision.
+- **Legacy duplicates in a real database.** If production already holds duplicate `(society, academicYear)` rows, `init()` will reject and the 503 path will close term creation until they're cleaned up. The events fix has the same property. No cleanup script is within the rules.
+- **Dangling terms** for a non-existent society id: noted above, outside NEW-11 and needs a decision on whether to add an existence check.
+- **Existing tests change.** The announcement tests listed above need to change for D-A2. That is expected, and should be reviewed against the policy and not mistaken for weakening.
+
+## 7. State
+
+I made no edits and ran no git commands that change state. I did not run `git status --short` or `git rev-parse --short HEAD` in this session. The session-start status showed a clean tree at `70ff8bd` on `agent/batch1-qa`, and I've changed nothing since.
+[launch] agent C exited with 0 at 14:51:59

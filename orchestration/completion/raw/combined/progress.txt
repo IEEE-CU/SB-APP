@@ -1,0 +1,20 @@
+13:40:04 START backend-unit
+13:41:28 END   backend-unit exit=0 duration=84s
+13:41:28 START backend-eslint
+13:41:49 END   backend-eslint exit=0 duration=21s
+13:41:49 START backend-typecheck
+13:42:12 END   backend-typecheck exit=0 duration=23s
+13:42:12 START backend-integration
+13:54:22 END   backend-integration exit=1 duration=729s
+13:54:22 START frontend-typecheck
+13:54:38 END   frontend-typecheck exit=0 duration=16s
+13:54:38 START frontend-lint
+13:55:17 END   frontend-lint exit=0 duration=39s
+13:55:17 START frontend-node
+13:55:20 END   frontend-node exit=0 duration=2s
+13:55:20 START frontend-build-fakekey
+13:56:14 END   frontend-build-fakekey exit=0 duration=53s
+13:56:14 bundle check: fake key in dist files=0; generativelanguage in dist files=0
+13:56:14 START browser-all
+14:04:36 END   browser-all exit=1 duration=502s
+14:04:37 FIN

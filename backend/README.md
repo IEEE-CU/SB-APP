@@ -36,7 +36,7 @@ PORT=5000
 NODE_ENV=development
 MONGODB_URI=mongodb://localhost:27017/ieee_finance
 JWT_SECRET=your-secret-key-change-in-production
-JWT_EXPIRES_IN=7d
+JWT_EXPIRES_IN=8h
 ```
 
 ---

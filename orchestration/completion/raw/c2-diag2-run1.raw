@@ -1,0 +1,47 @@
+[runner] harness ready (pid 20464)
+(node:23632) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 8 tests using 1 worker
+
+DIAG2 {"i":0,"delay":0,"sockets":2,"lastSocketAgeAtOffline_ms":34,"playwrightCloseEvent":"9898 ms after offline","playwrightSocketError":"none","clientRetryAfterOffline":"191 ms after offline"}
+  ✓  1 tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 0 (delay 0 ms) (19.5s)
+DIAG2 {"i":1,"delay":0,"sockets":2,"lastSocketAgeAtOffline_ms":69,"playwrightCloseEvent":"9781 ms after offline","playwrightSocketError":"none","clientRetryAfterOffline":"211 ms after offline"}
+  ✓  2 tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 1 (delay 0 ms) (16.7s)
+DIAG2 {"i":2,"delay":0,"sockets":2,"lastSocketAgeAtOffline_ms":80,"playwrightCloseEvent":"9850 ms after offline","playwrightSocketError":"none","clientRetryAfterOffline":"262 ms after offline"}
+  ✓  3 tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 2 (delay 0 ms) (16.8s)
+DIAG2 {"i":3,"delay":300,"sockets":2,"lastSocketAgeAtOffline_ms":329,"playwrightCloseEvent":"12 ms after offline","playwrightSocketError":"none","clientRetryAfterOffline":"none seen"}
+  ✓  4 tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 3 (delay 300 ms) (7.0s)
+DIAG2 {"i":4,"delay":1000,"sockets":2,"lastSocketAgeAtOffline_ms":1057,"playwrightCloseEvent":"13 ms after offline","playwrightSocketError":"none","clientRetryAfterOffline":"none seen"}
+  ✓  5 tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 4 (delay 1000 ms) (7.8s)
+DIAG2 {"i":5,"delay":2500,"sockets":2,"lastSocketAgeAtOffline_ms":2571,"playwrightCloseEvent":"14 ms after offline","playwrightSocketError":"none","clientRetryAfterOffline":"none seen"}
+  ✓  6 tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 5 (delay 2500 ms) (9.5s)
+DIAG2 {"i":6,"delay":0,"sockets":2,"lastSocketAgeAtOffline_ms":97,"playwrightCloseEvent":"9776 ms after offline","playwrightSocketError":"none","clientRetryAfterOffline":"134 ms after offline"}
+  ✓  7 tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 6 (delay 0 ms) (16.3s)
+  ✘  8 tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 7 (delay 0 ms) (2.0m)
+
+
+  1) tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 7 (delay 0 ms) ──────────────────
+
+    Test timeout of 120000ms exceeded.
+
+    Error: page.waitForURL: Test timeout of 120000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      37 |     await page.locator('input[name="confirmPassword"]').fill(NEW_PASSWORD);
+      38 |     await page.getByRole('button', { name: 'Change Password' }).click();
+    > 39 |     await page.waitForURL(/\/profile/);
+         |                ^
+      40 |     await spaNavigate(page, '/community');
+      41 |     if (delay) await page.waitForTimeout(delay);
+      42 |
+        at D:\SB-APP-worktrees\batch2-ci\frontend\tests\session\diag-socket-replace.spec.ts:39:16
+
+    Error Context: test-results\session\diag-socket-replace-replace-flow-7-delay-0-ms-\error-context.md
+
+  1 failed
+    tests\session\diag-socket-replace.spec.ts:14:3 › replace-flow 7 (delay 0 ms) ───────────────────
+  7 passed (3.6m)
+[runner] tests/session/diag-socket-replace.spec.ts: playwright exit=1; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, port5174 busy=false, temp artifacts=0

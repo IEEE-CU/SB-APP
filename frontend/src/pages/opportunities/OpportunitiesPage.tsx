@@ -15,6 +15,7 @@ import {
   type OpportunitySociety,
 } from "@/services/opportunities";
 import { LoadingSpinner, SearchInput } from "@/components/ui";
+import { safeExternalUrl } from "@/lib/safeUrl";
 import {
   PageTransition,
   AnimatedCard,
@@ -220,9 +221,9 @@ export default function OpportunitiesPage() {
             >
               <RefreshCw size={14} /> Retry
             </button>
-            {current?.url && (
+            {safeExternalUrl(current?.url) && (
               <a
-                href={current.url}
+                href={safeExternalUrl(current?.url) ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-primary font-medium hover:underline"
@@ -239,9 +240,9 @@ export default function OpportunitiesPage() {
             No listings could be parsed automatically for{" "}
             {current?.label || selected} right now.
           </p>
-          {(fallbackUrl || current?.url) && (
+          {safeExternalUrl(fallbackUrl || current?.url) && (
             <a
-              href={fallbackUrl || current?.url}
+              href={safeExternalUrl(fallbackUrl || current?.url) ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-primary font-medium hover:underline"
@@ -266,7 +267,7 @@ export default function OpportunitiesPage() {
               style={{ animationDelay: `${index * 40}ms` }}
             >
               <a
-                href={item.link}
+                href={safeExternalUrl(item.link) ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-start justify-between gap-4"

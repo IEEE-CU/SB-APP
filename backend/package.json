@@ -5,7 +5,6 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "start:cluster": "ENABLE_CLUSTER=true node src/server.js",
     "start:test-server": "node scripts/start-test-server.js",
     "dev": "nodemon src/server.js",
     "dev:memory": "node scripts/start-dev-server.js",
@@ -19,7 +18,7 @@
     "lint": "eslint .",
     "typecheck": "node scripts/typecheck.js",
     "test:unit": "node --test test/unit/*.test.js",
-    "test:contract": "node --test test/contract"
+    "test:contract": "node --test test/contract/*.test.js"
   },
   "keywords": [
     "ieee",

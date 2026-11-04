@@ -24,8 +24,9 @@ router.get('/', adminOnly, async (req, res, next) => {
         // Calculate total budget and balances
         const totalBudget = societies.reduce((sum, s) => sum + s.budget, 0);
 
-        // Get transaction stats
+        // Get transaction stats (AUD-005: only APPROVED transactions count)
         const transactionStats = await Transaction.aggregate([
+            { $match: { approvalStatus: 'APPROVED' } },
             {
                 $group: {
                     _id: '$type',
@@ -109,9 +110,9 @@ router.get('/society/:societyId', societyAccess, async (req, res, next) => {
             });
         }
 
-        // Get transaction stats for this society
+        // Get transaction stats for this society (AUD-005: only APPROVED transactions count)
         const transactionStats = await Transaction.aggregate([
-            { $match: { societyId: society._id } },
+            { $match: { societyId: society._id, approvalStatus: 'APPROVED' } },
             {
                 $group: {
                     _id: '$type',

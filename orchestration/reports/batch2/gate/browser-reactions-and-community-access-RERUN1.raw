@@ -1,0 +1,17 @@
+[runner] harness ready (pid 23952)
+(node:8316) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 8 tests using 1 worker
+
+  ✓  1 tests\session\reactions-and-community-access.spec.ts:52:3 › reactions › Community: add and remove use the mounted endpoint; the badge follows; no duplicates (20.4s)
+  ✓  2 tests\session\reactions-and-community-access.spec.ts:94:3 › reactions › the channel page picker uses the same endpoint and shows the server's answer (10.6s)
+  ✓  3 tests\session\reactions-and-community-access.spec.ts:118:3 › reactions › a rejected reaction is reported and no reaction is invented (10.2s)
+  ✓  4 tests\session\reactions-and-community-access.spec.ts:141:3 › Community for a non-administrator › a member loads their society's channel without ever requesting the user directory, and joins it (9.7s)
+  ✓  5 tests\session\reactions-and-community-access.spec.ts:161:3 › Community for a non-administrator › only the member's own society is exposed: the list holds that one channel, other societies are refused (2.0s)
+  ✓  6 tests\session\reactions-and-community-access.spec.ts:174:3 › Community for a non-administrator › an account without the community permission gets the existing error, not a crash (7.0s)
+  ✓  7 tests\session\reactions-and-community-access.spec.ts:188:3 › Community for a non-administrator › a society with no channels shows the empty Community page, not an error (7.2s)
+  ✓  8 tests\session\reactions-and-community-access.spec.ts:202:3 › Community for a non-administrator › an administrator still loads the user directory and can pick a member for a direct message (8.1s)
+
+  8 passed (1.4m)
+[runner] tests/session/reactions-and-community-access.spec.ts --trace retain-on-failure: playwright exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, port5174 busy=false, temp artifacts=0
