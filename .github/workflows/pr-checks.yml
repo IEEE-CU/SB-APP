@@ -58,7 +58,11 @@ jobs:
 
       - name: Seed MongoDB test binary (if not cached)
         if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
-        run: cd backend && node scripts/seed-mongo-test-binary.js
+        run: |
+          cd backend
+          MONGOMS_DEBUG=1 node scripts/seed-mongo-test-binary.js
+          echo "--- ~/.cache/mongodb-binaries after seed ---"
+          ls -la ~/.cache/mongodb-binaries || true
 
       # Integration suite: every file against its own isolated in-memory harness on 127.0.0.1:5057
       # (no secrets, no persistent database, nothing on localhost:5000).
@@ -114,7 +118,11 @@ jobs:
 
       - name: Seed MongoDB test binary (if not cached)
         if: steps.filter.outputs.changed == 'true'
-        run: cd backend && node scripts/seed-mongo-test-binary.js
+        run: |
+          cd backend
+          MONGOMS_DEBUG=1 node scripts/seed-mongo-test-binary.js
+          echo "--- ~/.cache/mongodb-binaries after seed ---"
+          ls -la ~/.cache/mongodb-binaries || true
 
       - name: Browser session specs (isolated harness)
         if: steps.filter.outputs.changed == 'true'
