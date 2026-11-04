@@ -38,6 +38,11 @@ jobs:
       # --- Backend Checks ---
       - name: Backend - Install and Checks
         if: steps.filter.outputs.backend == 'true' && hashFiles('backend/package.json') != ''
+        env:
+          # Without this, mongodb-memory-server's own postinstall download pre-populates
+          # node_modules/.cache, which the library then prefers over ~/.cache/mongodb-binaries -
+          # silently defeating the seed step below and the cache action's whole point.
+          MONGOMS_DISABLE_POSTINSTALL: "1"
         run: |
           cd backend
           npm ci
@@ -101,6 +106,11 @@ jobs:
 
       - name: Install backend and frontend dependencies
         if: steps.filter.outputs.changed == 'true'
+        env:
+          # See the matching comment in the verify job: this stops mongodb-memory-server's
+          # postinstall from pre-populating node_modules/.cache, which it would otherwise prefer
+          # over ~/.cache/mongodb-binaries and make the seed step below a silent no-op.
+          MONGOMS_DISABLE_POSTINSTALL: "1"
         run: |
           cd backend && npm ci
           cd ../frontend && npm ci
