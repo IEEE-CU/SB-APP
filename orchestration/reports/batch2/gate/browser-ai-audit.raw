@@ -1,0 +1,12 @@
+[runner] harness ready (pid 18984)
+(node:8616) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+  ✓  1 tests\session\ai-audit.spec.ts:24:3 › AI audit page › a user without finance:view is told so by the real backend, and nothing goes to Google (4.5s)
+  ✓  2 tests\session\ai-audit.spec.ts:39:3 › AI audit page › a generated report is shown; choosing a society sends only its id (4.6s)
+  ✓  3 tests\session\ai-audit.spec.ts:59:3 › AI audit page › "not configured" and "too many requests" are reported without a crash (4.6s)
+
+  3 passed (17.8s)
+[runner] tests/session/ai-audit.spec.ts --trace retain-on-failure: playwright exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, port5174 busy=false, temp artifacts=0

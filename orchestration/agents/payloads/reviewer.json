@@ -1,0 +1,30 @@
+{
+  "name": "Independent Reviewer",
+  "role": "general",
+  "title": "Independent Reviewer",
+  "icon": "eye",
+  "reportsTo": "f0a76ae6-ccbe-450a-bbec-5354de8ee084",
+  "capabilities": "Independent review of diffs, tests and completion claims. Read-only; never reviews its own work.",
+  "adapterType": "claude_local",
+  "adapterConfig": {
+    "engine": "cli",
+    "cwd": "D:\\SB-APP-orchestration",
+    "instructionsFilePath": "D:\\SB-APP-orchestration\\agents\\reviewer-instructions.md",
+    "dangerouslySkipPermissions": false,
+    "model": "claude-sonnet-5-5",
+    "maxTurnsPerRun": 30,
+    "timeoutSec": 1500,
+    "extraArgs": [
+      "--settings",
+      "D:\\SB-APP-orchestration\\agents\\reviewer-settings.json"
+    ]
+  },
+  "permissions": {
+    "canCreateAgents": false,
+    "canCreateSkills": false,
+    "trustPreset": "standard"
+  },
+  "metadata": {
+    "note": "Created for the owner. Does nothing until a task is assigned. No commits/merges/pushes/installs. digest.txt is off-limits."
+  }
+}

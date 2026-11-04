@@ -40,4 +40,8 @@ const testConnection = async () => {
   }
 };
 
-testConnection();
+module.exports = { testConnection };
+
+if (require.main === module) {
+  testConnection();
+}

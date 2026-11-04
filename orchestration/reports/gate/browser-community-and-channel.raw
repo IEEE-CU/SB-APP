@@ -1,0 +1,14 @@
+[runner] harness ready (pid 22020)
+(node:21952) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 5 tests using 1 worker
+
+  ✓  1 tests\session\community-and-channel.spec.ts:46:3 › Community renders real-time and loaded messages › a message delivered by a second client renders with its text and sender, without an application error (9.2s)
+  ✓  2 tests\session\community-and-channel.spec.ts:65:3 › Community renders real-time and loaded messages › the signed-in user's own message, sent from the UI, renders as theirs (5.3s)
+  ✓  3 tests\session\community-and-channel.spec.ts:81:3 › Community renders real-time and loaded messages › a message with reactions in the loaded history shows grouped reactions instead of crashing (5.4s)
+  ✓  4 tests\session\community-and-channel.spec.ts:107:3 › ChannelDetailPage opened directly › connects the socket, joins its channel, rejoins after a reconnect, and stops rejoining once left (9.1s)
+  ✓  5 tests\session\community-and-channel.spec.ts:143:3 › ChannelDetailPage opened directly › a channel message arriving on the directly opened page renders with its text and sender (7.0s)
+
+  5 passed (43.9s)
+[runner] tests/session/community-and-channel.spec.ts --trace retain-on-failure: playwright exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, port5174 busy=false, temp artifacts=0

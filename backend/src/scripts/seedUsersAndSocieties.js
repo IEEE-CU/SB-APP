@@ -3,7 +3,9 @@
  */
 
 require("dotenv").config();
+const mongoose = require("mongoose");
 const connectDB = require("../config/database");
+const { assertDestructiveTargetAllowed, assertConnectedToValidatedTarget } = require("../utils/dbSafety");
 const User = require("../models/User");
 const Society = require("../models/Society");
 
@@ -349,9 +351,16 @@ const generateEmail = (shortName) => {
   return `${shortName.toLowerCase().replace(/[^a-z0-9]/g, "")}@ieee.org`;
 };
 
-async function seedUsersAndSocieties() {
-  try {
-    await connectDB();
+// Creates societies and accounts with known passwords, so it follows the same rules as
+// seed.js (AUD-002): the target must be explicit, non-production and authorized by name,
+// and this is checked BEFORE connecting. Importing this module does nothing.
+async function seedUsersAndSocieties({ env = process.env } = {}) {
+  const target = assertDestructiveTargetAllowed({ operation: "seed users and societies", env });
+
+  {
+    const conn = await connectDB();
+    if (!conn) throw new Error("Database connection failed; seeding aborted.");
+    assertConnectedToValidatedTarget(target, mongoose.connection.name);
     console.log("🌱 Seeding Users and Societies only...\n");
 
     // Combine all societies
@@ -403,12 +412,16 @@ async function seedUsersAndSocieties() {
     console.log(
       `\n✅ Done! Created ${createdSocieties.length} societies and ${totalUsers} users.`,
     );
-
-    process.exit(0);
-  } catch (error) {
-    console.error("❌ Error:", error.message);
-    process.exit(1);
   }
 }
 
-seedUsersAndSocieties();
+module.exports = seedUsersAndSocieties;
+
+if (require.main === module) {
+  seedUsersAndSocieties()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error("❌ Error:", error.message);
+      process.exit(1);
+    });
+}

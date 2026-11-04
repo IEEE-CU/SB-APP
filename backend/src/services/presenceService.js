@@ -1,12 +1,224 @@
 const { resolvePermissions } = require("./resolvePermissions");
+const Channel = require("../models/Channel");
+const Conversation = require("../models/Conversation");
+const User = require("../models/User");
+const {
+  attachScope,
+  isSocietyInScope,
+  isGrantingLevel,
+} = require("../middleware/rbac");
 
 const userSockets = new Map(); // userId -> Set of socketIds
 const socketUserMap = new Map(); // socketId -> { userId, activeChannel, lastSeen }
 
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+
+// A typer is dropped this long after their last `typing:start` unless they
+// send `typing:stop` (ChannelChatFeed never sends one; CommunityPage uses the
+// same 3 s window on the client).
+const TYPING_TTL_MS = 3000;
+
+// A heartbeat is relayed to the whole society room, so what it may say and how often are
+// bounded (AUD-012). Only these statuses are relayed (a missing status means "online");
+// anything else is ignored. A status CHANGE is relayed immediately but spends a token from
+// a small per-socket bucket; repeating the same status is only relayed as a refresh every
+// HEARTBEAT_REFRESH_MS. One socket therefore cannot make the server fan out an unbounded
+// stream of presence events to its society.
+const HEARTBEAT_STATUSES = new Set(["online", "idle", "dnd"]);
+const HEARTBEAT_BURST = 5;
+const HEARTBEAT_REFILL_MS = 1000;
+const HEARTBEAT_REFRESH_MS = 30000;
+
+/**
+ * Resolves a typing payload to exactly one delivery room. The payload must
+ * carry either a channelId or a conversationId (a well-formed id), never both.
+ * Typing is relayed through the same authorized delivery rooms as messages.
+ */
+const typingTarget = (payload) => {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+  const hasChannel = payload.channelId !== undefined && payload.channelId !== null;
+  const hasConversation =
+    payload.conversationId !== undefined && payload.conversationId !== null;
+  if (hasChannel === hasConversation) return null;
+
+  if (hasChannel) {
+    const id = idFromPayload(payload, "channelId");
+    return id ? { key: "channelId", id, room: `channel_${id}` } : null;
+  }
+  const id = idFromPayload(payload, "conversationId");
+  return id ? { key: "conversationId", id, room: `conversation_${id}` } : null;
+};
+
+/**
+ * Extracts an identifier from a socket payload that is either the id itself
+ * (CommunityPage sends the raw id) or an object carrying it under `key`
+ * (ChannelChatFeed and the canvas send `{ channelId }`). Returns null for
+ * anything that is not a well-formed id.
+ */
+const idFromPayload = (payload, key) => {
+  let value;
+  if (typeof payload === "string") {
+    value = payload;
+  } else if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    value = payload[key];
+  }
+  return typeof value === "string" && OBJECT_ID_PATTERN.test(value) ? value : null;
+};
+
+const safeAck = (ack, result) => {
+  if (typeof ack !== "function") return;
+  try {
+    ack(result);
+  } catch {
+    /* a misbehaving acknowledgement callback must not break the handler */
+  }
+};
+
+/**
+ * Same rule the REST channel routes apply: the caller needs the community hub
+ * view permission and the channel's society must be within their scope.
+ * Never trusts the room name alone.
+ */
+async function canAccessChannel(userId, channelId) {
+  const resolved = await resolvePermissions(userId);
+  if (!resolved || !resolved.permissions) return false;
+  if (!isGrantingLevel(resolved.permissions["community_hub:view"])) return false;
+  if (
+    resolved.scope?.type === "society" &&
+    !resolved.scope.societyId &&
+    resolved.role !== "sb_faculty_advisor"
+  ) {
+    return false;
+  }
+
+  const channel = await Channel.findById(channelId);
+  if (!channel) return false;
+
+  // Reuse the existing scope computation instead of re-implementing it.
+  const scopeRequest = {
+    user: { _id: userId },
+    userScope: resolved.scope || {},
+    userRole: resolved.role,
+  };
+  const inertResponse = { status: () => inertResponse, json: () => inertResponse };
+  let failure = null;
+  await attachScope("societyId")(scopeRequest, inertResponse, (err) => {
+    failure = err || null;
+  });
+  if (failure) return false;
+
+  return isSocietyInScope(scopeRequest, channel.societyId);
+}
+
+/** Direct messages are limited to the two participants (as in the REST routes). */
+async function isConversationParticipant(userId, conversationId) {
+  const conversation = await Conversation.findById(conversationId);
+  if (!conversation) return false;
+  const uid = String(userId);
+  return (
+    String(conversation.userOneId) === uid ||
+    String(conversation.userTwoId) === uid
+  );
+}
+
 function setupPresenceHandlers(io) {
+  // room -> Map(userId -> { name, socketId, timer }) of users currently typing
+  const typing = new Map();
+
+  // Tells every member of the room who is typing, excluding the recipient.
+  const emitTypingUpdate = (target) => {
+    const members = io.sockets?.adapter?.rooms?.get(target.room);
+    if (!members) return;
+    const active = typing.get(target.room);
+    for (const socketId of members) {
+      const recipient = String(socketUserMap.get(socketId)?.userId);
+      const activeTypingUsers = [];
+      if (active) {
+        for (const [typerId, entry] of active) {
+          if (typerId !== recipient) activeTypingUsers.push(entry.name);
+        }
+      }
+      io.to(socketId).emit("typing:update", {
+        [target.key]: target.id,
+        activeTypingUsers,
+      });
+    }
+  };
+
+  // Removes a typer (explicit stop, expiry, leaving the room, disconnect).
+  const clearTyper = (target, typerId) => {
+    const active = typing.get(target.room);
+    const entry = active?.get(typerId);
+    if (!entry) return false;
+    clearTimeout(entry.timer);
+    active.delete(typerId);
+    if (active.size === 0) typing.delete(target.room);
+    emitTypingUpdate(target);
+    return true;
+  };
+
   io.on("connection", (socket) => {
     const userId = socket.user?.id || socket.user?._id;
     if (!userId) return;
+
+    // The token was verified once, at the handshake. Treat it like the REST
+    // middleware does (an expired token is no longer authentication): once
+    // `exp` passes, protected actions are refused and the socket is
+    // disconnected, which releases its rooms and typing state through the
+    // disconnect handler below. Tokens without an `exp` are not time-limited.
+    const tokenExpiresAtMs =
+      typeof socket.user?.exp === "number" ? socket.user.exp * 1000 : null;
+    const tokenExpired = () =>
+      tokenExpiresAtMs !== null && tokenExpiresAtMs <= Date.now();
+
+    if (tokenExpired()) {
+      socket.disconnect(true);
+      return;
+    }
+
+    let expiryTimer = null;
+    const armExpiry = () => {
+      const delay = tokenExpiresAtMs - Date.now();
+      if (delay <= 0) {
+        socket.disconnect(true);
+        return;
+      }
+      // setTimeout cannot exceed 2^31-1 ms; re-arm when it fires early.
+      expiryTimer = setTimeout(armExpiry, Math.min(delay, 2147483647));
+      if (typeof expiryTimer.unref === "function") expiryTimer.unref();
+    };
+    if (tokenExpiresAtMs !== null) armExpiry();
+
+    // Registers an event handler that refuses to run on an expired token.
+    const onEvent = (event, handler) => {
+      socket.on(event, (...args) => {
+        if (event !== "disconnect" && tokenExpired()) {
+          const ack = args[args.length - 1];
+          safeAck(ack, { success: false });
+          socket.disconnect(true);
+          return undefined;
+        }
+        return handler(...args);
+      });
+    };
+
+    // The typing identity comes from the authenticated socket. The JWT only
+    // carries the id, so the display name is read once per connection from
+    // the user record.
+    let cachedName = null;
+    const displayName = async () => {
+      if (cachedName) return cachedName;
+      try {
+        const doc = await User.findById(userId).select("name").lean();
+        const name = doc && typeof doc.name === "string" ? doc.name.trim() : "";
+        cachedName = name || null;
+      } catch {
+        cachedName = null;
+      }
+      return cachedName;
+    };
 
     // Track active connection
     if (!userSockets.has(userId)) {
@@ -21,103 +233,344 @@ function setupPresenceHandlers(io) {
 
     // Join the caller's own society room so society-scoped broadcasts reach
     // only that society's sockets. Users with no society scope join no room.
+    //
+    // Presence is delivered only through this room: it is visible to the
+    // user's own society and to nobody else. There is no global fallback; if
+    // the society cannot be established nothing is emitted. Payloads carry
+    // only `userId` and `status`.
+    let societyRoom = null;
+    let socketClosed = false;
+    const emitPresence = (payload) => {
+      if (societyRoom && !socketClosed) {
+        io.to(societyRoom).emit("presence:update", payload);
+      }
+    };
+
     resolvePermissions(userId)
       .then((resolved) => {
-        if (resolved?.scope?.societyId) {
-          socket.join(`society:${resolved.scope.societyId}`);
-        }
+        const societyId = resolved?.scope?.societyId;
+        if (!societyId || socketClosed) return;
+        societyRoom = `society:${societyId}`;
+        socket.join(societyRoom);
+
+        // Notify the society that the user is online (once the room is known)
+        emitPresence({ userId, status: "online" });
       })
       .catch(() => {
         /* leave the socket out of any society room on failure */
       });
 
-    // Notify user is online
-    io.emit("presence:update", {
-      userId,
-      status: "online",
-      socketCount: userSockets.get(userId).size,
+    // Joining a room is authorized against the persisted channel/conversation
+    // and the caller's permissions; the id in the payload proves nothing.
+
+    // Typing/canvas relay room (`channel:<id>`)
+    onEvent("room:join", async (payload, ack) => {
+      try {
+        const channelId = idFromPayload(payload, "channelId");
+        if (!channelId || !(await canAccessChannel(userId, channelId))) {
+          return safeAck(ack, { success: false });
+        }
+        socket.join(`channel:${channelId}`);
+        const info = socketUserMap.get(socket.id);
+        if (info) info.activeChannel = channelId;
+        safeAck(ack, { success: true });
+      } catch {
+        safeAck(ack, { success: false });
+      }
     });
 
-    // Handle channel room joining
-    socket.on("room:join", ({ channelId }) => {
-      socket.join(`channel:${channelId}`);
-      const info = socketUserMap.get(socket.id);
-      if (info) info.activeChannel = channelId;
-    });
-
-    socket.on("room:leave", ({ channelId }) => {
+    onEvent("room:leave", (payload, ack) => {
+      const channelId = idFromPayload(payload, "channelId");
+      if (!channelId) return safeAck(ack, { success: false });
       socket.leave(`channel:${channelId}`);
       const info = socketUserMap.get(socket.id);
       if (info && info.activeChannel === channelId) info.activeChannel = null;
+      safeAck(ack, { success: true });
     });
 
-    // Typing Indicators
-    socket.on("typing:start", ({ channelId, user }) => {
-      if (!socket.rooms.has(`channel:${channelId}`)) return;
-      socket.to(`channel:${channelId}`).emit("typing:start", {
-        channelId,
-        user: user || { id: userId },
-      });
+    // Message delivery rooms: the REST routes emit message:* events into
+    // `channel_<id>` and `conversation_<id>`.
+    onEvent("channel:join", async (payload, ack) => {
+      try {
+        const channelId = idFromPayload(payload, "channelId");
+        if (!channelId || !(await canAccessChannel(userId, channelId))) {
+          return safeAck(ack, { success: false });
+        }
+        socket.join(`channel_${channelId}`);
+        safeAck(ack, { success: true });
+      } catch {
+        safeAck(ack, { success: false });
+      }
     });
 
-    socket.on("typing:stop", ({ channelId, user }) => {
-      if (!socket.rooms.has(`channel:${channelId}`)) return;
-      socket.to(`channel:${channelId}`).emit("typing:stop", {
-        channelId,
-        user: user || { id: userId },
-      });
+    onEvent("channel:leave", (payload, ack) => {
+      const channelId = idFromPayload(payload, "channelId");
+      if (!channelId) return safeAck(ack, { success: false });
+      socket.leave(`channel_${channelId}`);
+      clearTyper(
+        { key: "channelId", id: channelId, room: `channel_${channelId}` },
+        String(userId),
+      );
+      safeAck(ack, { success: true });
+    });
+
+    onEvent("conversation:join", async (payload, ack) => {
+      try {
+        const conversationId = idFromPayload(payload, "conversationId");
+        if (
+          !conversationId ||
+          !(await isConversationParticipant(userId, conversationId))
+        ) {
+          return safeAck(ack, { success: false });
+        }
+        socket.join(`conversation_${conversationId}`);
+        safeAck(ack, { success: true });
+      } catch {
+        safeAck(ack, { success: false });
+      }
+    });
+
+    onEvent("conversation:leave", (payload, ack) => {
+      const conversationId = idFromPayload(payload, "conversationId");
+      if (!conversationId) return safeAck(ack, { success: false });
+      socket.leave(`conversation_${conversationId}`);
+      clearTyper(
+        {
+          key: "conversationId",
+          id: conversationId,
+          room: `conversation_${conversationId}`,
+        },
+        String(userId),
+      );
+      safeAck(ack, { success: true });
+    });
+
+    // Typing indicators for channels and conversations. The sender must be a
+    // member of the corresponding delivery room (`channel_<id>` /
+    // `conversation_<id>`); those rooms are only ever joined through the
+    // authorized channel:join / conversation:join handlers above. Any identity
+    // fields in the payload are ignored.
+    onEvent("typing:start", async (payload) => {
+      try {
+        const target = typingTarget(payload);
+        if (!target || !socket.rooms.has(target.room)) return;
+
+        const name = await displayName();
+        // Fail closed without a server-known identity, and re-check
+        // membership because the lookup was asynchronous.
+        if (!name || !socket.rooms.has(target.room)) return;
+
+        const typerId = String(userId);
+        let active = typing.get(target.room);
+        if (!active) {
+          active = new Map();
+          typing.set(target.room, active);
+        }
+        const existing = active.get(typerId);
+        if (existing) clearTimeout(existing.timer);
+
+        const timer = setTimeout(
+          () => clearTyper(target, typerId),
+          TYPING_TTL_MS,
+        );
+        if (typeof timer.unref === "function") timer.unref();
+        active.set(typerId, { name, socketId: socket.id, timer });
+
+        socket.to(target.room).emit("typing:start", {
+          [target.key]: target.id,
+          userId,
+          userName: name,
+          user: { id: userId, name },
+        });
+        emitTypingUpdate(target);
+      } catch {
+        /* a failed typing notification must never affect the socket */
+      }
+    });
+
+    onEvent("typing:stop", (payload) => {
+      try {
+        const target = typingTarget(payload);
+        if (!target || !socket.rooms.has(target.room)) return;
+
+        clearTyper(target, String(userId));
+        socket.to(target.room).emit("typing:stop", {
+          [target.key]: target.id,
+          userId,
+          user: { id: userId },
+        });
+      } catch {
+        /* ignore */
+      }
     });
 
     // Canvas stroke broadcasting
-    socket.on("canvas:draw", ({ channelId, stroke }) => {
+    onEvent("canvas:draw", (payload) => {
+      const channelId = idFromPayload(payload, "channelId");
+      if (!channelId || typeof payload !== "object") return;
       if (!socket.rooms.has(`channel:${channelId}`)) return;
       socket.to(`channel:${channelId}`).emit("canvas:draw", {
         channelId,
-        stroke,
+        stroke: payload.stroke,
       });
     });
 
     // Heartbeat for status updates (online / idle / dnd)
 
-    socket.on("presence:heartbeat", ({ status }) => {
+    const beat = { status: null, emittedAt: 0, tokens: HEARTBEAT_BURST, refilledAt: Date.now() };
+    onEvent("presence:heartbeat", (payload) => {
       const info = socketUserMap.get(socket.id);
       if (info) {
         info.lastSeen = new Date();
       }
-      io.emit("presence:update", {
-        userId,
-        status: status || "online",
-      });
+
+      const requested =
+        payload && typeof payload === "object" && !Array.isArray(payload) ? payload.status : undefined;
+      let status;
+      if (requested === undefined || requested === null) status = "online";
+      else if (typeof requested === "string" && HEARTBEAT_STATUSES.has(requested)) status = requested;
+      else return; // not a status this server relays
+
+      const now = Date.now();
+      beat.tokens = Math.min(HEARTBEAT_BURST, beat.tokens + (now - beat.refilledAt) / HEARTBEAT_REFILL_MS);
+      beat.refilledAt = now;
+      if (status === beat.status && now - beat.emittedAt < HEARTBEAT_REFRESH_MS) return;
+      if (beat.tokens < 1) return;
+      beat.tokens -= 1;
+      beat.status = status;
+      beat.emittedAt = now;
+      emitPresence({ userId, status });
     });
 
     // Handle Disconnect
-    socket.on("disconnect", () => {
+    onEvent("disconnect", () => {
+      if (expiryTimer) clearTimeout(expiryTimer);
+
+      // Drop this socket's typing entries (and tell the rooms) before its
+      // membership data disappears.
+      for (const [room, active] of [...typing]) {
+        for (const [typerId, entry] of [...active]) {
+          if (entry.socketId !== socket.id) continue;
+          const isChannel = room.startsWith("channel_");
+          const id = room.slice(isChannel ? "channel_".length : "conversation_".length);
+          clearTyper(
+            { key: isChannel ? "channelId" : "conversationId", id, room },
+            typerId,
+          );
+        }
+      }
+
       const info = socketUserMap.get(socket.id);
       if (info) {
         socketUserMap.delete(socket.id);
       }
 
+      // Stop any in-flight society resolution from emitting or joining.
+      const room = societyRoom;
+      socketClosed = true;
+
       const userSet = userSockets.get(userId);
       if (userSet) {
         userSet.delete(socket.id);
+        const status = userSet.size === 0 ? "offline" : "online";
         if (userSet.size === 0) {
           userSockets.delete(userId);
-          // Broadcast user offline status
-          io.emit("presence:update", {
-            userId,
-            status: "offline",
-            lastSeen: new Date(),
-          });
-        } else {
-          io.emit("presence:update", {
-            userId,
-            status: "online",
-            socketCount: userSet.size,
-          });
+        }
+        // Tell only the user's own society (never a global broadcast).
+        if (room) {
+          io.to(room).emit("presence:update", { userId, status });
         }
       }
     });
   });
+}
+
+/**
+ * Re-checks the live sockets after the permission matrix changed (AUD-007).
+ *
+ * Joining a channel room is authorized once, at join time, and a joined room keeps delivering
+ * messages. Without this, a user whose community_hub:view was just revoked kept receiving
+ * every message of the channels they had already joined until they disconnected, although
+ * every HTTP request of theirs was already refused. After a matrix edit, each live socket's
+ * channel rooms (message delivery `channel_<id>` and the typing/canvas relay `channel:<id>`)
+ * are authorized again with the same rule as joining (canAccessChannel, fresh permissions)
+ * and the ones no longer allowed are left. A socket whose user no longer exists is
+ * disconnected. Direct-message rooms are untouched: they depend on participation, not on the
+ * matrix. Only this process's sockets are visible (state is per process).
+ *
+ * @returns {Promise<{ checked: number, left: number, disconnected: number }>}
+ */
+async function reauthorizeLiveSockets(io) {
+  const summary = { checked: 0, left: 0, disconnected: 0 };
+  const sockets = io && io.sockets && io.sockets.sockets;
+  if (!sockets || typeof sockets.values !== "function") return summary;
+
+  await Promise.allSettled(
+    [...sockets.values()].map(async (socket) => {
+      const userId = socket.user && (socket.user.id || socket.user._id);
+      if (!userId) return;
+      summary.checked += 1;
+
+      let exists = true;
+      try {
+        exists = Boolean(await User.findById(userId).select("_id").lean());
+      } catch {
+        exists = true; // a lookup failure is not evidence that the user is gone
+      }
+      if (!exists) {
+        summary.disconnected += 1;
+        socket.disconnect(true);
+        return;
+      }
+
+      for (const room of [...socket.rooms]) {
+        const match = /^channel[_:]([0-9a-fA-F]{24})$/.exec(room);
+        if (!match) continue;
+        let allowed = false;
+        try {
+          allowed = await canAccessChannel(userId, match[1]);
+        } catch {
+          allowed = false; // fail closed
+        }
+        if (!allowed) {
+          socket.leave(room);
+          summary.left += 1;
+        }
+      }
+    }),
+  );
+  return summary;
+}
+
+/**
+ * Disconnects every live socket that belongs to `userId` (all devices), after the account's
+ * password changed (AUD-007B). Ownership comes from the authenticated socket's own identity,
+ * never from anything a client sent. The socket's normal `disconnect` handler then releases its
+ * rooms, typing state and presence, and tells the society the user went offline if it was the
+ * last one. Only this process's sockets are visible (state is per process). A socket that fails
+ * to close is logged (socket id and error message only) and does not stop the others.
+ *
+ * @returns {{ matched: number, disconnected: number, failed: number }}
+ */
+function disconnectUserSockets(io, userId) {
+  const summary = { matched: 0, disconnected: 0, failed: 0 };
+  const sockets = io && io.sockets && io.sockets.sockets;
+  if (!sockets || typeof sockets.values !== "function" || !userId) return summary;
+
+  const target = String(userId);
+  for (const socket of [...sockets.values()]) {
+    const id = socket.user && (socket.user.id || socket.user._id);
+    if (!id || String(id) !== target) continue;
+    summary.matched += 1;
+    try {
+      socket.disconnect(true);
+      summary.disconnected += 1;
+    } catch (error) {
+      summary.failed += 1;
+      console.error(`Could not disconnect socket ${socket.id} after a password change: ${error.message}`);
+    }
+  }
+  return summary;
 }
 
 function getOnlineUsers() {
@@ -141,6 +594,8 @@ function sendNotificationToUser(io, userId, notification) {
 
 module.exports = {
   setupPresenceHandlers,
+  reauthorizeLiveSockets,
+  disconnectUserSockets,
   getOnlineUsers,
   sendNotificationToUser,
   userSockets,

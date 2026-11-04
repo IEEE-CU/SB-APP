@@ -1,13 +1,27 @@
 const express = require("express");
-const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const User = require("../models/User");
-const { authenticate } = require("../middleware/auth");
+const { authenticate, adminOnly } = require("../middleware/auth");
+const { signAuthToken } = require("../utils/authTokens");
+const { disconnectUserSockets } = require("../services/presenceService");
 const {
   authLimiter,
   registrationLimiter,
 } = require("../middleware/rateLimiter");
 
 const router = express.Router();
+
+// AUTH-CLOSE-01: one public answer for "no such account" and "wrong password", so the
+// endpoint cannot be used to find out which e-mail addresses have accounts.
+const INVALID_CREDENTIALS = "Invalid email or password";
+const MAX_EMAIL_LENGTH = 254;
+const MAX_PASSWORD_LENGTH = 1024;
+
+// When the account does not exist a password hash is still compared (against this
+// throw-away hash, computed once at start-up with the same cost as real passwords), so the
+// failure takes about as long as a wrong password. Response equality alone is not timing
+// equality; this narrows the gap, it does not claim to remove it.
+const timingHash = bcrypt.hash("timing-equalizer-not-a-real-password", 12);
 
 /**
  * @route   POST /api/auth/login
@@ -16,43 +30,46 @@ const router = express.Router();
  */
 router.post("/login", authLimiter, async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body && typeof req.body === "object" ? req.body : {};
 
-    // Validate input
-    if (!email || !password) {
+    // Only strings reach the string methods and the database query: objects, arrays,
+    // numbers and null are malformed requests, not authentication failures.
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password ||
+      email.length > MAX_EMAIL_LENGTH ||
+      password.length > MAX_PASSWORD_LENGTH
+    ) {
       return res.status(400).json({
         success: false,
         message: "Please provide email and password",
       });
     }
 
-    // Find user with password
-    const user = await User.findOne({ email: email.toLowerCase() })
+    const user = await User.findOne({ email: email.trim().toLowerCase() })
       .select("+password")
       .populate("societyId");
 
     if (!user) {
+      await bcrypt.compare(password, await timingHash);
       return res.status(401).json({
         success: false,
-        message: "Invalid email address",
+        message: INVALID_CREDENTIALS,
       });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Incorrect password",
+        message: INVALID_CREDENTIALS,
       });
     }
 
     // Generate JWT
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
-    );
+    const token = signAuthToken(user);
 
     res.json({
       success: true,
@@ -76,10 +93,17 @@ router.post("/login", authLimiter, async (req, res, next) => {
 
 /**
  * @route   POST /api/auth/register
- * @desc    Register a new user account
- * @access  Public
+ * @desc    Create a new user account (role is always OFFICE_BEARER, no society)
+ * @access  Administrator only (SEC-CLOSE-02)
  */
-router.post("/register", registrationLimiter, async (req, res, next) => {
+// SEC-CLOSE-02: accounts are created by an administrator, never by the public. The
+// server enforces it here (not by hiding the page): the caller must present a valid
+// token and be an ADMIN, so an anonymous or ordinary caller creates no user and receives
+// no token (and unauthorized probes do not use up the administrator's registration
+// allowance, which is why the rate limiter comes after the authorization checks). The
+// role of the new account is always fixed server-side below; nothing in the request body
+// can choose a role, society or approval state.
+router.post("/register", authenticate, adminOnly, registrationLimiter, async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
@@ -119,11 +143,7 @@ router.post("/register", registrationLimiter, async (req, res, next) => {
       role: "OFFICE_BEARER",
     });
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
-    );
+    const token = signAuthToken(user);
 
     res.status(201).json({
       success: true,
@@ -198,13 +218,24 @@ router.post(
         });
       }
 
-      // Update password
+      // Update password. The save also stamps passwordChangedAt, which ends every session
+      // issued before now - including the one making this request.
       user.password = newPassword;
       await user.save();
 
+      // Close the user's live sockets on every device; they reconnect with the new token.
+      try {
+        const io = req.app && typeof req.app.get === "function" ? req.app.get("io") : null;
+        if (io) disconnectUserSockets(io, user._id);
+      } catch (socketError) {
+        console.error("Could not close the user's sockets after a password change:", socketError.message);
+      }
+
+      // A replacement token keeps the current client signed in (additive response field).
       res.json({
         success: true,
         message: "Password updated successfully",
+        data: { token: signAuthToken(user) },
       });
     } catch (error) {
       next(error);

@@ -1,0 +1,11 @@
+[runner] harness ready (pid 7136)
+(node:7352) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+DIAG_RESULT [{"socketAgeAtOffline_s":3.7,"sinceLastServerPing_s":null,"pingsSeen":0,"closeDelay_s":0},{"socketAgeAtOffline_s":9.6,"sinceLastServerPing_s":null,"pingsSeen":0,"closeDelay_s":0},{"socketAgeAtOffline_s":1.5,"sinceLastServerPing_s":null,"pingsSeen":0,"closeDelay_s":0},{"socketAgeAtOffline_s":16.7,"sinceLastServerPing_s":null,"pingsSeen":0,"closeDelay_s":0}]
+  ✓  1 tests\session\diag-socket-offline.spec.ts:9:1 › diagnostic: when does the websocket close while offline? (41.0s)
+
+  1 passed (44.8s)
+[runner] tests/session/diag-socket-offline.spec.ts: playwright exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, port5174 busy=false, temp artifacts=0

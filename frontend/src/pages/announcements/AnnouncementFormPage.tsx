@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuthStore } from "@/store/authStore";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,12 +14,18 @@ import { slugify } from "@/utils/slug";
 import toast from "react-hot-toast";
 import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
 
-const schema = z.object({
-  title: z.string().min(1, "Announcement title is required"),
-  content: z.string().min(1, "Broadcast content is required"),
-  priority: z.enum(["low", "medium", "high"]),
-  societyId: z.string().optional(),
-});
+const schema = z
+  .object({
+    title: z.string().min(1, "Announcement title is required"),
+    content: z.string().min(1, "Broadcast content is required"),
+    priority: z.enum(["low", "medium", "high"]),
+    targetAudience: z.enum(["ALL", "SOCIETY", "LEADERSHIP"]),
+    societyId: z.string().optional(),
+  })
+  .refine((v) => v.targetAudience !== "SOCIETY" || !!v.societyId, {
+    message: "Choose the society this announcement is for",
+    path: ["societyId"],
+  });
 
 type Form = z.infer<typeof schema>;
 
@@ -34,6 +41,12 @@ export default function AnnouncementFormPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const navigate = useNavigate();
 
+  // The backend is authoritative; this only decides which choices the form offers.
+  // Administrators may pick any audience, everyone else only their own society.
+  const user = useAuthStore((s) => s.user) as { role?: string; societyId?: string } | null;
+  const isAdmin = user?.role === "ADMIN";
+  const ownSocietyId = user?.societyId || "";
+
   const { hasAccess } = usePermissions();
   const canCreate = hasAccess("announcements", "create");
   const canEdit = hasAccess("announcements", "write");
@@ -47,8 +60,14 @@ export default function AnnouncementFormPage() {
     formState: { errors },
   } = useForm<Form>({
     resolver: zodResolver(schema),
-    defaultValues: { priority: "medium" },
+    defaultValues: {
+      priority: "medium",
+      targetAudience: isAdmin ? "ALL" : "SOCIETY",
+      societyId: isAdmin ? "" : ownSocietyId,
+    },
   });
+
+  const targetAudience = watch("targetAudience");
 
   const contentValue = watch("content");
 
@@ -77,7 +96,11 @@ export default function AnnouncementFormPage() {
             title: a.title,
             content: a.content || (a as any).message || "",
             priority: a.priority,
-            societyId: a.societyId || "",
+            targetAudience: a.targetAudience ?? "SOCIETY",
+            societyId:
+              typeof a.societyId === "object" && a.societyId
+                ? a.societyId.id || a.societyId._id || ""
+                : a.societyId || "",
           });
         });
       })
@@ -90,11 +113,18 @@ export default function AnnouncementFormPage() {
   const onSubmit = async (data: Form) => {
     setSubmitting(true);
     try {
+      const payload = {
+        title: data.title,
+        content: data.content,
+        priority: data.priority,
+        targetAudience: data.targetAudience,
+        ...(data.targetAudience === "SOCIETY" ? { societyId: data.societyId } : {}),
+      };
       if (isEdit && announcementId) {
-        await announcementService.updateAnnouncement(announcementId, data);
+        await announcementService.updateAnnouncement(announcementId, payload);
         toast.success("Announcement updated successfully");
       } else {
-        await announcementService.createAnnouncement(data);
+        await announcementService.createAnnouncement(payload);
         toast.success("Announcement broadcast published");
       }
       navigate("/announcements");
@@ -151,14 +181,40 @@ export default function AnnouncementFormPage() {
               </div>
 
               <div>
-                <label className="block text-body-sm font-semibold text-ink-secondary mb-2">
-                  Target Society / Channel
+                <label
+                  htmlFor="announcement-audience"
+                  className="block text-body-sm font-semibold text-ink-secondary mb-2"
+                >
+                  Audience
                 </label>
                 <select
+                  id="announcement-audience"
+                  {...register("targetAudience")}
+                  className="w-full px-4 py-3 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-sm"
+                >
+                  {isAdmin && <option value="ALL">All members</option>}
+                  <option value="SOCIETY">
+                    {isAdmin ? "A specific society" : "My society"}
+                  </option>
+                  {isAdmin && <option value="LEADERSHIP">Leadership</option>}
+                </select>
+              </div>
+            </div>
+
+            {targetAudience === "SOCIETY" && isAdmin && (
+              <div>
+                <label
+                  htmlFor="announcement-society"
+                  className="block text-body-sm font-semibold text-ink-secondary mb-2"
+                >
+                  Society <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="announcement-society"
                   {...register("societyId")}
                   className="w-full px-4 py-3 bg-surface/50 border border-white/10 dark:border-white/5 rounded-xl text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-sm"
                 >
-                  <option value="">IEEE Student Branch (All Members)</option>
+                  <option value="">Select a society</option>
                   {societies.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name} ({s.shortName || s.name.substring(0, 4)})
@@ -166,7 +222,15 @@ export default function AnnouncementFormPage() {
                   ))}
                 </select>
               </div>
-            </div>
+            )}
+            {targetAudience === "SOCIETY" && !isAdmin && !ownSocietyId && (
+              <p className="text-caption text-red-500">
+                Your account is not linked to a society, so you cannot publish an announcement.
+              </p>
+            )}
+            {errors.societyId && (
+              <p className="text-caption text-red-500 -mt-4">{errors.societyId.message}</p>
+            )}
 
             <div>
               <div className="flex items-center justify-between mb-2">

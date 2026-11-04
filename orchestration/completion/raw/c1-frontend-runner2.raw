@@ -1,0 +1,41 @@
+
+[session] ===== tests/session/dm-recipients.spec.ts
+(node:21400) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+  ✘  1 tests\session\dm-recipients.spec.ts:22:3 › direct-message recipients for a non-administrator › lists same-society members only, never calls GET /users, and starts a conversation (1ms)
+  -  2 tests\session\dm-recipients.spec.ts:47:3 › direct-message recipients for a non-administrator › a member alone in their society sees an empty-state message, not a crash
+  -  3 tests\session\dm-recipients.spec.ts:60:3 › direct-message recipients for a non-administrator › a failed lookup is reported without a crash and without falling back to the user directory
+
+
+  1) tests\session\dm-recipients.spec.ts:22:3 › direct-message recipients for a non-administrator › lists same-society members only, never calls GET /users, and starts a conversation 
+
+    Error: browserType.launch: Executable doesn't exist at C:\Users\Arrin Paul\AppData\Local\ms-playwright\chromium_headless_shell-1234\chrome-headless-shell-win64\chrome-headless-shell.exe
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results\session\dm-recipients-direct-messa-bba47-s-and-starts-a-conversation\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\session\dm-recipients-direct-messa-bba47-s-and-starts-a-conversation\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\session\dm-recipients-direct-messa-bba47-s-and-starts-a-conversation\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\session\dm-recipients.spec.ts:22:3 › direct-message recipients for a non-administrator › lists same-society members only, never calls GET /users, and starts a conversation 
+  2 did not run
+[session] tests/session/dm-recipients.spec.ts: playwright exit=1; harness exit=0; ready file removed=true
+
+[session] 0/1 specs passed
+[session] FAILED: tests/session/dm-recipients.spec.ts (playwright exit=1, harness exit=0)

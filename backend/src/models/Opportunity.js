@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { isSafeWebUrl } = require("../utils/urlSafety");
 
 const SOCIETY_CODES = [
   "GENERAL",
@@ -29,15 +30,24 @@ const opportunitySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    // AUD-030: both are shown to users as links, so only plain http(s) URLs are accepted.
     link: {
       type: String,
       required: true,
       trim: true,
+      validate: {
+        validator: isSafeWebUrl,
+        message: "link must be an http(s) URL without credentials",
+      },
     },
     sourceUrl: {
       type: String,
       required: true,
       trim: true,
+      validate: {
+        validator: isSafeWebUrl,
+        message: "sourceUrl must be an http(s) URL without credentials",
+      },
     },
     scrapedAt: {
       type: Date,

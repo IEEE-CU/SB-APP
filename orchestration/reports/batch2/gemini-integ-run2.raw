@@ -1,0 +1,89 @@
+
+[runner] ===== test/integration/ai-financial-insights.integration.test.js
+[runner] fresh harness ready (pid 25548)
+▶ AUD-013: who may ask
+  ✔ no token is 401 (3.7081ms)
+  ✔ a user without finance:view is 403, and so is a user with no role (22.8669ms)
+  ✔ a finance:view holder passes every check; with no key configured the answer is a safe 503 (27.128ms)
+✔ AUD-013: who may ask (1298.5659ms)
+▶ AUD-013: scope
+  ✔ a chair may audit their own society but not another's (38.8924ms)
+  ✔ a chair cannot learn whether an out-of-scope society exists: both answers are 403 (6.3457ms)
+  ✔ an administrator may audit any society; a nonexistent one is 404 (21.1559ms)
+✔ AUD-013: scope (66.7502ms)
+▶ AUD-013: the payload
+  ✔ only societyId is accepted: prompt text, financial data and any other field are 400 (25.1051ms)
+  ✖ a malformed, non-string or oversized societyId is 400 (17.9905ms)
+✖ AUD-013: the payload (43.8997ms)
+▶ AUD-013: rate limit
+  ✖ each user gets 10 audits per window; the 11th is 429 and another user is unaffected (85.4031ms)
+✖ AUD-013: rate limit (85.8007ms)
+ℹ tests 9
+ℹ suites 4
+ℹ pass 7
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1598.7029
+
+✖ failing tests:
+
+test at test\integration\ai-financial-insights.integration.test.js:102:3
+✖ a malformed, non-string or oversized societyId is 400 (17.9905ms)
+  AssertionError [ERR_ASSERTION]: {"$ne":null}
+  
+  429 !== 400
+  
+      at TestContext.<anonymous> (D:\SB-APP-worktrees\batch2-gemini\backend\test\integration\ai-financial-insights.integration.test.js:105:14)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1313:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:897:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\integration\ai-financial-insights.integration.test.js:111:3
+✖ each user gets 10 audits per window; the 11th is 429 and another user is unaffected (85.4031ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    [
+      503,
+      503,
+      503,
+      503,
+  ...
+      503,
+  -   503,
+      429,
+  +   429
+    ]
+  
+      at TestContext.<anonymous> (D:\SB-APP-worktrees\batch2-gemini\backend\test\integration\ai-financial-insights.integration.test.js:115:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1313:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1771:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:897:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [
+      503, 503, 503, 503,
+      503, 503, 503, 503,
+      503, 429, 429
+    ],
+    expected: [
+      503, 503, 503, 503,
+      503, 503, 503, 503,
+      503, 503, 429
+    ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+[runner] test/integration/ai-financial-insights.integration.test.js: tests exit=1; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0

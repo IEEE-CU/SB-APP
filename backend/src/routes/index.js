@@ -14,10 +14,13 @@ const announcementRoutes = require("./announcements");
 const dashboardRoutes = require("./dashboard");
 const projectReportRoutes = require("./projectReports");
 const institutionRoutes = require("./institution");
+// Intentionally imported but not mounted: see the note at the former mount.
+// eslint-disable-next-line no-unused-vars
 const storageRoutes = require("./storage");
 const communityRoutes = require("./community");
 const rbacRoutes = require("./rbac");
 const channelRoutes = require("./channels");
+const aiRoutes = require("./ai");
 const conversationRoutes = require("./conversations");
 const boardsRouter = require("./boards");
 const tasksRouter = require("./tasks");
@@ -49,9 +52,14 @@ router.use("/calendar", calendarRoutes);
 router.use("/announcements", announcementRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/institution", institutionRoutes);
-router.use("/storage", storageRoutes);
+// AUD-001: the storage router (upload/list/download/delete) has no
+// authentication or authorization, so it is deliberately NOT mounted. Do not
+// re-mount it until an approved access policy is implemented (see
+// test/unit/storage-unmounted.test.js).
+// router.use("/storage", storageRoutes);
 router.use("/community", communityRoutes);
 router.use("/channels", channelRoutes);
+router.use("/ai", aiRoutes);
 router.use("/conversations", conversationRoutes);
 router.use("/boards", boardsRouter);
 router.use("/tasks", tasksRouter);

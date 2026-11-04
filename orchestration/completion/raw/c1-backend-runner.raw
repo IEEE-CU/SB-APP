@@ -1,0 +1,63 @@
+
+[integration] ===== test/integration/rate-limit-budget.integration.test.js
+▶ what costs one request
+  ✔ health, anonymous and authenticated requests, and an unknown path (49.295ms)
+  ✔ a successful login (270.49ms)
+✔ what costs one request (1052.6176ms)
+▶ what costs nothing
+  ✔ a CORS preflight (4.349ms)
+  ✔ Socket.IO transport requests (the realtime handshake and reconnects) (10.2964ms)
+✔ what costs nothing (14.9942ms)
+▶ whose quota it is
+  ✔ different users on one address spend the same counter (42.0243ms)
+✔ whose quota it is (42.2125ms)
+ℹ tests 5
+ℹ suites 3
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1211.1607
+[integration] test/integration/rate-limit-budget.integration.test.js: tests exit=0; harness exit=0; ready file removed=true
+
+[integration] ===== test/integration/dm-recipients.integration.test.js
+▶ the recipient list
+  ✔ a member sees exactly the other members of their own society (376.8207ms)
+  ✔ no one from another society, no administrator and no society-less account is listed (301.632ms)
+  ✔ a society id in the query string cannot widen or redirect the result (25.2661ms)
+  ✔ each entry is { id, name } and nothing else; no e-mail, role, society or secret appears anywhere (7.9638ms)
+  ✔ results are sorted by name (19.7794ms)
+✔ the recipient list (3345.6807ms)
+▶ search
+  ✔ a name fragment narrows the list, case-insensitively, inside the caller's society only (20.0294ms)
+  ✔ regular-expression characters are treated as text, not as a pattern (45.3808ms)
+  ✔ over-long or non-text search input is a 400, never a server error (12.5351ms)
+  ✔ a blank search is the full scoped list (7.7109ms)
+✔ search (86.2245ms)
+▶ who may ask
+  ✔ anonymous requests are rejected (2.4054ms)
+  ✔ an account without the community permission is denied, like the rest of Community (263.085ms)
+  ✔ an account holding the role but with no society is refused (no scope) and never sees the global directory (10.6355ms)
+  ✔ a member alone in their society gets an empty list (14.981ms)
+  ✔ a global administrator has no society, so the scoped list is empty - administrators use GET /users (282.5701ms)
+✔ who may ask (574.1947ms)
+▶ the user directory stays administrator-only
+  ✔ anonymous 401, members 403 (with no user data), the administrator 200 (289.4116ms)
+✔ the user directory stays administrator-only (289.5902ms)
+▶ starting a conversation is limited to the same scope, however the request is made
+  ✔ a listed recipient can be messaged (the list and the creation rule agree) (25.9689ms)
+  ✔ a crafted request for someone outside the society is refused and creates nothing (61.469ms)
+  ✔ an unknown recipient is a 404 and a malformed one a 400 (12.6622ms)
+✔ starting a conversation is limited to the same scope, however the request is made (100.4278ms)
+ℹ tests 18
+ℹ suites 5
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4492.7261
+[integration] test/integration/dm-recipients.integration.test.js: tests exit=0; harness exit=0; ready file removed=true
+
+[integration] 2/2 files passed

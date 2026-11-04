@@ -6,7 +6,12 @@
  */
 
 require("dotenv").config();
+const mongoose = require("mongoose");
 const connectDB = require("../config/database");
+const {
+  assertDestructiveTargetAllowed,
+  assertConnectedToValidatedTarget,
+} = require("../utils/dbSafety");
 
 // Import models
 const User = require("../models/User");
@@ -649,9 +654,17 @@ const defaultMatrixMapping = {
   },
 };
 
-async function seed() {
+async function seed({ env = process.env } = {}) {
+  // Seeding wipes users, societies, roles and permissions. Validate and
+  // authorize the target BEFORE connecting or modifying any collection.
+  const target = assertDestructiveTargetAllowed({ operation: "seed", env });
+
   try {
-    await connectDB();
+    const conn = await connectDB();
+    if (!conn) {
+      throw new Error("Database connection failed; seeding aborted.");
+    }
+    assertConnectedToValidatedTarget(target, mongoose.connection.name);
     console.log("🌱 Starting database seeding...\n");
 
     // Clear existing data

@@ -11,16 +11,57 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
+ * Object-level scope check for a loaded report. A report belongs to the
+ * society in `report.societyId`; `societyAccess` cannot enforce this on
+ * `/:id` routes because they carry no society parameter. Administrators are
+ * unrestricted (same policy as `societyAccess`); everyone else may only act on
+ * their own society's reports. Fails closed when either society is missing.
+ */
+const isReportInCallerScope = (user, report) => {
+  if (user.role === "ADMIN") return true;
+
+  const userSocietyId =
+    user.societyId?._id?.toString() || user.societyId?.toString();
+  const reportSocietyId =
+    report.societyId?._id?.toString() || report.societyId?.toString();
+
+  return Boolean(userSocietyId) && userSocietyId === reportSocietyId;
+};
+
+const outOfScope = (res) =>
+  res.status(403).json({
+    success: false,
+    message: "Access restricted to your own society",
+  });
+
+// Id of a society reference that may be a bare id or a populated document.
+// A populated document without an _id (for example a deleted society) has no id.
+const societyIdOf = (ref) => {
+  if (!ref) return undefined;
+  const id = ref._id !== undefined ? ref._id : ref;
+  return id ? id.toString() : undefined;
+};
+
+/**
  * @route   GET /api/project-reports
- * @desc    Get all reports
- * @access  All users
+ * @desc    Get reports (own society; administrators: any)
+ * @access  Authenticated users with a society, and administrators
  */
 router.get("/", async (req, res, next) => {
   try {
     const { societyId, projectId, limit = 100, page = 1 } = req.query;
     const filter = {};
 
-    if (societyId) filter.societyId = societyId;
+    // AUD-021: administrators may filter by any society. Everyone else is
+    // forced to their own stored society; a society named in the query is
+    // ignored, and a caller without a society gets no unscoped list.
+    if (req.user.role === "ADMIN") {
+      if (societyId) filter.societyId = societyId;
+    } else {
+      const ownSocietyId = societyIdOf(req.user.societyId);
+      if (!ownSocietyId) return outOfScope(res);
+      filter.societyId = ownSocietyId;
+    }
     if (projectId) filter.projectId = projectId;
 
     const parsedLimit = parseLimit(limit);
@@ -55,14 +96,32 @@ router.get("/", async (req, res, next) => {
 
 /**
  * @route   GET /api/project-reports/project/:projectId
- * @desc    Get reports for a specific project
- * @access  All users
+ * @desc    Get reports for a specific project (own society's projects; administrators: any)
+ * @access  Authenticated users with a society, and administrators
  */
 router.get("/project/:projectId", async (req, res, next) => {
   try {
-    const reports = await ProjectReport.find({
-      projectId: req.params.projectId,
-    })
+    const filter = { projectId: req.params.projectId };
+
+    // AUD-021: for non-admins the project is resolved from the database and
+    // its stored society must be the caller's; an unknown project and a
+    // foreign one look the same. Reports are also restricted to the caller's
+    // society, so a mismatched legacy report cannot leak through its project.
+    if (req.user.role !== "ADMIN") {
+      const ownSocietyId = societyIdOf(req.user.societyId);
+      if (!ownSocietyId) return outOfScope(res);
+      const project = await Project.findById(req.params.projectId)
+        .select("societyId")
+        .lean();
+      if (!project || societyIdOf(project.societyId) !== ownSocietyId) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Project not found" });
+      }
+      filter.societyId = ownSocietyId;
+    }
+
+    const reports = await ProjectReport.find(filter)
       .populate("societyId", "name shortName")
       .sort({ createdAt: -1 });
 
@@ -78,8 +137,8 @@ router.get("/project/:projectId", async (req, res, next) => {
 
 /**
  * @route   GET /api/project-reports/:id
- * @desc    Get report by ID
- * @access  All users
+ * @desc    Get report by ID (own society's reports; administrators: any)
+ * @access  Authenticated users with a society, and administrators
  */
 router.get("/:id", async (req, res, next) => {
   try {
@@ -87,7 +146,9 @@ router.get("/:id", async (req, res, next) => {
       .populate("societyId", "name shortName")
       .populate("projectId", "title category");
 
-    if (!report) {
+    // AUD-021: a report outside the caller's scope is indistinguishable from
+    // a nonexistent one.
+    if (!report || !isReportInCallerScope(req.user, report)) {
       return res
         .status(404)
         .json({ success: false, message: "Report not found" });
@@ -142,6 +203,15 @@ router.post(
           return res
             .status(404)
             .json({ success: false, message: "Project not found" });
+        }
+        // AUD-021: a report belongs to its project's society, for every
+        // caller including administrators. The project's society is the
+        // stored one, never a client-supplied value.
+        if (societyIdOf(project.societyId) !== societyIdOf(finalSocietyId)) {
+          return res.status(400).json({
+            success: false,
+            message: "Project does not belong to the report's society",
+          });
         }
       }
 
@@ -202,6 +272,10 @@ router.patch(
           .json({ success: false, message: "Report not found" });
       }
 
+      if (!isReportInCallerScope(req.user, report)) {
+        return outOfScope(res);
+      }
+
       // Update fields if provided
       if (title !== undefined) report.title = title;
       if (description !== undefined) report.description = description;
@@ -247,6 +321,10 @@ router.delete(
         return res
           .status(404)
           .json({ success: false, message: "Report not found" });
+      }
+
+      if (!isReportInCallerScope(req.user, report)) {
+        return outOfScope(res);
       }
 
       await ProjectReport.findByIdAndDelete(req.params.id);

@@ -1,0 +1,30 @@
+{
+  "name": "QA Engineer",
+  "role": "qa",
+  "title": "QA Engineer",
+  "icon": "search",
+  "reportsTo": "f0a76ae6-ccbe-450a-bbec-5354de8ee084",
+  "capabilities": "Independent test execution and defect reproduction with the isolated harness. Does not implement features.",
+  "adapterType": "claude_local",
+  "adapterConfig": {
+    "engine": "cli",
+    "cwd": "D:\\SB-APP-orchestration",
+    "instructionsFilePath": "D:\\SB-APP-orchestration\\agents\\qa-instructions.md",
+    "dangerouslySkipPermissions": false,
+    "model": "claude-sonnet-5-5",
+    "maxTurnsPerRun": 30,
+    "timeoutSec": 1500,
+    "extraArgs": [
+      "--settings",
+      "D:\\SB-APP-orchestration\\agents\\qa-settings.json"
+    ]
+  },
+  "permissions": {
+    "canCreateAgents": false,
+    "canCreateSkills": false,
+    "trustPreset": "standard"
+  },
+  "metadata": {
+    "note": "Created for the owner. Does nothing until a task is assigned. No commits/merges/pushes/installs. digest.txt is off-limits."
+  }
+}

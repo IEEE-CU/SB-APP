@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Reaction } from "@/types/models";
 import { channelsService } from "@/services/channels";
+import { groupReactions } from "@/lib/messageContract";
+import toast from "react-hot-toast";
 import { Smile } from "lucide-react";
 
 interface EmojiReactionPickerProps {
@@ -21,22 +23,15 @@ export default function EmojiReactionPicker({ messageId, reactions = [], onReact
 
   const handleToggleEmoji = async (emoji: string) => {
     try {
-      const res = await channelsService.addReaction(messageId, emoji);
-      const updated = (res.data?.data as any)?.reactions || localReactions;
+      const res = await channelsService.toggleReaction(messageId, emoji);
+      // The server answers with the message's reaction records; keep what is shown if it did not.
+      const updated = Array.isArray(res.data?.data) ? groupReactions(res.data.data) : localReactions;
       setLocalReactions(updated);
       onReactionUpdate?.(updated);
       setShowPicker(false);
     } catch {
-      // Fallback optimistic update
-      const existing = localReactions.find((r) => r.emoji === emoji);
-      let updated: Reaction[];
-      if (existing) {
-        updated = localReactions.filter((r) => r.emoji !== emoji);
-      } else {
-        updated = [...localReactions, { emoji, users: ["me"] }];
-      }
-      setLocalReactions(updated);
-      onReactionUpdate?.(updated);
+      // Do not pretend the server accepted it: leave the reactions as they are.
+      toast.error("Failed to update reaction");
       setShowPicker(false);
     }
   };

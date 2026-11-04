@@ -1,0 +1,53 @@
+[runner] harness ready (pid 12268)
+(node:25004) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+  ✓  1 tests\session\socket-reconnect.spec.ts:36:3 › a mounted Community page after the connection drops › rejoins its channel on every reconnect without being remounted, once per reconnect (19.2s)
+  ✘  2 tests\session\socket-reconnect.spec.ts:77:3 › a mounted Community page after the connection drops › a reconnect after a password change uses the replacement token, not the old one, and rejoins (34.5s)
+  -  3 tests\session\socket-reconnect.spec.ts:113:3 › logout and revoked sessions › logout closes the socket and no later connection uses the previous user's token
+  -  4 tests\session\socket-reconnect.spec.ts:138:3 › logout and revoked sessions › a session revoked by a password reset does not get its room back, and the page signs out on its next request
+
+
+  1) tests\session\socket-reconnect.spec.ts:77:3 › a mounted Community page after the connection drops › a reconnect after a password change uses the replacement token, not the old one, and rejoins 
+
+    Error: the websocket did not close when offline
+
+    the websocket did not close when offline
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 20000ms exceeded while waiting on the predicate
+
+       at support.ts:217
+
+      215 |     await expect
+      216 |       .poll(() => wire.sockets.at(-1)?.closed, { timeout: 20_000, message: 'the websocket did not close when offline' })
+    > 217 |       .toBe(true);
+          |        ^
+      218 |   } finally {
+      219 |     await page.context().setOffline(false);
+      220 |   }
+        at dropConnection (D:\SB-APP-worktrees\batch2-integration\frontend\tests\session\support.ts:217:8)
+        at D:\SB-APP-worktrees\batch2-integration\frontend\tests\session\socket-reconnect.spec.ts:103:5
+
+    Error Context: test-results\session\socket-reconnect-a-mounted-784e2-not-the-old-one-and-rejoins\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\session\socket-reconnect-a-mounted-784e2-not-the-old-one-and-rejoins\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\session\socket-reconnect-a-mounted-784e2-not-the-old-one-and-rejoins\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\session\socket-reconnect.spec.ts:77:3 › a mounted Community page after the connection drops › a reconnect after a password change uses the replacement token, not the old one, and rejoins 
+  2 did not run
+  1 passed (1.0m)
+[runner] tests/session/socket-reconnect.spec.ts --trace retain-on-failure: playwright exit=1; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, port5174 busy=false, temp artifacts=0

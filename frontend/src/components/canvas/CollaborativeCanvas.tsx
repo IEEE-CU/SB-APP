@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { getSocket } from '../../lib/socket';
+import { rejoinOnConnect } from '../../lib/socketRejoin';
 
 interface Point {
   x: number;
@@ -42,7 +43,7 @@ export const CollaborativeCanvas: React.FC<CollaborativeCanvasProps> = ({
 
   useEffect(() => {
     const socket = getSocket();
-    socket.emit('room:join', { channelId });
+    const stopRejoin = rejoinOnConnect(socket, () => socket.emit('room:join', { channelId }));
 
     const handleRemoteDraw = ({ stroke }: { stroke: Stroke }) => {
       const canvas = canvasRef.current;
@@ -56,6 +57,7 @@ export const CollaborativeCanvas: React.FC<CollaborativeCanvasProps> = ({
     socket.on('canvas:draw', handleRemoteDraw);
 
     return () => {
+      stopRejoin();
       socket.off('canvas:draw', handleRemoteDraw);
       socket.emit('room:leave', { channelId });
     };

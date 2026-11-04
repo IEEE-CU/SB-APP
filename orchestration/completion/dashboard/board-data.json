@@ -1,0 +1,135 @@
+{
+ "stats": [
+  { "cls": "done", "n": 18, "t": "things finished (grouped below); most independently verified by me" },
+  { "cls": "wait", "n": 20, "t": "waiting on your decision or approval" },
+  { "cls": "todo", "n": 20, "t": "not started yet" },
+  { "cls": "bad", "n": 3, "t": "critical dependency packages, none upgraded (dompurify, proxy-addr, tar)" }
+ ],
+ "nextSteps": [
+  "<b>Answer the open decisions and questions</b> in the Waiting column below: D-24, D-B5, D-B6, D-B7, D-26 to D-29, and Q1 to Q7.",
+  "<b>Decide whether to commit</b> the now fully-verified Backend (NEW-22) and Frontend (API-F2/FE-F1/NEW-09) agent changes sitting uncommitted in wave2-backend / wave2-frontend.",
+  "<b>Give the hosting facts for TRUST_PROXY</b> (NEW-18) and <b>approve the dependency batches</b> from DEP-01 (plan only so far, nothing installed).",
+  "<b>Rerun the 8 unlaunched integration files and the flaky socket-reconnect spec</b> once memory is free (close other programs first).",
+  "<b>Prove the CI workflow on a real GitHub Actions run</b>, then decide whether to build a PWA at all (none exists today — Q4).",
+  "<b>Decide NEW-15</b>: should society faculty advisors be able to change any role's permissions across the whole app?"
+ ],
+ "register": [
+  ["Verified complete", 25, "var(--done)"],
+  ["Partially resolved", 9, "var(--warn)"],
+  ["Open defect", 13, "var(--bad)"],
+  ["Open decision", 9, "var(--wait)"],
+  ["Not verified / blocked", 4, "var(--wip)"],
+  ["Not reproduced", 2, "var(--todo)"],
+  ["Superseded", 2, "#94a3b8"]
+ ],
+ "phases": [
+  ["0", "Safe discovery", "done", "Done", "Baseline, worktree map, 8 documents written; endpoint count (129) independently checked against the repo"],
+  ["1", "Handover verification", "done", "First pass done", "Reviewer agent checked the 3 commits against the real diff: no test weakened; 2 of 3 commits approved with changes, 1 held back pending D-B5/D-B7. Full final review is still Phase 9, below"],
+  ["2", "Security & critical defects", "part", "Partly done", "NEW-22 and 3 of 4 frontend items fixed + independently verified; dependency remediation PLAN written (DEP-01), nothing installed yet"],
+  ["3", "Backend / API audit", "part", "First pass done", "All 129 endpoints classified (06-api-and-database-audit.md); 27 GET endpoints and the database half still need a full pass"],
+  ["4", "Frontend audit", "part", "First pass done", "Static read-only pass done (05-functional-audit.md); nothing run in a browser yet"],
+  ["5", "QA / browser tests", "part", "Partly done", "Unit-test count gap fully explained (QA-03); NEW-10 flake still open; 8 integration files + socket-reconnect spec still need a rerun"],
+  ["6", "UI/UX audit", "todo", "Not started", "Blocked behind the security and functional gates (charter §11); no large redesign without your approval"],
+  ["7", "PWA / DevOps / prod", "part", "Partly done", "CI workflow written, never run on GitHub Actions; no PWA exists anywhere in this repo (Q4); env-file gaps found (no root .env.example)"],
+  ["8", "Full regression", "part", "Partly done", "Combined run done once: 718/718 unit, 557/557 of the integration files that ran, all frontend checks clean; 8 integration files + 1 browser spec still unrun"],
+  ["9", "Independent final review", "part", "Partial", "The 3 commits were reviewed (Phase 1 above); a full final review of ALL work, including the 5 agent-made fixes, has not happened"],
+  ["10", "Final handover", "todo", "Not started", "Final issue register, readiness report and handover doc not written"]
+ ],
+ "cols": [
+  {
+   "title": "Done", "cls": "done",
+   "hint": "Grouped by area. Everything stays uncommitted except the 3 named commits.",
+   "items": [
+    ["Agent team built and fenced in", "6 specialist agents (Security, Backend, Frontend/UI-UX, QA, DevOps, Reviewer) + the CEO, all on claude-sonnet-5, each can edit only its own worktree folder, none can commit/push/merge/install. $200/month spend cap with hard stops, split per agent.", "ok"],
+    ["Three local commits on integration/combined", "Batch 1 (society terms + announcements), Batch 2 (Gemini server-side + dead wrapper removal), CI work. Explicit file lists only, nothing pushed or merged.", "ok"],
+    ["Society terms: privacy, access control, race fixed", "NEW-07/AUD-025/NEW-11. Budgets need finance:view, chair/treasurer emails admin-only, index-wait race fixed (reproduced on the old code first).", "ok"],
+    ["Announcement audience rules", "NEW-06/AUD-022/D-23/D-21. Non-admins post only to their own society; PATCH can't escalate; nonexistent society → 404.", "ok"],
+    ["Gemini key moved server-side, no transaction data leaves", "AUD-013, D-B10, D-B11. Fake key found in 0 production-bundle files; dead channel-member wrapper removed (NEW-08).", "ok"],
+    ["Combined regression run (once)", "718/718 backend unit, 557/557 of the 34 integration files that ran, all frontend checks clean, 27/30 browser tests. See test table below for the gaps.", "ok"],
+    ["Dependency audit run (NEW-12)", "32 findings across root/backend/frontend; 3 distinct critical packages (dompurify, proxy-addr, tar). Nothing upgraded yet.", "ok"],
+    ["Dependency remediation PLAN (DEP-01)", "Security Lead: proxy-addr fixable by a lockfile refresh alone; the root tar critical comes only from an unused root bcrypt. Plan only — I independently spot-checked 3 of its claims against the code.", "ok"],
+    ["Independent review of the 3 commits (REV-01)", "Reviewer agent read the real diffs: no test weakened anywhere. 2 commits approved with changes (owner questions below); the CI commit held back pending D-B5/D-B7.", "ok"],
+    ["PWA & environment report (DevOps agent)", "Finding: this repository has no PWA at all — no service worker, manifest, or icons anywhere, confirmed by searching every git ref. Also: no root .env.example, 2 conflicting backend example files, FRONTEND_URL undocumented.", "ok"],
+    ["Unit-test count gap fully explained (QA-03)", "645 declared tests + 73 from 3 loop-driven files = 718 executed, exactly. I independently re-checked every number.", "ok"],
+    ["Backend: conversation sidebar fix (NEW-22)", "GET /conversations now returns lastMessage. I independently re-ran eslint (clean), the new test (8/8), and the pre-existing calendar-conversations-authz suite (22/22, no regression). Uncommitted in wave2-backend.", "ok"],
+    ["Frontend: 3 small fixes verified (API-F2, FE-F1, NEW-09)", "Dead getConversation wrapper removed; double-click guards added to the Kanban and chat send buttons; one readable message for HTTP 429 with no auto-retry. I read every diff and independently re-ran all 53 tests. Uncommitted in wave2-frontend.", "ok"],
+    ["First-pass audits: endpoints, frontend, roles", "All 129 backend endpoints classified (API-01); a static frontend read-only pass (FE-01); the role/permission matrix pulled from the real seed data (AUTHZ-01). Each surfaced new small findings, listed under Waiting/Not started.", "ok"],
+    ["Security spot-checks", "DOMPurify's risky options are never used in this codebase (SEC-01); the unused Google Drive upload code holds no secret but would send financial data to Google if ever wired up (SEC-03); proxy-addr's severity depends on your proxy setup (SEC-02).", "ok"],
+    ["Generated files untracked", "AUD-014. 9 files (Vite cache, Playwright output, tsbuildinfo) removed from git tracking in the CI worktree; the files themselves stay on disk.", "ok"],
+    ["NEW-10 flake: partly diagnosed, not fixed", "The test drops the socket connection ~100ms after it opens, which the evidence suggests is too fast for the browser to report the close in time. Not proven; no fix applied yet (needs D-B6).", "unv"],
+    ["Paperclip set up end-to-end", "Server running, company created, CEO + 6 agents hired and approved, live dashboard wired to the real API.", "ok"]
+   ]
+  },
+  {
+   "title": "Waiting on you", "cls": "wait",
+   "hint": "Grouped: decisions, then owner questions from the reviews, then approvals.",
+   "items": [
+    ["D-24: who may edit term handover?", "Chair, society faculty advisor, SB chair, SB faculty advisor (not treasurer)? Already built that way — just needs your confirmation.", ""],
+    ["D-B5: approve the CI changes?", "And should the new jobs be required for merge?", ""],
+    ["D-B6: apply the NEW-10 test fix?", "Wait for the replacement socket to join its channel before dropping the connection.", ""],
+    ["D-B7: keep the 9 generated files untracked?", "Already done in the CI worktree; just needs sign-off.", ""],
+    ["D-26: approve the dependency remediation plan?", "Lockfile refresh for in-range fixes (incl. proxy-addr → 2.0.8) and removing the unused root bcrypt. Zod 4 and react-router 7 are major upgrades the plan recommends deferring.", ""],
+    ["D-27: what to do with the public /register page?", "It can never succeed — sign-up is admin-only on the server. Remove, hide behind admin, or build real self-registration?", ""],
+    ["D-28: delete the unused Google Drive code?", "Holds no secret, but would send financial data to Google if ever wired up. Deleting is a feature removal, so it needs your OK.", ""],
+    ["D-29: /reports and /project-reports are the same route", "Low priority — decide during the backend audit.", "P3"],
+    ["Give the hosting facts for TRUST_PROXY (NEW-18)", "How is the app reached — directly, or behind proxies? And which ones? Decides how serious the proxy-addr finding actually is.", ""],
+    ["Q1: should a legacy admin see term budgets?", "Today only finance:view unlocks budgets, so a legacy admin sees none — but the AI audit treats legacy admins as fully authorized. Inconsistent; pick one.", ""],
+    ["Q2: may budget/balance totals go to Google?", "The AI prompt sends society name, budget and balance (no individual transactions). Your D-B10 rule bans transaction data — are these totals acceptable?", ""],
+    ["Q3: which Gemini model, and who sets the key?", "Server default is gemini-1.5-pro; the old frontend used gemini-3-flash-preview. Without GEMINI_MODEL/GEMINI_API_KEY set server-side, the AI audit just answers 503.", ""],
+    ["Q4: where is the PWA work from your project history?", "Your history says 197 PWA tests passed, but no PWA code exists anywhere in this repo (checked every git ref). Different repo, never saved, or should one be built now?", ""],
+    ["Q5: add Cache-Control: no-store to API responses?", "The backend sends no cache header today, so financial/personal data could be cached by a browser or proxy. Small, recommended hardening.", ""],
+    ["Q6: calendar events aren't saved to the backend at all", "Found while reviewing the frontend fixes — \"Save Event\" only updates local state and never calls the API. Intentional, or a real bug to fix?", ""],
+    ["Q7: which permission should gate each create/edit page?", "The societies/events/projects/reports/announcements new+edit routes have no permission check in the UI (the backend still enforces it server-side).", ""],
+    ["Commit the Backend and Frontend agent changes?", "Both are now fully reviewed AND independently re-tested by me (not just reported). Sitting uncommitted in wave2-backend / wave2-frontend.", ""],
+    ["Rerun the gate gaps (A1)", "8 integration files that never started (out of memory) + the flaky socket-reconnect spec — needs free memory.", ""],
+    ["Prove the CI on a real GitHub Actions run (CI-01)", "The workflow has only ever been tested locally.", ""],
+    ["Optional: let the CEO file its own Paperclip tasks", "Would need 2 extra tool permissions. Not required — I've been closing/recording its work for it.", ""]
+   ]
+  },
+  {
+   "title": "Not started", "cls": "todo",
+   "hint": "Roughly in priority order.",
+   "items": [
+    ["Trusted proxy and hosting topology", "NEW-18. Needs your hosting facts first.", "P1"],
+    ["PWA runtime check — on hold", "Nothing to check: no PWA exists in the repo. Waiting on Q4.", "P1"],
+    ["Importer / scraper security audit", "NEW-24, AUD-030, NEW-25 (unvalidated stored URLs).", "P2"],
+    ["Who may edit any role's permissions (NEW-15)", "Society faculty advisors can currently change any role globally, and the check picks an arbitrary role if a user holds several. Needs your decision.", "P2"],
+    ["FE-F2: gate the 5 create/edit form pages in the UI", "Needs your answer to Q7 first (which module+action per route).", "P2"],
+    ["Task-creation browser test", "NEW-05.", "P2"],
+    ["Legacy data cleanup in events/projects", "NEW-23.", "P2"],
+    ["Backup / restore safety review", "NEW-14. Password hashes in plaintext backups; restore isn't atomic.", "P2"],
+    ["Stale E2E config pointing at localhost:5000", "NEW-19.", "P2"],
+    ["Frontend test:unit script is a stub (F-05 / CI-02)", "Needs D-B5 first.", "P2"],
+    ["Ten backend areas have no frontend client module (F-06)", "Decide per area: consumed inline, or genuinely unused?", "P3"],
+    ["Duplicate permission requests; dormant audit logger", "NEW-20, NEW-21.", "P3"],
+    ["Remaining charter documents (DOC-01)", "Security audit, functional audit, API/DB audit, role matrix, UI/UX audit, CI/dependency audit, final issue register, readiness report, handover doc.", "P2"],
+    ["UI/UX audit and improvements", "Responsive, accessibility, visual consistency. Gated behind the security/functional work; large changes need your approval first.", "P3"],
+    ["Full clean regression", "After the open fixes land and the gate gaps are closed.", ""],
+    ["Final issue register & readiness report", "Phase 10 of the charter.", ""],
+    ["Full independent final review", "Phase 9 — a review of everything, not just the 3 commits.", ""],
+    ["Production readiness call", "Not release-ready while any P1 item stays open.", ""],
+    ["SEC-02 follow-up: is the root tar critical reachable?", "Depends on whether the root package.json is ever actually invoked.", "P2"],
+    ["AUTHZ-01: per-endpoint negative tests", "For the 27 authenticated GET endpoints with no route-level guard (each has an inline check that still needs a test).", "P2"]
+   ]
+  }
+ ],
+ "tests": [
+  ["Backend unit", "718 / 718", "pass", "exit 0"],
+  ["Backend lint + syntax typecheck", "clean", "pass", "0 errors"],
+  ["Backend integration", "557 / 557 in 34 of 42 files", "gap", "8 files could not start (host ran out of memory), ~91 tests not run"],
+  ["Frontend Node tests", "45 / 45", "pass", ""],
+  ["Frontend typecheck, lint, build", "clean", "pass", "10 lint warnings, same as before"],
+  ["Gemini key in production bundle", "0 files", "pass", "fake-key test"],
+  ["Browser tests (7 specs)", "27 / 30", "gap", "1 failed (NEW-10 socket-reconnect), 2 did not run"],
+  ["Backend agent fix (NEW-22), re-verified by me", "8/8 new + 22/22 existing", "pass", "no regression in calendar-conversations-authz"],
+  ["Frontend agent fixes, re-verified by me", "53 / 53", "pass", "re-ran node --test myself"]
+ ],
+ "risks": [
+  ["High", "Nothing is pushed anywhere", "The 3 commits and every agent change exist only on this PC. A disk problem would lose all of it."],
+  ["High", "3 critical dependency packages", "dompurify looks unreachable in current code; proxy-addr depends on your proxy setup; tar comes only from an unused root package. None upgraded."],
+  ["Medium", "Agent spending", "$200/month cap with hard stops. About $40 spent so far across all 7 agents and 7 finished tasks."],
+  ["Medium", "NEW-10 flaky browser test", "Would make a CI browser job fail at random until fixed."],
+  ["Medium", "CI never run on GitHub", "The workflow changes are only tested on this PC."],
+  ["Medium", "Agent guardrails are best-effort", "No filesystem sandbox on Windows; relies on Claude permission rules. Tested: reads/edits are confined and git commit is refused."]
+ ]
+}

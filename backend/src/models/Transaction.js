@@ -52,6 +52,24 @@ const transactionSchema = new mongoose.Schema({
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    // AUD-005 approval workflow. All three are optional so records created before
+    // the workflow (which have none of them) stay valid and unchanged.
+    // Who approved or rejected the transaction, and when (approvedBy additionally
+    // stays set for approvals, as before).
+    decidedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    decidedAt: {
+        type: Date
+    },
+    // Set only on a reversal: the approved transaction it offsets. The original is
+    // never modified; the reversal is a separate, opposite-type record of the same
+    // amount that goes through the normal approval workflow.
+    reversalOf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Transaction'
     }
 }, {
     timestamps: true
@@ -63,6 +81,18 @@ transactionSchema.index({ societyId: 1, type: 1 });
 transactionSchema.index({ type: 1, category: 1 });
 transactionSchema.index({ approvalStatus: 1 });
 transactionSchema.index({ createdBy: 1 });
+// An approved transaction can be reversed at most once: while a reversal of it is
+// pending, and once one is approved, no second one can exist. A rejected reversal
+// frees the original for another attempt. (Two partial unique indexes, because a
+// partial filter cannot express "not rejected".)
+transactionSchema.index(
+    { reversalOf: 1 },
+    { unique: true, partialFilterExpression: { reversalOf: { $exists: true }, approvalStatus: 'PENDING' }, name: 'one_pending_reversal_per_transaction' }
+);
+transactionSchema.index(
+    { reversalOf: 1 },
+    { unique: true, partialFilterExpression: { reversalOf: { $exists: true }, approvalStatus: 'APPROVED' }, name: 'one_approved_reversal_per_transaction' }
+);
 
 // Transform output to use 'id' instead of '_id' for frontend compatibility
 transactionSchema.set('toJSON', {

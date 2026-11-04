@@ -8,6 +8,12 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { TEST_USERS } = require("../test/fixtures");
+const { secretForLocalRun } = require("../src/utils/jwtSecret");
+
+if (process.env.NODE_ENV === "production") {
+  console.error("This test server refuses to run with NODE_ENV=production.");
+  process.exit(1);
+}
 
 // Written once seeding finishes so CI can wait for fixtures, not just /health.
 const READY_FILE =
@@ -19,10 +25,12 @@ async function main() {
   const mongod = await MongoMemoryServer.create();
 
   process.env.MONGODB_URI = mongod.getUri();
-  process.env.JWT_SECRET =
-    process.env.JWT_SECRET || "test-jwt-secret-do-not-use-in-production";
+  // Never a literal: a configured valid secret is kept, otherwise a random per-run one is
+  // used. Nothing reads the secret back: the contract tests log in through the API.
+  process.env.JWT_SECRET = secretForLocalRun(process.env).secret;
   process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
   process.env.NODE_ENV = process.env.NODE_ENV || "test";
+  require("../src/config/testOverrides").enableTestRateLimits();
   process.env.PORT = process.env.PORT || 5000;
 
   // server.js starts listening as a side effect of being required.
@@ -110,7 +118,11 @@ async function main() {
   fs.writeFileSync(READY_FILE, "ready");
 }
 
-main().catch((err) => {
-  console.error("Failed to start test server:", err);
-  process.exit(1);
-});
+module.exports = { main };
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error("Failed to start test server:", err);
+    process.exit(1);
+  });
+}

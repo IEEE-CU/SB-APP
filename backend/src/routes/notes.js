@@ -8,6 +8,44 @@ const {
 } = require("../middleware/rbac");
 const Note = require("../models/Note");
 
+// AUD-032: Note.isPublic controls who may READ a note; it never widens what a caller may
+// edit or delete (community_hub permissions and society scope still apply).
+//   - public (isPublic true, or the field absent - the schema default is true, so legacy
+//     records written before the field existed stay visible): every caller who passes the
+//     community_hub:view and society-scope checks;
+//   - private (isPublic false): its creator (the server-assigned authorId) and
+//     administrators (legacy role ADMIN, the convention used for ownership elsewhere);
+//   - anything else (null or a non-boolean stored value): treated as private - there is no
+//     evidence it was meant to be public. Nothing is migrated.
+// A note the caller may not see is a 404, identical to one that does not exist.
+const isAdmin = (user) => user.role === "ADMIN";
+const userId = (user) => String(user._id || user.id);
+const isAuthor = (user, note) => Boolean(note.authorId) && String(note.authorId._id || note.authorId) === userId(user);
+
+function visibilityFilter(user) {
+  if (isAdmin(user)) return {};
+  return {
+    $or: [
+      { isPublic: true },
+      { isPublic: { $exists: false } },
+      { authorId: user._id || user.id },
+    ],
+  };
+}
+
+const isBoolean = (value) => typeof value === "boolean";
+const invalidIsPublic = (res) =>
+  res.status(400).json({ success: false, message: "isPublic must be true or false" });
+const notFound = (res) => res.status(404).json({ success: false, message: "Note not found" });
+
+/** The note with this id in the URL's society, only if the caller may see it. */
+const findVisible = (req, populate) => {
+  const query = Note.findOne({
+    $and: [{ _id: req.params.noteId, societyId: req.params.societyId }, visibilityFilter(req.user)],
+  });
+  return populate ? query.populate("authorId", "name email avatar") : query;
+};
+
 // GET /api/v1/societies/:societyId/notes
 router.get(
   "/",
@@ -25,8 +63,8 @@ router.get(
       }
 
       const { channelId } = req.query;
-      const filter = { societyId };
-      if (channelId) filter.channelId = channelId;
+      const filter = { $and: [{ societyId }, visibilityFilter(req.user)] };
+      if (channelId) filter.$and.push({ channelId });
 
       const notes = await Note.find(filter)
         .populate("authorId", "name email avatar")
@@ -56,6 +94,7 @@ router.post(
       }
 
       const { title, content, channelId, isPublic } = req.body;
+      if (isPublic !== undefined && !isBoolean(isPublic)) return invalidIsPublic(res);
 
       const note = await Note.create({
         title,
@@ -81,15 +120,8 @@ router.get(
   attachScope("societyId"),
   async (req, res, next) => {
     try {
-      const note = await Note.findById(req.params.noteId).populate(
-        "authorId",
-        "name email avatar",
-      );
-      if (!note) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Note not found" });
-      }
+      const note = await findVisible(req, true);
+      if (!note) return notFound(res);
       if (!isSocietyInScope(req, note.societyId)) {
         return res.status(403).json({
           success: false,
@@ -112,16 +144,20 @@ router.put(
   async (req, res, next) => {
     try {
       const { title, content, isPublic } = req.body;
-      const note = await Note.findById(req.params.noteId);
-      if (!note) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Note not found" });
-      }
+      if (isPublic !== undefined && !isBoolean(isPublic)) return invalidIsPublic(res);
+      const note = await findVisible(req);
+      if (!note) return notFound(res);
       if (!isSocietyInScope(req, note.societyId)) {
         return res.status(403).json({
           success: false,
           message: "Access denied. You do not have access to this note.",
+        });
+      }
+      // Only the creator or an administrator may change who can see a note.
+      if (isPublic !== undefined && isPublic !== note.isPublic && !isAdmin(req.user) && !isAuthor(req.user, note)) {
+        return res.status(403).json({
+          success: false,
+          message: "Only the note's author can change its visibility.",
         });
       }
 
@@ -145,12 +181,8 @@ router.delete(
   attachScope("societyId"),
   async (req, res, next) => {
     try {
-      const note = await Note.findById(req.params.noteId);
-      if (!note) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Note not found" });
-      }
+      const note = await findVisible(req);
+      if (!note) return notFound(res);
       if (!isSocietyInScope(req, note.societyId)) {
         return res.status(403).json({
           success: false,

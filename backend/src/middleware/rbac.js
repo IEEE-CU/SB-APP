@@ -1,6 +1,20 @@
 const { resolvePermissions } = require("../services/resolvePermissions");
 const { logAudit } = require("../services/auditLogger");
 
+// Access levels (RolePermission.accessLevel) that grant the permission key
+// being checked. "none" and anything unrecognized do not grant access.
+const GRANTING_LEVELS = new Set(["full", "limited_own_scope", "approval"]);
+
+/**
+ * True only for a recognized level that grants access. Fails closed for
+ * "none", missing values and any unknown or malformed value.
+ *
+ * @param {*} level - A resolved access level
+ * @returns {boolean}
+ */
+const isGrantingLevel = (level) =>
+  typeof level === "string" && GRANTING_LEVELS.has(level);
+
 /**
  * Middleware to require a specific permission for a module and action.
  * Enforces data-driven permission checks and logs the attempt.
@@ -30,8 +44,9 @@ const requirePermission = (module, action) => {
         req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;
       const route = req.originalUrl || req.baseUrl + req.path;
 
-      // Check if permission is granted (any level other than 'none' or undefined)
-      if (!accessLevel || accessLevel === "none") {
+      // Check if permission is granted: only a recognized granting level
+      // passes. 'none', a missing key and unknown/malformed values are denied.
+      if (!isGrantingLevel(accessLevel)) {
         // Log access denied
         await logAudit({
           user: userId,
@@ -40,7 +55,7 @@ const requirePermission = (module, action) => {
           route,
           method: req.method,
           result: "denied",
-          reason: `Insufficient permission for key ${permKey}. Assigned level: ${accessLevel || "none"}`,
+          reason: `Insufficient permission for key ${permKey}. Assigned level: ${typeof accessLevel === "string" && accessLevel ? accessLevel.slice(0, 40) : "none"}`,
           ipAddress,
         });
 
@@ -278,6 +293,7 @@ const auditLogger = (action, module) => {
 
 module.exports = {
   requirePermission,
+  isGrantingLevel,
   requireRole,
   requireSuperAdmin,
   attachScope,

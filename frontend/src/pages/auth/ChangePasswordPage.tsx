@@ -4,6 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import { authService } from "@/services/auth";
+import { useAuthStore } from "@/store/authStore";
+import { acceptReplacementToken } from "@/lib/replacementToken";
 import { Button } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
@@ -27,6 +29,7 @@ type Form = z.infer<typeof schema>;
 export default function ChangePasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const replaceToken = useAuthStore((state) => state.replaceToken);
   const {
     register,
     handleSubmit,
@@ -38,7 +41,11 @@ export default function ChangePasswordPage() {
   const onSubmit = async (data: Form) => {
     setSubmitting(true);
     try {
-      await authService.changePassword(data.currentPassword, data.newPassword);
+      const res = await authService.changePassword(data.currentPassword, data.newPassword);
+      // The server ended every earlier session, including this one; keep the user signed in
+      // with the replacement token - and never overwrite the stored token with anything else.
+      const replacement = acceptReplacementToken(res.data?.data);
+      if (replacement) replaceToken(replacement);
       toast.success("Password changed successfully");
       navigate("/profile");
     } catch {

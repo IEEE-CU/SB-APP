@@ -1,0 +1,35 @@
+
+[runner] ===== test/integration/ai-financial-insights.integration.test.js
+[runner] fresh harness ready (pid 8372)
+▶ D-B11: administrators and unrecognized roles
+  ✔ a legacy administrator with no RBAC role is authorized and sees every society (102.9528ms)
+  ✔ an RBAC administrator (sb_faculty_advisor, not a legacy ADMIN) is authorized through finance:view (45.2682ms)
+  ✔ an invalid legacy role with no RBAC role is refused, and a plain member still is (42.7263ms)
+  ✔ a garbage bearer token is 401 (4.7471ms)
+✔ D-B11: administrators and unrecognized roles (4883.813ms)
+▶ AUD-013: who may ask
+  ✔ no token is 401 (4.669ms)
+  ✔ a user without finance:view is 403, and so is a user with no role (20.7589ms)
+  ✔ a finance:view holder passes every check; with no key configured the answer is a safe 503 (31.312ms)
+✔ AUD-013: who may ask (57.5669ms)
+▶ AUD-013: scope
+  ✔ a chair may audit their own society but not another's (55.9675ms)
+  ✔ a chair cannot learn whether an out-of-scope society exists: both answers are 403 (10.4994ms)
+  ✔ an administrator may audit any society; a nonexistent one is 404 (18.9282ms)
+✔ AUD-013: scope (85.952ms)
+▶ AUD-013: the payload
+  ✔ only societyId is accepted: prompt text, financial data and any other field are 400 (28.6245ms)
+  ✔ a malformed, non-string or oversized societyId is 400 (45.7625ms)
+✔ AUD-013: the payload (74.6479ms)
+▶ AUD-013: rate limit
+  ✔ each user gets 10 audits per window; the 11th is 429 and another user is unaffected (110.5645ms)
+✔ AUD-013: rate limit (110.7622ms)
+ℹ tests 13
+ℹ suites 5
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5379.8282
+[runner] test/integration/ai-financial-insights.integration.test.js: tests exit=0; harness exit=0; ready-file removed=true; mongod=0, port5057 busy=false, temp artifacts=0
