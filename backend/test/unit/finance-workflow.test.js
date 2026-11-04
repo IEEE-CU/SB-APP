@@ -20,6 +20,7 @@ const MISSING = "64b7f8f2a1b2c3d4e5f6c0ff";
 
 const Transaction = require("../../src/models/Transaction");
 const Society = require("../../src/models/Society");
+const SocietyTerm = require("../../src/models/SocietyTerm");
 const original = {
   find: Transaction.find,
   findById: Transaction.findById,
@@ -28,6 +29,7 @@ const original = {
   findOneAndDelete: Transaction.findOneAndDelete,
   create: Transaction.create,
   aggregate: Transaction.aggregate,
+  societyTermFind: SocietyTerm.find,
   societyExists: Society.exists,
 };
 
@@ -37,6 +39,7 @@ let resolved;
 let updateResult; // what findOneAndUpdate resolves to (null = lost the race)
 let deleteResult;
 let createError;
+let legacyServedSocieties; // D-36: SocietyTerm society ids a legacy ADMIN chairs/treasures
 
 function stubModule(relPath, exportsValue) {
   const file = require.resolve(path.join(__dirname, relPath));
@@ -73,6 +76,11 @@ beforeEach(() => {
   deleteResult = "removed";
   createError = null;
   resolved = { role: "r", scope: { type: "society", societyId: SOCIETY_A }, permissions: {} };
+  legacyServedSocieties = [];
+  SocietyTerm.find = (filter) => {
+    calls.finds.push({ model: "SocietyTerm", filter });
+    return { distinct: async () => legacyServedSocieties };
+  };
 
   stubModule("../../src/services/resolvePermissions.js", {
     resolvePermissions: async () => resolved,
@@ -137,6 +145,7 @@ test.after(() => {
     aggregate: original.aggregate,
   });
   Society.exists = original.societyExists;
+  SocietyTerm.find = original.societyTermFind;
 });
 
 function mockRes() {
@@ -242,6 +251,55 @@ for (const [method, routePath, permission, options] of ROUTES) {
     assert.notEqual(res.statusCode, 403, res.body && JSON.stringify(res.body).slice(0, 120));
   });
 }
+
+// ---- D-36: a legacy ADMIN with no RBAC role is scoped to the societies they served -----
+
+test("D-36: a legacy admin who chairs/treasures no SocietyTerm is denied the 3 view routes, same as before", async () => {
+  const viewRoutes = [["get", "/", {}], ["get", "/society/:societyId", { params: { societyId: SOCIETY_A } }], ["get", "/:id", { params: { id: TX } }]];
+  for (const [method, routePath, options] of viewRoutes) {
+    const { res } = await tr(method, routePath, { user: admin(), ...options });
+    assert.equal(res.statusCode, 403, `${method} ${routePath}`);
+  }
+});
+
+test("D-36: a legacy admin who chairs a SocietyTerm for society A sees only society A", async () => {
+  legacyServedSocieties = [SOCIETY_A];
+
+  const list = await tr("get", "/", { user: admin() });
+  assert.equal(list.res.statusCode, 200);
+  assert.deepEqual(calls.finds.at(-1), { societyId: { $in: [SOCIETY_A] } });
+
+  const ownSociety = await tr("get", "/society/:societyId", { user: admin(), params: { societyId: SOCIETY_A } });
+  assert.equal(ownSociety.res.statusCode, 200);
+
+  const foreignSociety = await tr("get", "/society/:societyId", { user: admin(), params: { societyId: SOCIETY_B } });
+  assert.equal(foreignSociety.res.statusCode, 403);
+
+  const ownTx = await tr("get", "/:id", { user: admin(), params: { id: TX } }); // TX is society A
+  assert.equal(ownTx.res.statusCode, 200);
+
+  const foreignTx = await tr("get", "/:id", { user: admin(), params: { id: TX2 } }); // TX2 is society B
+  assert.equal(foreignTx.res.statusCode, 403);
+});
+
+test("D-36: a real RBAC grant (the actual main-admin case, e.g. sb_faculty_advisor) stays fully unrestricted regardless of SocietyTerm service", async () => {
+  legacyServedSocieties = []; // not a chair/treasurer of anything
+  resolved = { ...resolved, permissions: { "finance:view": "full" } };
+
+  const list = await tr("get", "/", { user: admin() });
+  assert.equal(list.res.statusCode, 200);
+  assert.deepEqual(calls.finds.at(-1), {}); // unscoped - sees every society
+
+  const anySociety = await tr("get", "/society/:societyId", { user: admin(), params: { societyId: SOCIETY_B } });
+  assert.equal(anySociety.res.statusCode, 200);
+});
+
+test("D-36: an ordinary member (non-admin) is unaffected - never touches SocietyTerm", async () => {
+  grant("finance:view");
+  const { res } = await tr("get", "/society/:societyId", { user: user(), params: { societyId: SOCIETY_A } });
+  assert.equal(res.statusCode, 200);
+  assert.ok(!calls.finds.some((f) => f && f.model === "SocietyTerm"));
+});
 
 // ---- creation -----------------------------------------------------------------------
 

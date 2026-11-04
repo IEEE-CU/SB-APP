@@ -2,8 +2,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
 const Society = require('../models/Society');
+const SocietyTerm = require('../models/SocietyTerm');
 const { authenticate, adminOnly, societyAccess } = require('../middleware/auth');
-const { requirePermission } = require('../middleware/rbac');
+const { requirePermission, isGrantingLevel } = require('../middleware/rbac');
+const { resolvePermissions } = require('../services/resolvePermissions');
 const { logAudit } = require('../services/auditLogger');
 const { parseLimit } = require('../utils/pagination');
 
@@ -51,6 +53,55 @@ const inCallerScope = (user, societyRef) => {
     if (isAdmin(user)) return true;
     const own = societyIdOf(user.societyId);
     return Boolean(own) && own === societyIdOf(societyRef);
+};
+
+// Owner decision D-36: a legacy ADMIN is unrestricted only while they genuinely hold an RBAC
+// role that grants it (the real "main admin", sb_faculty_advisor, already passes through
+// requirePermission on its own merit - nothing special-cased for that case). A legacy ADMIN
+// with NO RBAC role at all is not unrestricted: they may see transactions only for the
+// society/societies where a SocietyTerm names them as chair or treasurer - "their period" -
+// and nothing else. SocietyTerm has no start/end date field (only a free-text academicYear
+// string), so this scopes by SOCIETY, not by exact calendar date; narrowing further would mean
+// guessing this institution's academic-year date convention, which is not done here.
+const legacyServedSocietyIds = async (userId) => {
+    const ids = await SocietyTerm.find({ $or: [{ chair: userId }, { treasurer: userId }] }).distinct('society');
+    return ids.map((id) => String(id));
+};
+
+// View-only guard for the three read routes below. A real RBAC permission (including
+// sb_faculty_advisor's blanket grant) passes exactly as requirePermission alone would. A
+// legacy ADMIN with no RBAC role is neither denied outright nor given full access: they pass
+// with req.legacyScopedSocietyIds set to the societies they served, enforced by the handler.
+// With no served society, there is nothing to scope to, so the request is denied, in the same
+// shape and with the same audit entry requirePermission itself would produce.
+const viewScopedToLegacyPeriod = (module, action) => {
+    const permission = requirePermission(module, action);
+    return async (req, res, next) => {
+        if (!isAdmin(req.user)) return permission(req, res, next);
+
+        const resolved = await resolvePermissions(req.user._id);
+        if (isGrantingLevel(resolved.permissions[`${module}:${action}`])) return next();
+
+        const societyIds = await legacyServedSocietyIds(req.user._id);
+        if (societyIds.length === 0) {
+            await logAudit({
+                user: req.user._id,
+                action: 'access_check',
+                module,
+                route: req.originalUrl,
+                method: req.method,
+                result: 'denied',
+                reason: `Legacy ADMIN with no RBAC role and no served SocietyTerm for key ${module}:${action}`,
+                ipAddress: req.ip,
+            });
+            return res.status(403).json({
+                success: false,
+                error: { code: 'PERMISSION_DENIED', message: 'You do not have permission to perform this action' },
+            });
+        }
+        req.legacyScopedSocietyIds = societyIds;
+        next();
+    };
 };
 
 const invalidId = (res) =>
@@ -124,11 +175,13 @@ const buildFilter = (req, res, base) => {
 /**
  * @route   GET /api/transactions
  * @desc    Get all transactions, every status (Admin only)
- * @access  finance:view AND administrator
+ * @access  finance:view AND administrator. A legacy administrator with no RBAC role (D-36)
+ *          sees only the society/societies they served a SocietyTerm in, not every society.
  */
-router.get('/', requirePermission('finance', 'view'), adminOnly, async (req, res, next) => {
+router.get('/', viewScopedToLegacyPeriod('finance', 'view'), adminOnly, async (req, res, next) => {
     try {
-        const filter = buildFilter(req, res, {});
+        const base = req.legacyScopedSocietyIds ? { societyId: { $in: req.legacyScopedSocietyIds } } : {};
+        const filter = buildFilter(req, res, base);
         if (!filter) return;
 
         const transactions = await Transaction.find(filter)
@@ -150,10 +203,14 @@ router.get('/', requirePermission('finance', 'view'), adminOnly, async (req, res
 /**
  * @route   GET /api/transactions/society/:societyId
  * @desc    Get transactions for a specific society, every status
- * @access  finance:view AND (Admin or Own Society)
+ * @access  finance:view AND (Admin or Own Society). A legacy administrator with no RBAC role
+ *          (D-36) may only name a society they served a SocietyTerm in.
  */
-router.get('/society/:societyId', societyAccess, requirePermission('finance', 'view'), async (req, res, next) => {
+router.get('/society/:societyId', societyAccess, viewScopedToLegacyPeriod('finance', 'view'), async (req, res, next) => {
     try {
+        if (req.legacyScopedSocietyIds && !req.legacyScopedSocietyIds.includes(req.params.societyId)) {
+            return outOfScope(res);
+        }
         const filter = buildFilter(req, res, { societyId: req.params.societyId });
         if (!filter) return;
 
@@ -176,9 +233,11 @@ router.get('/society/:societyId', societyAccess, requirePermission('finance', 'v
 /**
  * @route   GET /api/transactions/:id
  * @desc    Get transaction by ID
- * @access  finance:view AND (Admin or Own Society)
+ * @access  finance:view AND (Admin or Own Society). A legacy administrator with no RBAC role
+ *          (D-36) may only read a transaction belonging to a society they served a
+ *          SocietyTerm in.
  */
-router.get('/:id', requirePermission('finance', 'view'), async (req, res, next) => {
+router.get('/:id', viewScopedToLegacyPeriod('finance', 'view'), async (req, res, next) => {
     try {
         if (!OBJECT_ID_PATTERN.test(req.params.id)) return invalidId(res);
 
@@ -191,7 +250,10 @@ router.get('/:id', requirePermission('finance', 'view'), async (req, res, next) 
             });
         }
 
-        if (!inCallerScope(req.user, transaction.societyId)) return outOfScope(res);
+        const inScope = req.legacyScopedSocietyIds
+            ? req.legacyScopedSocietyIds.includes(societyIdOf(transaction.societyId))
+            : inCallerScope(req.user, transaction.societyId);
+        if (!inScope) return outOfScope(res);
 
         res.json({
             success: true,
