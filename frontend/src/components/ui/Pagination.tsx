@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { PaginationMeta } from "@/types/api";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 
 interface PaginationProps {
   meta: PaginationMeta;
@@ -19,7 +19,10 @@ export default function Pagination({ meta, onPageChange }: PaginationProps) {
       </p>
       <div className="flex gap-2">
         <motion.button
-          whileTap={{ scale: 0.92, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+          whileTap={{
+            scale: 0.92,
+            transition: { type: "spring", stiffness: 400, damping: 25 },
+          }}
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           className="p-2.5 rounded-full bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 text-ink-muted hover:text-ink hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
@@ -27,7 +30,10 @@ export default function Pagination({ meta, onPageChange }: PaginationProps) {
           <ChevronLeft size={16} />
         </motion.button>
         <motion.button
-          whileTap={{ scale: 0.92, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+          whileTap={{
+            scale: 0.92,
+            transition: { type: "spring", stiffness: 400, damping: 25 },
+          }}
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           className="p-2.5 rounded-full bg-surface/60 backdrop-blur-xl border border-white/20 dark:border-white/5 text-ink-muted hover:text-ink hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"

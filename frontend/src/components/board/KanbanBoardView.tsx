@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Portal from "@/components/ui/Portal";
 import { useParams } from "react-router-dom";
 import { LayoutGrid, Plus } from "lucide-react";
 import api from "@/lib/api";
@@ -231,55 +232,59 @@ export default function KanbanBoardView({
 
       {/* Add Task Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface border border-hairline rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4">
-            <h3 className="text-title font-semibold text-ink">
-              Add Task to {selectedColumn}
-            </h3>
-            <form onSubmit={handleCreateCard} className="space-y-4">
-              <div>
-                <label className="text-eyebrow text-ink-muted uppercase block mb-1">
-                  Task Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
-                  placeholder="Task title..."
-                />
-              </div>
+        <Portal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-canvas-soft border border-hairline rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4">
+              <h3 className="text-title font-semibold text-ink">
+                Add Task to {selectedColumn}
+              </h3>
+              <form onSubmit={handleCreateCard} className="space-y-4">
+                <div>
+                  <label className="text-eyebrow text-ink-muted uppercase block mb-1">
+                    Task Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
+                    placeholder="Task title..."
+                  />
+                </div>
 
-              <div>
-                <label className="text-eyebrow text-ink-muted uppercase block mb-1">
-                  Priority
-                </label>
-                <select
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value as any)}
-                  className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
-                >
-                  <option value="LOW">LOW</option>
-                  <option value="MEDIUM">MEDIUM</option>
-                  <option value="HIGH">HIGH</option>
-                  <option value="URGENT">URGENT</option>
-                </select>
-              </div>
+                <div>
+                  <label className="text-eyebrow text-ink-muted uppercase block mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={newPriority}
+                    onChange={(e) => setNewPriority(e.target.value as any)}
+                    className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
+                  >
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="URGENT">URGENT</option>
+                  </select>
+                </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-hairline">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setIsAddModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" loading={creating}>Create Card</Button>
-              </div>
-            </form>
+                <div className="flex justify-end gap-3 pt-4 border-t border-hairline">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setIsAddModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" loading={creating}>
+                    Create Card
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </Portal>
       )}
     </div>
   );

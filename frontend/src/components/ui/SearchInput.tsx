@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback } from "react";
+import { Search } from "lucide-react";
+import { motion } from "@/lib/motion";
 
 interface SearchInputProps {
   onSearch: (query: string) => void;
@@ -10,10 +10,10 @@ interface SearchInputProps {
 
 export default function SearchInput({
   onSearch,
-  placeholder = 'Search...',
+  placeholder = "Search...",
   debounceMs = 300,
 }: SearchInputProps) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
   const debouncedSearch = useCallback(
@@ -30,17 +30,21 @@ export default function SearchInput({
   }, [value, debouncedSearch]);
 
   return (
-    <motion.div 
+    <motion.div
       initial={false}
-      animate={{ 
-        boxShadow: isFocused ? "0 0 0 3px rgba(37,99,235,0.2)" : "0 2px 5px rgba(0,0,0,0.02)",
-        borderColor: isFocused ? "rgba(37,99,235,0.5)" : "rgba(255,255,255,0.2)"
+      animate={{
+        boxShadow: isFocused
+          ? "0 0 0 3px rgba(37,99,235,0.2)"
+          : "0 2px 5px rgba(0,0,0,0.02)",
+        borderColor: isFocused
+          ? "rgba(37,99,235,0.5)"
+          : "rgba(255,255,255,0.2)",
       }}
       className="relative flex items-center bg-surface/60 backdrop-blur-xl border dark:border-white/10 rounded-full overflow-hidden transition-colors"
     >
       <Search
         size={18}
-        className={`absolute left-4 transition-colors ${isFocused ? 'text-primary' : 'text-ink-muted'}`}
+        className={`absolute left-4 transition-colors ${isFocused ? "text-primary" : "text-ink-muted"}`}
       />
       <input
         type="text"

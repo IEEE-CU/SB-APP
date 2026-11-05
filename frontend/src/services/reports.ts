@@ -1,19 +1,19 @@
-import api from '@/lib/api';
-import type { ApiResponse, PaginatedResponse } from '@/types/api';
-import type { Report } from '@/types/models';
+import api from "@/lib/api";
+import type { ApiResponse, PaginatedResponse } from "@/types/api";
+import type { Report } from "@/types/models";
+import { toReportPayload } from "@/lib/backendPayload";
 
 export const reportService = {
   getReports: (page = 1, limit = 20) =>
-    api.get<PaginatedResponse<Report>>('/reports', {
+    api.get<PaginatedResponse<Report>>("/reports", {
       params: { page, limit },
     }),
   getReport: (id: string) => api.get<ApiResponse<Report>>(`/reports/${id}`),
-  createReport: (data: Pick<Report, 'title' | 'content' | 'type'>) =>
-    api.post<ApiResponse<Report>>('/reports', data),
+  createReport: (data: Pick<Report, "title" | "content" | "type">) =>
+    api.post<ApiResponse<Report>>("/reports", toReportPayload(data)),
   updateReport: (
     id: string,
-    data: Partial<Pick<Report, 'title' | 'content' | 'type'>>,
+    data: Partial<Pick<Report, "title" | "content" | "type">>,
   ) => api.patch<ApiResponse<Report>>(`/reports/${id}`, data),
-  deleteReport: (id: string) =>
-    api.delete<ApiResponse<null>>(`/reports/${id}`),
+  deleteReport: (id: string) => api.delete<ApiResponse<null>>(`/reports/${id}`),
 };

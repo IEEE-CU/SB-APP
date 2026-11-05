@@ -116,3 +116,17 @@
   letter-spacing: 1px;
 }
 
+
+/* No animations: pages appear immediately and nothing waits on a transition. */
+*,
+*::before,
+*::after {
+  transition: none !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  scroll-behavior: auto !important;
+}
+/* Loading spinners still need to turn. */
+.animate-spin {
+  animation-duration: 1s !important;
+}

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import { motion, AnimatePresence, Variants } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "@/lib/motion";
 
 interface Column {
   key: string;
@@ -19,7 +19,7 @@ interface DataTableProps {
 }
 
 const containerVariants: Variants = {
-  hidden: { opacity: 0 },
+  hidden: {},
   visible: {
     opacity: 1,
     transition: {
@@ -29,11 +29,11 @@ const containerVariants: Variants = {
 };
 
 const rowVariants: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { 
-    opacity: 1, 
+  hidden: { y: 10 },
+  visible: {
+    opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 350, damping: 30 }
+    transition: { type: "spring", stiffness: 350, damping: 30 },
   },
 };
 
@@ -81,7 +81,10 @@ export default function DataTable({
                           )
                         ) : (
                           <div className="flex flex-col -gap-1 opacity-40">
-                            <ChevronUp size={10} className="translate-y-[2px]" />
+                            <ChevronUp
+                              size={10}
+                              className="translate-y-[2px]"
+                            />
                             <ChevronDown
                               size={10}
                               className="-translate-y-[2px]"
@@ -95,7 +98,7 @@ export default function DataTable({
               ))}
             </tr>
           </thead>
-          <motion.tbody 
+          <motion.tbody
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -117,11 +120,16 @@ export default function DataTable({
                     key={item.id || i}
                     onClick={() => onRowClick?.(item)}
                     className={`border-b border-white/10 dark:border-white/5 last:border-0 transition-all duration-200 ${
-                      onRowClick ? "cursor-pointer hover:bg-black/5 dark:hover:bg-white/5" : ""
+                      onRowClick
+                        ? "cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+                        : ""
                     }`}
                   >
                     {columns.map((col) => (
-                      <td key={col.key} className="px-5 py-4 text-sm font-medium text-ink whitespace-nowrap">
+                      <td
+                        key={col.key}
+                        className="px-5 py-4 text-sm font-medium text-ink whitespace-nowrap"
+                      >
                         {col.render
                           ? col.render(item)
                           : String(item[col.key] ?? "")}

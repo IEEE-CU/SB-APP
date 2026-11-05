@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import Portal from "@/components/ui/Portal";
 import { CheckSquare, Plus, Trash2, Clock } from "lucide-react";
 import api from "@/lib/api";
 import { useSocietyStore } from "@/store/societyStore";
@@ -6,7 +7,7 @@ import { useAuthStore } from "@/store/authStore";
 import { resolveTaskSociety, taskSocietyNotice } from "@/lib/taskSociety";
 import { Button } from "@/components/ui";
 import { PageTransition, AnimatedCard } from "@/components/ui/WatermelonMotion";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import toast from "react-hot-toast";
 
 export interface TaskItem {
@@ -29,7 +30,8 @@ export default function TasksPage() {
   // first society by default (see lib/taskSociety.ts).
   const taskSociety = resolveTaskSociety({ user, activeSocietyId, societies });
   const taskSocietyStatus = taskSociety.status;
-  const taskSocietyId = taskSociety.status === "ready" ? taskSociety.societyId : null;
+  const taskSocietyId =
+    taskSociety.status === "ready" ? taskSociety.societyId : null;
   const societyNotice = taskSocietyNotice(taskSociety, activeSocietyId);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,13 +51,31 @@ export default function TasksPage() {
     }
     try {
       setLoading(true);
-      const res = await api.get("/tasks", { params: { societyId: taskSocietyId } });
+      const res = await api.get("/tasks", {
+        params: { societyId: taskSocietyId },
+      });
       setTasks(res.data?.data || []);
     } catch {
       // Fallback demo tasks
       setTasks([
-        { id: "t1", title: "Submit Monthly Financial Audit", completed: false, status: "IN_PROGRESS", priority: "HIGH", categoryName: "Finance", categoryColor: "#ef4444" },
-        { id: "t2", title: "Prepare Agenda for AGM", completed: true, status: "COMPLETED", priority: "MEDIUM", categoryName: "General", categoryColor: "#3b82f6" },
+        {
+          id: "t1",
+          title: "Submit Monthly Financial Audit",
+          completed: false,
+          status: "IN_PROGRESS",
+          priority: "HIGH",
+          categoryName: "Finance",
+          categoryColor: "#ef4444",
+        },
+        {
+          id: "t2",
+          title: "Prepare Agenda for AGM",
+          completed: true,
+          status: "COMPLETED",
+          priority: "MEDIUM",
+          categoryName: "General",
+          categoryColor: "#3b82f6",
+        },
       ]);
       toast.error("Failed to load tasks. Showing demo data.");
     } finally {
@@ -67,18 +87,29 @@ export default function TasksPage() {
     fetchTasks();
   }, [fetchTasks]);
 
-
   const toggleTaskCompleted = async (task: TaskItem) => {
     const newStatus = task.status === "COMPLETED" ? "IN_PROGRESS" : "COMPLETED";
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, status: newStatus, completed: newStatus === "COMPLETED" } : t))
+      prev.map((t) =>
+        t.id === task.id
+          ? { ...t, status: newStatus, completed: newStatus === "COMPLETED" }
+          : t,
+      ),
     );
     try {
       await api.put(`/tasks/${task.id}`, { status: newStatus });
     } catch {
       // Revert if API fails
       setTasks((prev) =>
-        prev.map((t) => (t.id === task.id ? { ...t, status: task.status, completed: task.status === "COMPLETED" } : t))
+        prev.map((t) =>
+          t.id === task.id
+            ? {
+                ...t,
+                status: task.status,
+                completed: task.status === "COMPLETED",
+              }
+            : t,
+        ),
       );
       toast.error("Failed to update task status");
     }
@@ -122,7 +153,7 @@ export default function TasksPage() {
           completed: false,
           status: "NOT_STARTED",
           priority: "MEDIUM",
-          categoryColor: "#8b5cf6"
+          categoryColor: "#8b5cf6",
         };
         setTasks((prev) => [newTask, ...prev]);
       }
@@ -147,26 +178,37 @@ export default function TasksPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckSquare size={22} className="text-primary" />
-            <h1 className="text-heading-2 font-bold text-ink">Personal & Team Tasks</h1>
+            <h1 className="text-heading-2 font-bold text-ink">
+              Personal & Team Tasks
+            </h1>
           </div>
-          <Button onClick={() => setIsAddModalOpen(true)} disabled={!taskSocietyId}>
+          <Button
+            onClick={() => setIsAddModalOpen(true)}
+            disabled={!taskSocietyId}
+          >
             <Plus size={16} /> New Task
           </Button>
         </div>
-        {societyNotice && <p className="text-body-sm text-ink-muted">{societyNotice}</p>}
+        {societyNotice && (
+          <p className="text-body-sm text-ink-muted">{societyNotice}</p>
+        )}
 
         {/* Task List */}
         <div className="space-y-3">
           {loading ? (
-            <p className="text-body-sm text-ink-muted text-center py-8">Loading tasks...</p>
+            <p className="text-body-sm text-ink-muted text-center py-8">
+              Loading tasks...
+            </p>
           ) : tasks.length === 0 ? (
-            <p className="text-body-sm text-ink-muted text-center py-12">No tasks created yet.</p>
+            <p className="text-body-sm text-ink-muted text-center py-12">
+              No tasks created yet.
+            </p>
           ) : (
             <AnimatePresence>
               {tasks.map((t) => (
                 <motion.div
                   key={t.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                   className="flex items-center justify-between p-4 bg-canvas-soft/40 border border-hairline/60 rounded-xl group hover:border-primary/40 transition-colors"
@@ -179,11 +221,15 @@ export default function TasksPage() {
                       className="w-5 h-5 rounded border-hairline text-primary focus:ring-primary cursor-pointer"
                     />
                     <div className="flex flex-col">
-                      <span className={`text-body-sm font-semibold ${t.status === "COMPLETED" ? "line-through text-ink-muted" : "text-ink"}`}>
+                      <span
+                        className={`text-body-sm font-semibold ${t.status === "COMPLETED" ? "line-through text-ink-muted" : "text-ink"}`}
+                      >
                         {t.title}
                       </span>
                       {t.description && (
-                        <span className={`text-body-xs mt-0.5 ${t.status === "COMPLETED" ? "line-through text-ink-muted/70" : "text-ink-secondary"}`}>
+                        <span
+                          className={`text-body-xs mt-0.5 ${t.status === "COMPLETED" ? "line-through text-ink-muted/70" : "text-ink-secondary"}`}
+                        >
                           {t.description}
                         </span>
                       )}
@@ -193,7 +239,8 @@ export default function TasksPage() {
                         </span>
                         {t.dueDate && (
                           <span className="flex items-center gap-1">
-                            <Clock size={12} /> {new Date(t.dueDate).toLocaleDateString()}
+                            <Clock size={12} />{" "}
+                            {new Date(t.dueDate).toLocaleDateString()}
                           </span>
                         )}
                       </div>
@@ -213,77 +260,100 @@ export default function TasksPage() {
         </div>
 
         {/* Create Task Modal */}
-        <AnimatePresence>
-          {isAddModalOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            >
+        <Portal>
+          <AnimatePresence>
+            {isAddModalOpen && (
               <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-surface/80 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4"
+                initial={false}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
               >
-                <h3 className="text-title font-semibold text-ink">Create New Task</h3>
-                <form onSubmit={handleCreateTask} className="space-y-4">
-                  <div>
-                    <label className="text-eyebrow text-ink-muted uppercase block mb-1">Title</label>
-                    <input
-                      type="text"
-                      required
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
-                      placeholder="Task title..."
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="text-eyebrow text-ink-muted uppercase block mb-1">Description (Optional)</label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary resize-none"
-                      placeholder="Task description..."
-                      rows={3}
-                    />
-                  </div>
+                <motion.div
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="bg-canvas-soft border border-hairline rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4"
+                >
+                  <h3 className="text-title font-semibold text-ink">
+                    Create New Task
+                  </h3>
+                  <form onSubmit={handleCreateTask} className="space-y-4">
+                    <div>
+                      <label className="text-eyebrow text-ink-muted uppercase block mb-1">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
+                        placeholder="Task title..."
+                      />
+                    </div>
 
-                  <div>
-                    <label className="text-eyebrow text-ink-muted uppercase block mb-1">Category</label>
-                    <input
-                      type="text"
-                      value={categoryName}
-                      onChange={(e) => setCategoryName(e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
-                      placeholder="Finance, General, Event..."
-                    />
-                  </div>
+                    <div>
+                      <label className="text-eyebrow text-ink-muted uppercase block mb-1">
+                        Description (Optional)
+                      </label>
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary resize-none"
+                        placeholder="Task description..."
+                        rows={3}
+                      />
+                    </div>
 
-                  <div>
-                    <label className="text-eyebrow text-ink-muted uppercase block mb-1">Due Date</label>
-                    <input
-                      type="date"
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
-                    />
-                  </div>
+                    <div>
+                      <label className="text-eyebrow text-ink-muted uppercase block mb-1">
+                        Category
+                      </label>
+                      <input
+                        type="text"
+                        value={categoryName}
+                        onChange={(e) => setCategoryName(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
+                        placeholder="Finance, General, Event..."
+                      />
+                    </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-hairline">
-                    <Button type="button" variant="secondary" onClick={() => setIsAddModalOpen(false)} disabled={submitting}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" loading={submitting} disabled={submitting}>Create Task</Button>
-                  </div>
-                </form>
+                    <div>
+                      <label className="text-eyebrow text-ink-muted uppercase block mb-1">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-canvas-soft border border-hairline/60 text-ink text-body-sm focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-hairline">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => setIsAddModalOpen(false)}
+                        disabled={submitting}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        loading={submitting}
+                        disabled={submitting}
+                      >
+                        Create Task
+                      </Button>
+                    </div>
+                  </form>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
+        </Portal>
       </AnimatedCard>
     </PageTransition>
   );

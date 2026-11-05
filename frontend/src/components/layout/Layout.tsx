@@ -3,7 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import Lenis from "lenis";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "@/lib/motion";
 import { PageTransition } from "@/components/ui/WatermelonMotion";
 
 export default function Layout() {
@@ -28,7 +28,8 @@ export default function Layout() {
 
     const lenis = new Lenis({
       wrapper: mainRef.current,
-      content: (mainRef.current.firstElementChild as HTMLElement) || mainRef.current,
+      content:
+        (mainRef.current.firstElementChild as HTMLElement) || mainRef.current,
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
@@ -54,10 +55,8 @@ export default function Layout() {
 
   return (
     <div className="h-screen w-full sm:p-4 md:p-6 lg:p-8 flex items-center justify-center relative overflow-hidden bg-transparent text-ink font-sans transition-colors duration-200">
-      
       {/* Window Container */}
       <div className="flex w-full h-full max-w-[1600px] overflow-hidden rounded-none sm:rounded-3xl border-0 sm:border border-white/20 dark:border-white/5 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.2)] bg-surface backdrop-blur-2xl transition-all duration-300 relative">
-        
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div
@@ -75,9 +74,15 @@ export default function Layout() {
             <Header onMenuClick={() => setSidebarOpen(true)} />
           </div>
 
-          <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-8 relative">
+          <main
+            ref={mainRef}
+            className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-8 relative"
+          >
             <AnimatePresence mode="wait">
-              <PageTransition key={location.pathname} className="h-full max-w-[100vw]">
+              <PageTransition
+                key={location.pathname}
+                className="h-full max-w-[100vw]"
+              >
                 <Outlet />
               </PageTransition>
             </AnimatePresence>

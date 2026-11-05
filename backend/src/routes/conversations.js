@@ -9,8 +9,10 @@ const { requirePermission } = require("../middleware/rbac");
 const { withLastMessages } = require("../utils/conversationPreview");
 
 const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
-const idOf = (ref) => (ref && ref._id ? String(ref._id) : ref ? String(ref) : null);
-const isId = (value) => typeof value === "string" && OBJECT_ID_PATTERN.test(value);
+const idOf = (ref) =>
+  ref && ref._id ? String(ref._id) : ref ? String(ref) : null;
+const isId = (value) =>
+  typeof value === "string" && OBJECT_ID_PATTERN.test(value);
 
 const router = express.Router();
 
@@ -39,8 +41,13 @@ router.get(
   async (req, res, next) => {
     try {
       const { q } = req.query;
-      if (q !== undefined && (typeof q !== "string" || q.length > MAX_SEARCH_LENGTH)) {
-        return res.status(400).json({ success: false, message: "Invalid search text" });
+      if (
+        q !== undefined &&
+        (typeof q !== "string" || q.length > MAX_SEARCH_LENGTH)
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid search text" });
       }
 
       const societyId = idOf(req.user.societyId);
@@ -52,8 +59,15 @@ router.get(
       const term = typeof q === "string" ? q.trim() : "";
       if (term) filter.name = new RegExp(escapeRegex(term), "i");
 
-      const members = await User.find(filter).select("name").sort({ name: 1 }).limit(MAX_RECIPIENTS).lean();
-      const data = members.map((member) => ({ id: String(member._id), name: member.name }));
+      const members = await User.find(filter)
+        .select("name")
+        .sort({ name: 1 })
+        .limit(MAX_RECIPIENTS)
+        .lean();
+      const data = members.map((member) => ({
+        id: String(member._id),
+        name: member.name,
+      }));
       res.json({ success: true, count: data.length, data });
     } catch (error) {
       next(error);
@@ -68,9 +82,12 @@ router.get(
  */
 router.get("/", async (req, res, next) => {
   try {
-    let societyId = req.query.societyId || req.user.societyId?._id || req.user.societyId;
+    let societyId =
+      req.query.societyId || req.user.societyId?._id || req.user.societyId;
     if (!societyId) {
-      const firstSociety = await require("../models/Society").findOne().sort({ createdAt: 1 });
+      const firstSociety = await require("../models/Society")
+        .findOne()
+        .sort({ createdAt: 1 });
       societyId = firstSociety?._id;
     }
     if (!societyId) {
@@ -108,47 +125,93 @@ router.post("/", async (req, res, next) => {
     let recipientId = body.recipientId;
     if (recipientId === undefined && Array.isArray(body.participantIds)) {
       if (body.participantIds.length !== 1) {
-        return res.status(400).json({ success: false, message: "Exactly one other participant is required" });
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Exactly one other participant is required",
+          });
       }
       recipientId = body.participantIds[0];
     }
     const callerId = String(req.user._id);
 
-    if (recipientId === undefined || recipientId === null || recipientId === "") {
-      return res.status(400).json({ success: false, message: "Recipient User ID is required" });
+    if (
+      recipientId === undefined ||
+      recipientId === null ||
+      recipientId === ""
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Recipient User ID is required" });
     }
-    if (!isId(recipientId) || (body.societyId !== undefined && !isId(body.societyId))) {
-      return res.status(400).json({ success: false, message: "Invalid ID format." });
+    if (
+      !isId(recipientId) ||
+      (body.societyId !== undefined && !isId(body.societyId))
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid ID format." });
     }
     if (recipientId.toLowerCase() === callerId.toLowerCase()) {
-      return res.status(400).json({ success: false, message: "You cannot start a conversation with yourself" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "You cannot start a conversation with yourself",
+        });
     }
 
     const isAdmin = req.user.role === "ADMIN";
     const callerSocietyId = idOf(req.user.societyId);
     const targetSocietyId = body.societyId || callerSocietyId;
     if (!targetSocietyId) {
-      return res.status(400).json({ success: false, message: "Society ID is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Society ID is required" });
     }
     // Only administrators may open a conversation in a society that is not their own.
-    if (!isAdmin && targetSocietyId.toLowerCase() !== String(callerSocietyId || "").toLowerCase()) {
-      return res.status(403).json({ success: false, message: "Access restricted to your own society only." });
+    if (
+      !isAdmin &&
+      targetSocietyId.toLowerCase() !==
+        String(callerSocietyId || "").toLowerCase()
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Access restricted to your own society only.",
+        });
     }
     if (!(await Society.exists({ _id: targetSocietyId }))) {
-      return res.status(404).json({ success: false, message: "Society not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Society not found" });
     }
     const recipient = await User.findById(recipientId).select("role societyId");
     if (!recipient) {
-      return res.status(404).json({ success: false, message: "Recipient not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Recipient not found" });
     }
     // The other participant must belong to the same society (administrators belong to none
     // and may be messaged from any society).
-    if (recipient.role !== "ADMIN" && idOf(recipient.societyId) !== String(targetSocietyId)) {
-      return res.status(403).json({ success: false, message: "The recipient is not a member of this society." });
+    if (
+      recipient.role !== "ADMIN" &&
+      idOf(recipient.societyId) !== String(targetSocietyId)
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "The recipient is not a member of this society.",
+        });
     }
 
-    const userOneId = callerId < recipientId.toLowerCase() ? callerId : recipientId;
-    const userTwoId = callerId < recipientId.toLowerCase() ? recipientId : callerId;
+    const userOneId =
+      callerId < recipientId.toLowerCase() ? callerId : recipientId;
+    const userTwoId =
+      callerId < recipientId.toLowerCase() ? recipientId : callerId;
     const pair = { societyId: targetSocietyId, userOneId, userTwoId };
 
     // Find or create. Two simultaneous requests for the same pair both pass the lookup; the
@@ -182,7 +245,9 @@ router.get("/:id/messages", async (req, res, next) => {
   try {
     const conversation = await Conversation.findById(req.params.id);
     if (!conversation) {
-      return res.status(404).json({ success: false, message: "Conversation not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Conversation not found" });
     }
 
     // Security check: Verify user is part of the conversation
@@ -191,24 +256,40 @@ router.get("/:id/messages", async (req, res, next) => {
       conversation.userTwoId.toString() === req.user._id.toString();
 
     if (!isParticipant) {
-      return res.status(403).json({ success: false, message: "Access denied. You are not a participant in this conversation." });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message:
+            "Access denied. You are not a participant in this conversation.",
+        });
     }
 
-    const messages = await Message.find({ conversationId: req.params.id, parentMessageId: null })
+    const messages = await Message.find({
+      conversationId: req.params.id,
+      parentMessageId: null,
+    })
       .populate("authorId", "name email")
       .sort({ createdAt: 1 });
 
     const messagesWithReactions = await Promise.all(
       messages.map(async (msg) => {
-        const reactions = await Reaction.find({ messageId: msg._id }).populate("userId", "name email");
+        const reactions = await Reaction.find({ messageId: msg._id }).populate(
+          "userId",
+          "name email",
+        );
         return {
           ...msg.toJSON(),
           reactions,
         };
-      })
+      }),
     );
 
-    res.json({ success: true, count: messagesWithReactions.length, data: messagesWithReactions });
+    res.json({
+      success: true,
+      count: messagesWithReactions.length,
+      data: messagesWithReactions,
+    });
   } catch (error) {
     next(error);
   }
@@ -221,10 +302,14 @@ router.get("/:id/messages", async (req, res, next) => {
  */
 router.post("/:id/messages", async (req, res, next) => {
   try {
-    const { body, plainText, imageUrl, calendarEvent } = req.body;
+    const { plainText, imageUrl, calendarEvent } = req.body;
+    // The web client sends `content`; direct callers send `body` (the channel route accepts both).
+    const body = req.body.body || req.body.content;
     const conversation = await Conversation.findById(req.params.id);
     if (!conversation) {
-      return res.status(404).json({ success: false, message: "Conversation not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Conversation not found" });
     }
 
     // Security check: Verify user is part of the conversation
@@ -233,11 +318,19 @@ router.post("/:id/messages", async (req, res, next) => {
       conversation.userTwoId.toString() === req.user._id.toString();
 
     if (!isParticipant) {
-      return res.status(403).json({ success: false, message: "Access denied. You are not a participant in this conversation." });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message:
+            "Access denied. You are not a participant in this conversation.",
+        });
     }
 
     if (!body) {
-      return res.status(400).json({ success: false, message: "Message body is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Message body is required" });
     }
 
     const message = await Message.create({
@@ -254,14 +347,22 @@ router.post("/:id/messages", async (req, res, next) => {
     conversation.changed = true; // dummy change to trigger timestamp update if hook needed, or save() directly
     await conversation.save();
 
-    const populated = await Message.findById(message._id).populate("authorId", "name email");
+    const populated = await Message.findById(message._id).populate(
+      "authorId",
+      "name email",
+    );
 
     const io = req.app.get("io");
     if (io) {
-      io.to(`conversation_${conversation._id}`).emit("message:new", { ...populated.toJSON(), reactions: [] });
+      io.to(`conversation_${conversation._id}`).emit("message:new", {
+        ...populated.toJSON(),
+        reactions: [],
+      });
     }
 
-    res.status(201).json({ success: true, data: { ...populated.toJSON(), reactions: [] } });
+    res
+      .status(201)
+      .json({ success: true, data: { ...populated.toJSON(), reactions: [] } });
   } catch (error) {
     next(error);
   }
