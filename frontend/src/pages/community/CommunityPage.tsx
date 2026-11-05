@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import Portal from "@/components/ui/Portal";
 import DOMPurify from "dompurify";
 import { channelsService } from "@/services/channels";
+import { activeSocietyId } from "@/lib/backendPayload";
 import { conversationsService } from "@/services/conversations";
 import { userService } from "@/services/users";
 import { Button, LoadingSpinner } from "@/components/ui";
@@ -504,9 +505,18 @@ export default function CommunityPage() {
 
   const handleStartDm = async (targetUser: { id: string }) => {
     try {
-      const res = await conversationsService.createConversation([
-        targetUser.id,
-      ]);
+      // Only an administrator has to say which society: the recipient's own, else the one
+      // selected in the header. Everyone else's conversation uses their own society.
+      const targetSociety = (targetUser as { societyId?: unknown }).societyId;
+      const targetSocietyId =
+        typeof targetSociety === "string"
+          ? targetSociety
+          : ((targetSociety as { id?: string; _id?: string } | null)?.id ??
+            (targetSociety as { _id?: string } | null)?._id);
+      const res = await conversationsService.createConversation(
+        [targetUser.id],
+        isAdmin ? targetSocietyId || activeSocietyId() : undefined,
+      );
       // The create response has the same shape as the list rows, so it needs the same
       // participants mapping; selecting the raw row crashed the page.
       const created = withParticipants(res.data.data);

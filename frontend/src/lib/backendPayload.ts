@@ -1,9 +1,14 @@
 import { useSocietyStore } from "@/store/societyStore";
+import { useAuthStore } from "@/store/authStore";
 
 // Translates the web forms' field names into the shapes the REST API validates.
 
-/** Society chosen in the header switcher; admins have no society of their own. */
+/**
+ * The society new records belong to: a member's own society, otherwise (administrators have
+ * none) the one selected in the header switcher.
+ */
 export const activeSocietyId = (): string | undefined =>
+  useAuthStore.getState().userScope?.societyId ||
   useSocietyStore.getState().activeSocietyId ||
   localStorage.getItem("activeSocietyId") ||
   undefined;
