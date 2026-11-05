@@ -44,6 +44,6 @@ test("other statuses and network errors are left untouched", () => {
 test("api.ts wires the helper, never retries, and keeps the 401 branch", () => {
   const api = readFileSync(new URL("../../src/lib/api.ts", import.meta.url), "utf8");
   assert.match(api, /applyRateLimitMessage\(err\)/);
-  assert.match(api, /status === 401[\s\S]*removeItem\('token'\)[\s\S]*window\.location\.href = '\/login'/);
+  assert.match(api, /status === 401[\s\S]*removeItem\((["'])token\1\)[\s\S]*window\.location\.href = \1\/login\1/);
   assert.ok(!/retry/i.test(api.replace(/no automatic retry/, "")));
 });

@@ -8,7 +8,7 @@ import {
   RefreshCw,
   Sparkles,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "@/lib/motion";
 import {
   opportunityService,
   type Opportunity,
@@ -160,7 +160,7 @@ export default function OpportunitiesPage() {
             <AnimatePresence>
               {isOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                  initial={{ y: -6, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.98 }}
                   transition={{ duration: 0.15 }}

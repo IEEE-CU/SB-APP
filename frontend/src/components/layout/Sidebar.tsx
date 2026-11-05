@@ -14,18 +14,38 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { ACCESS_LEVELS } from "@/lib/permissionLevels";
 import CollapsibleChannelMenu from "./CollapsibleChannelMenu";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", module: null },
   { to: "/societies", icon: Building2, label: "Societies", module: null },
   { to: "/events", icon: Calendar, label: "Events", module: "events" },
-  { to: "/projects", icon: FolderKanban, label: "Projects", module: "projects" },
+  {
+    to: "/projects",
+    icon: FolderKanban,
+    label: "Projects",
+    module: "projects",
+  },
   { to: "/reports", icon: FileText, label: "Reports", module: "reports" },
-  { to: "/announcements", icon: Megaphone, label: "Announcements", module: "announcements" },
-  { to: "/community", icon: MessageCircle, label: "Community Hub", module: "community_hub" },
+  {
+    to: "/announcements",
+    icon: Megaphone,
+    label: "Announcements",
+    module: "announcements",
+  },
+  {
+    to: "/community",
+    icon: MessageCircle,
+    label: "Community Hub",
+    module: "community_hub",
+  },
   { to: "/tasks", icon: CheckSquare, label: "Tasks", module: null },
-  { to: "/opportunities", icon: Award, label: "Awards & Scholarships", module: null },
+  {
+    to: "/opportunities",
+    icon: Award,
+    label: "Awards & Scholarships",
+    module: null,
+  },
   { to: "/calendar", icon: Calendar, label: "Unified Calendar", module: null },
 ];
 
@@ -71,11 +91,16 @@ export default function Sidebar({
               className={linkClass}
             >
               {({ isActive }) => (
-                <motion.div whileTap={{ scale: 0.96 }} className="flex items-center gap-3 w-full">
+                <motion.div
+                  whileTap={{ scale: 0.96 }}
+                  className="flex items-center gap-3 w-full"
+                >
                   <item.icon
                     size={18}
                     className={
-                      isActive ? "text-white" : "text-ink-muted transition-colors"
+                      isActive
+                        ? "text-white"
+                        : "text-ink-muted transition-colors"
                     }
                   />
                   <span>{item.label}</span>
@@ -103,11 +128,16 @@ export default function Sidebar({
               canAccess(item.module) ? (
                 <NavLink key={item.to} to={item.to} className={linkClass}>
                   {({ isActive }) => (
-                    <motion.div whileTap={{ scale: 0.96 }} className="flex items-center gap-3 w-full">
+                    <motion.div
+                      whileTap={{ scale: 0.96 }}
+                      className="flex items-center gap-3 w-full"
+                    >
                       <item.icon
                         size={18}
                         className={
-                          isActive ? "text-white" : "text-ink-muted transition-colors"
+                          isActive
+                            ? "text-white"
+                            : "text-ink-muted transition-colors"
                         }
                       />
                       <span>{item.label}</span>
@@ -122,7 +152,7 @@ export default function Sidebar({
 
       {/* User Info Badge at the bottom */}
       <div className="px-4 mt-6">
-        <motion.div 
+        <motion.div
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.97 }}
           className="p-3 bg-white/50 dark:bg-black/20 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-2xl flex items-center gap-3 shadow-sm cursor-pointer"
